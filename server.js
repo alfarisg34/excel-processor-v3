@@ -68,9 +68,12 @@ app.post('/api/process', uploadFields, handleProcess);
 app.post('/api/process-with-fa', uploadFields, handleProcess);
 app.post('/', uploadFields, handleProcess);
 
-// Start Server
-app.listen(PORT, () => {
-  console.log(`=================================================`);
-  console.log(`🚀 Excel Processor V3 Running on http://localhost:${PORT}`);
-  console.log(`=================================================`);
-});
+module.exports = app;
+
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`=================================================`);
+    console.log(`🚀 Excel Processor V3 Running on http://localhost:${PORT}`);
+    console.log(`=================================================`);
+  });
+}
