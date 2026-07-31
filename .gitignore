@@ -1,0 +1,9 @@
+node_modules/
+*.xlsx
+*.xls
+*.xlsm
+*.csv
+test_output/
+*.log
+.DS_Store
+scratch*.js

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Excel Processor V3 - Kemnaker</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📊 Excel File Processor V3</h1>
+      <p>Unified Excel restructurer & formatter for Kemnaker (RAB Format Output)</p>
+    </div>
+
+    <!-- FLOW 1: Semula Menjadi Processing (Tanpa Realisasi) -->
+    <div class="card">
+      <div class="card-title">
+        <i class="fa-solid fa-bolt" style="color: #38bdf8;"></i>
+        <span>Alur 1: Processing Standard (Semula Menjadi)</span>
+      </div>
+      <div class="card-subtitle">
+        Upload file RINCIAN KERTAS KERJA SATKER untuk menghasilkan file Excel format RAB baru
+      </div>
+
+      <div class="upload-zone" id="dropZone1">
+        <div class="upload-icon"><i class="fa-solid fa-file-excel"></i></div>
+        <div class="upload-text">Upload RINCIAN KERTAS KERJA SATKER</div>
+        <div class="upload-hint">Klik atau drag & drop file (.xlsx, .xls)</div>
+        <input type="file" id="fileInput1" accept=".xlsx,.xls" style="display: none;">
+        <div class="file-status" id="fileStatus1"></div>
+      </div>
+
+      <button class="btn" id="btnProcess1" disabled>
+        <i class="fa-solid fa-gears"></i> Proses & Download Output
+      </button>
+
+      <div class="status-box" id="status1"></div>
+    </div>
+
+    <!-- FLOW 2: Semula Menjadi dengan Realisasi (Laporan FA + RINCIAN KERTAS KERJA) -->
+    <div class="card">
+      <div class="card-title">
+        <i class="fa-solid fa-chart-pie" style="color: #22c55e;"></i>
+        <span>Alur 2: Processing Dengan Realisasi (Laporan FA)</span>
+      </div>
+      <div class="card-subtitle">
+        Upload Laporan FA Detail (16 Segmen) + RINCIAN KERTAS KERJA SATKER untuk mengisi Sisa Anggaran (AV)
+      </div>
+
+      <!-- FA File Upload -->
+      <div class="upload-zone" id="dropZoneFA" style="margin-bottom: 15px;">
+        <div class="upload-icon" style="color: #22c55e;"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+        <div class="upload-text">1. Upload Laporan FA Detail (16 Segmen)</div>
+        <div class="upload-hint">File .xlsx / .xls berisi data realisasi/sisa anggaran</div>
+        <input type="file" id="fileInputFA" accept=".xlsx,.xls" style="display: none;">
+        <div class="file-status" id="fileStatusFA"></div>
+      </div>
+
+      <!-- RKK File Upload for Flow 2 -->
+      <div class="upload-zone" id="dropZone2">
+        <div class="upload-icon"><i class="fa-solid fa-file-excel"></i></div>
+        <div class="upload-text">2. Upload RINCIAN KERTAS KERJA SATKER</div>
+        <div class="upload-hint">File .xlsx / .xls rencana kertas kerja</div>
+        <input type="file" id="fileInput2" accept=".xlsx,.xls" style="display: none;">
+        <div class="file-status" id="fileStatus2"></div>
+      </div>
+
+      <button class="btn btn-success" id="btnProcess2" disabled>
+        <i class="fa-solid fa-cloud-arrow-down"></i> Proses & Download Output (Dengan Realisasi)
+      </button>
+
+      <div class="status-box" id="status2"></div>
+    </div>
+
+    <!-- COLOR NOTES SECTION -->
+    <div class="card">
+      <div class="card-title">
+        <i class="fa-solid fa-palette" style="color: #f59e0b;"></i>
+        <span>📝 Color Coding Notes</span>
+      </div>
+      <div class="notes-grid">
+        <div class="note-item" style="border-color: #0c0c5e;">
+          <div class="note-title" style="color: #38bdf8;">Code 322 (026.04.DN)</div>
+          <div class="note-desc">Dark Blue (#0c0c5e) font color applied to row</div>
+        </div>
+        <div class="note-item" style="border-color: #0000FF;">
+          <div class="note-title" style="color: #818cf8;">4 Digit Number (2175)</div>
+          <div class="note-desc">Blue (#0000FF) font color applied to row</div>
+        </div>
+        <div class="note-item" style="border-color: #B10301;">
+          <div class="note-title" style="color: #ef4444;">Code 43 (2175.BDC)</div>
+          <div class="note-desc">Red (#B10301) font color applied to row</div>
+        </div>
+        <div class="note-item" style="border-color: #94a3b8;">
+          <div class="note-title" style="color: #f8fafc;">Code 433 / 3-Digit</div>
+          <div class="note-desc">Bold formatting applied (No row color)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p><i class="fa-regular fa-copyright"></i> 2026 Kemnaker — Excel Processor V3 Unified</p>
+  </footer>
+
+  <script>
+    // Elements Flow 1
+    const dropZone1 = document.getElementById('dropZone1');
+    const fileInput1 = document.getElementById('fileInput1');
+    const fileStatus1 = document.getElementById('fileStatus1');
+    const btnProcess1 = document.getElementById('btnProcess1');
+    const status1 = document.getElementById('status1');
+
+    let file1 = null;
+
+    // Elements Flow 2
+    const dropZoneFA = document.getElementById('dropZoneFA');
+    const fileInputFA = document.getElementById('fileInputFA');
+    const fileStatusFA = document.getElementById('fileStatusFA');
+
+    const dropZone2 = document.getElementById('dropZone2');
+    const fileInput2 = document.getElementById('fileInput2');
+    const fileStatus2 = document.getElementById('fileStatus2');
+
+    const btnProcess2 = document.getElementById('btnProcess2');
+    const status2 = document.getElementById('status2');
+
+    let fileFA = null;
+    let file2 = null;
+
+    // Setup Drag & Drop Handlers
+    setupDropZone(dropZone1, fileInput1, (f) => {
+      file1 = f;
+      fileStatus1.textContent = '✅ Selected: ' + f.name;
+      btnProcess1.disabled = false;
+    });
+
+    setupDropZone(dropZoneFA, fileInputFA, (f) => {
+      fileFA = f;
+      fileStatusFA.textContent = '✅ Selected FA: ' + f.name;
+      checkFlow2Ready();
+    });
+
+    setupDropZone(dropZone2, fileInput2, (f) => {
+      file2 = f;
+      fileStatus2.textContent = '✅ Selected RKK: ' + f.name;
+      checkFlow2Ready();
+    });
+
+    function checkFlow2Ready() {
+      btnProcess2.disabled = !(fileFA && file2);
+    }
+
+    function setupDropZone(zone, input, onFileSelect) {
+      zone.addEventListener('click', () => input.click());
+      zone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        zone.classList.add('dragover');
+      });
+      zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+      zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        zone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) {
+          input.files = e.dataTransfer.files;
+          onFileSelect(e.dataTransfer.files[0]);
+        }
+      });
+      input.addEventListener('change', (e) => {
+        if (e.target.files.length) {
+          onFileSelect(e.target.files[0]);
+        }
+      });
+    }
+
+    // Process Flow 1
+    btnProcess1.addEventListener('click', async () => {
+      if (!file1) return;
+      btnProcess1.disabled = true;
+      showStatus(status1, '⏳ Memproses file Excel RKK...', 'info');
+
+      const formData = new FormData();
+      formData.append('file', file1);
+
+      try {
+        const response = await fetch('/api/process', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.detail || err.error || 'Server error');
+        }
+
+        const blob = await response.blob();
+        downloadBlob(blob, `output_${new Date().toISOString().slice(0, 19).replace(/[:]/g, '-')}.xlsx`);
+        showStatus(status1, '✅ Berhasil memproses dan mengunduh file!', 'success');
+      } catch (err) {
+        showStatus(status1, '❌ Error: ' + err.message, 'error');
+      } finally {
+        btnProcess1.disabled = false;
+      }
+    });
+
+    // Process Flow 2
+    btnProcess2.addEventListener('click', async () => {
+      if (!fileFA || !file2) return;
+      btnProcess2.disabled = true;
+      showStatus(status2, '⏳ Memproses Laporan FA + RKK...', 'info');
+
+      const formData = new FormData();
+      formData.append('file', file2);
+      formData.append('fa_file', fileFA);
+
+      try {
+        const response = await fetch('/api/process-with-fa', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.detail || err.error || 'Server error');
+        }
+
+        const blob = await response.blob();
+        downloadBlob(blob, `output_${new Date().toISOString().slice(0, 19).replace(/[:]/g, '-')}_Dengan_Realisasi.xlsx`);
+        showStatus(status2, '✅ Berhasil memproses dan mengunduh file dengan Realisasi!', 'success');
+      } catch (err) {
+        showStatus(status2, '❌ Error: ' + err.message, 'error');
+      } finally {
+        btnProcess2.disabled = false;
+      }
+    });
+
+    function downloadBlob(blob, filename) {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }
+
+    function showStatus(elem, text, type) {
+      elem.textContent = text;
+      elem.className = `status-box ${type}`;
+    }
+  </script>
+</body>
+</html>
