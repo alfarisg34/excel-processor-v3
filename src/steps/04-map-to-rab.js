@@ -277,60 +277,42 @@ async function mapToRab(inWorkbook) {
     row2[40] = 'SELISIH';
     outSheet.addRow(row2);
 
-    // Row 3: Column Numbers
+    // Row 3: Column Numbers (1-10 for SEMULA and MENJADI)
     const row3 = new Array(65).fill('');
     row3[0] = '1';
     row3[1] = '2';
     row3[2] = '3';
     row3[3] = '4';
     row3[4] = '5';
-    row3[5] = '6';
-    row3[6] = '7';
-    row3[7] = '8';
-    row3[8] = '9';
-    row3[9] = '10';
-    row3[10] = '11';
-    row3[11] = '12';
-    row3[12] = '13';
-    row3[13] = '14';
-    row3[14] = '15';
-    row3[15] = '16';
-    row3[16] = '17';
-    row3[17] = '18';
-    row3[18] = '19';
-    row3[19] = '20';
+    row3[15] = '6';
+    row3[16] = '7';
+    row3[17] = '8';
+    row3[18] = '9';
+    row3[19] = '10';
 
     row3[20] = '1';
     row3[21] = '2';
     row3[22] = '3';
     row3[23] = '4';
     row3[24] = '5';
-    row3[25] = '6';
-    row3[26] = '7';
-    row3[27] = '8';
-    row3[28] = '9';
-    row3[29] = '10';
-    row3[30] = '11';
-    row3[31] = '12';
-    row3[32] = '13';
-    row3[33] = '14';
-    row3[34] = '15';
-    row3[35] = '16';
-    row3[36] = '17';
-    row3[37] = '18';
-    row3[38] = '19';
-    row3[39] = '20';
+    row3[35] = '6';
+    row3[36] = '7';
+    row3[37] = '8';
+    row3[38] = '9';
+    row3[39] = '10';
 
     row3[40] = 'SELISIH';
     outSheet.addRow(row3);
 
-    // Merge header ranges including E2:O2 and Y2:AI2
+    // Merge header ranges including E2:O2, Y2:AI2, E3:O3, Y3:AI3
     const mergeRanges = [
       'A1:T1',
       'U1:AN1',
       'AO1:AO3',
       'E2:O2',
       'Y2:AI2',
+      'E3:O3',
+      'Y3:AI3',
     ];
 
     mergeRanges.forEach((rangeStr) => {

@@ -223,8 +223,12 @@ async function restructure(workbook) {
       const taggingCandidates = [colK, rawColL, rawColM, rawColN, rawColO];
       for (const cand of taggingCandidates) {
         const t = cand.trim().toUpperCase();
-        if (t === 'RM' || t === 'PNBP' || t === 'PNP') {
-          tagging = t === 'PNP' ? 'PNBP' : t;
+        if (t === 'RM' || t === 'PNBP' || t === 'PNP' || t === '*' || t.includes('*')) {
+          if (t === 'PNP') tagging = 'PNBP';
+          else if (t.includes('RM')) tagging = 'RM';
+          else if (t.includes('PNBP')) tagging = 'PNBP';
+          else if (t.includes('*')) tagging = '*';
+          else tagging = t;
           break;
         }
       }

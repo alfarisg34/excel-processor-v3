@@ -7,46 +7,20 @@ const PATTERNS = require('../utils/patterns');
  */
 async function styling(workbook) {
   workbook.worksheets.forEach((worksheet) => {
-    // 1. Data font Arial 6pt for all data rows (row 4 onwards)
-    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-      if (rowNumber >= 4) {
-        row.eachCell({ includeEmpty: true }, (cell) => {
-          cell.font = {
-            ...(cell.font || {}),
-            name: 'Arial',
-            size: 6,
-          };
-        });
-      }
-    });
-
-    // 2. Color coding & bold formatting based on Column A
+    // 1. Data font Arial 6pt & bold formatting (all rows bold except when Column A is "-")
     worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
       if (rowNumber < 4) return;
-      const cellA = row.getCell(1);
-      const valA = getCellText(cellA);
+      const valA = getCellText(row.getCell(1)).trim();
+      const isBold = valA !== '-';
 
-      if (PATTERNS.CODE_322.test(valA)) {
-        // Dark Blue #0c0c5e
-        row.eachCell({ includeEmpty: true }, (cell) => {
-          cell.font = { ...(cell.font || {}), color: { argb: 'FF0c0c5e' } };
-        });
-      } else if (PATTERNS.DIGIT_4.test(valA)) {
-        // Blue #0000FF
-        row.eachCell({ includeEmpty: true }, (cell) => {
-          cell.font = { ...(cell.font || {}), color: { argb: 'FF0000FF' } };
-        });
-      } else if (PATTERNS.CODE_43.test(valA)) {
-        // Red #B10301
-        row.eachCell({ includeEmpty: true }, (cell) => {
-          cell.font = { ...(cell.font || {}), color: { argb: 'FFB10301' } };
-        });
-      } else if (PATTERNS.CODE_433.test(valA) || PATTERNS.DIGIT_3.test(valA)) {
-        // Bold
-        row.eachCell({ includeEmpty: true }, (cell) => {
-          cell.font = { ...(cell.font || {}), bold: true };
-        });
-      }
+      row.eachCell({ includeEmpty: true }, (cell) => {
+        cell.font = {
+          ...(cell.font || {}),
+          name: 'Arial',
+          size: 6,
+          bold: isBold,
+        };
+      });
     });
 
     // 3. Header styling (Rows 1-3)
@@ -147,25 +121,25 @@ async function styling(workbook) {
 
     // 7. Set column widths (20-column RAB format layout)
     const widths = {
-      1: 12, // A - KODE
+      1: 8, // A - KODE
       2: 35, // B - URAIAN
-      3: 8,  // C - VOL RO
+      3: 4,  // C - VOL RO
       4: 12, // D - JENIS KOMPONEN
-      5: 4,  // E - Vol 1
-      6: 6.5, // F - Sat 1
-      7: 2.5, // G - x
-      8: 4,  // H - Vol 2
-      9: 6.5, // I - Sat 2
-      10: 2.5, // J - x
-      11: 4,  // K - Vol 3
-      12: 6.5, // L - Sat 3
-      13: 2.5, // M - x
-      14: 4,  // N - Vol 4
-      15: 6.5, // O - Sat 4
-      16: 8,  // P - VOL
-      17: 8,  // Q - SAT
-      18: 12, // R - HARGASAT
-      19: 14, // S - JUMLAH
+      5: 4.5,  // E - Vol 1
+      6: 4.5, // F - Sat 1
+      7: 4.5, // G - x
+      8: 4.5,  // H - Vol 2
+      9: 4.5, // I - Sat 2
+      10: 4.5, // J - x
+      11: 4.5,  // K - Vol 3
+      12: 4.5, // L - Sat 3
+      13: 4.5, // M - x
+      14: 4.5,  // N - Vol 4
+      15: 4.5, // O - Sat 4
+      16: 4.5,  // P - VOL
+      17: 4.5,  // Q - SAT
+      18: 9.5, // R - HARGASAT
+      19: 8, // S - JUMLAH
       20: 8,  // T - TAGGING RM/PNBP
     };
 
