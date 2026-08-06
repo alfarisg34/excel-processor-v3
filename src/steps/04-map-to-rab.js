@@ -64,6 +64,11 @@ function generateOutSheetFormulas(worksheet) {
     const row = worksheet.getRow(r);
     const code = getCellText(row.getCell(1)).trim();
 
+    if (PATTERNS.CODE_433.test(code)) {
+      row.getCell(3).value = { formula: `P${r}` };
+      row.getCell(23).value = { formula: `AJ${r}` };
+    }
+
     if (code === '-' || code === '>' || code === '>>') {
       const vol1 = getCellText(row.getCell(5));
       const vol2 = getCellText(row.getCell(8));
