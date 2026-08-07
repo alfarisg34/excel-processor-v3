@@ -58,11 +58,31 @@ async function handleProcess(req, res) {
   }
 }
 
-// Routes
+const validateInput = require('./src/steps/00-validate-input');
+
+// Multer upload fields configuration
 const uploadFields = upload.fields([
   { name: 'file', maxCount: 1 },
   { name: 'fa_file', maxCount: 1 },
 ]);
+
+// Validate file pattern route
+app.post('/api/validate', upload.single('file'), async (req, res) => {
+  try {
+    const file = req.file;
+    if (!file) {
+      return res.status(400).json({ error: 'File Excel Rencana Kertas Kerja wajib di-upload' });
+    }
+    const result = await validateInput(file.buffer);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error('[Validation Error]', error);
+    return res.status(500).json({
+      error: 'Gagal melakukan validasi file Excel',
+      detail: error.message,
+    });
+  }
+});
 
 app.post('/api/process', uploadFields, handleProcess);
 app.post('/api/process-with-fa', uploadFields, handleProcess);

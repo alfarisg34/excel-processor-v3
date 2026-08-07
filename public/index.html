@@ -32,6 +32,16 @@
         <div class="file-status" id="fileStatus1"></div>
       </div>
 
+      <!-- Validation Panel Flow 1 -->
+      <div class="validation-card" id="valCard1">
+        <div class="validation-header" id="valHeader1"></div>
+        <div class="validation-rules-list" id="valList1"></div>
+        <div class="ack-container" id="ackBox1" style="display: none;">
+          <input type="checkbox" id="chkAck1">
+          <label for="chkAck1">Saya sudah mengetahui aturan yang terlanggar di atas dan ingin tetap melanjutkan proses.</label>
+        </div>
+      </div>
+
       <button class="btn" id="btnProcess1" disabled>
         <i class="fa-solid fa-gears"></i> Proses & Download Output
       </button>
@@ -67,14 +77,22 @@
         <div class="file-status" id="fileStatus2"></div>
       </div>
 
+      <!-- Validation Panel Flow 2 -->
+      <div class="validation-card" id="valCard2">
+        <div class="validation-header" id="valHeader2"></div>
+        <div class="validation-rules-list" id="valList2"></div>
+        <div class="ack-container" id="ackBox2" style="display: none;">
+          <input type="checkbox" id="chkAck2">
+          <label for="chkAck2">Saya sudah mengetahui aturan yang terlanggar di atas dan ingin tetap melanjutkan proses.</label>
+        </div>
+      </div>
+
       <button class="btn btn-success" id="btnProcess2" disabled>
         <i class="fa-solid fa-cloud-arrow-down"></i> Proses & Download Output (Dengan Realisasi)
       </button>
 
       <div class="status-box" id="status2"></div>
     </div>
-
-
   </div>
 
   <footer>
@@ -86,10 +104,17 @@
     const dropZone1 = document.getElementById('dropZone1');
     const fileInput1 = document.getElementById('fileInput1');
     const fileStatus1 = document.getElementById('fileStatus1');
+    const valCard1 = document.getElementById('valCard1');
+    const valHeader1 = document.getElementById('valHeader1');
+    const valList1 = document.getElementById('valList1');
+    const ackBox1 = document.getElementById('ackBox1');
+    const chkAck1 = document.getElementById('chkAck1');
     const btnProcess1 = document.getElementById('btnProcess1');
     const status1 = document.getElementById('status1');
 
     let file1 = null;
+    let isValidated1 = false;
+    let hasViolations1 = false;
 
     // Elements Flow 2
     const dropZoneFA = document.getElementById('dropZoneFA');
@@ -100,33 +125,68 @@
     const fileInput2 = document.getElementById('fileInput2');
     const fileStatus2 = document.getElementById('fileStatus2');
 
+    const valCard2 = document.getElementById('valCard2');
+    const valHeader2 = document.getElementById('valHeader2');
+    const valList2 = document.getElementById('valList2');
+    const ackBox2 = document.getElementById('ackBox2');
+    const chkAck2 = document.getElementById('chkAck2');
+
     const btnProcess2 = document.getElementById('btnProcess2');
     const status2 = document.getElementById('status2');
 
     let fileFA = null;
     let file2 = null;
+    let isValidated2 = false;
+    let hasViolations2 = false;
 
     // Setup Drag & Drop Handlers
-    setupDropZone(dropZone1, fileInput1, (f) => {
+    setupDropZone(dropZone1, fileInput1, async (f) => {
       file1 = f;
       fileStatus1.textContent = '✅ Selected: ' + f.name;
-      btnProcess1.disabled = false;
+      await handleValidation(file1, valCard1, valHeader1, valList1, ackBox1, chkAck1, (valid, hasViol) => {
+        isValidated1 = valid;
+        hasViolations1 = hasViol;
+        updateButtonState1();
+      });
     });
 
     setupDropZone(dropZoneFA, fileInputFA, (f) => {
       fileFA = f;
       fileStatusFA.textContent = '✅ Selected FA: ' + f.name;
-      checkFlow2Ready();
+      updateButtonState2();
     });
 
-    setupDropZone(dropZone2, fileInput2, (f) => {
+    setupDropZone(dropZone2, fileInput2, async (f) => {
       file2 = f;
       fileStatus2.textContent = '✅ Selected RKK: ' + f.name;
-      checkFlow2Ready();
+      await handleValidation(file2, valCard2, valHeader2, valList2, ackBox2, chkAck2, (valid, hasViol) => {
+        isValidated2 = valid;
+        hasViolations2 = hasViol;
+        updateButtonState2();
+      });
     });
 
-    function checkFlow2Ready() {
-      btnProcess2.disabled = !(fileFA && file2);
+    chkAck1.addEventListener('change', updateButtonState1);
+    chkAck2.addEventListener('change', updateButtonState2);
+
+    function updateButtonState1() {
+      if (!file1 || !isValidated1) {
+        btnProcess1.disabled = true;
+      } else if (hasViolations1) {
+        btnProcess1.disabled = !chkAck1.checked;
+      } else {
+        btnProcess1.disabled = false;
+      }
+    }
+
+    function updateButtonState2() {
+      if (!fileFA || !file2 || !isValidated2) {
+        btnProcess2.disabled = true;
+      } else if (hasViolations2) {
+        btnProcess2.disabled = !chkAck2.checked;
+      } else {
+        btnProcess2.disabled = false;
+      }
     }
 
     function setupDropZone(zone, input, onFileSelect) {
@@ -149,6 +209,100 @@
           onFileSelect(e.target.files[0]);
         }
       });
+    }
+
+    // Handle File Pattern Validation
+    async function handleValidation(file, cardElem, headerElem, listElem, ackBoxElem, chkElem, callback) {
+      cardElem.classList.add('show');
+      headerElem.className = 'validation-header warning';
+      headerElem.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memeriksa pola & duplikasi kode pada file...';
+      listElem.innerHTML = '';
+      ackBoxElem.style.display = 'none';
+      chkElem.checked = false;
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await fetch('/api/validate', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error('Gagal melakukan validasi file');
+        }
+
+        const data = await response.json();
+
+        if (data.valid) {
+          headerElem.className = 'validation-header success';
+          headerElem.innerHTML = '<i class="fa-solid fa-circle-check"></i> ✅ Hasil Pengecekan: Semua aturan pola kode terpenuhi!';
+          listElem.innerHTML = '<p style="font-size:13px; color:#94a3b8; margin-top:5px;">Tidak ditemukan duplikasi kode yang melanggar aturan hierarki.</p>';
+          ackBoxElem.style.display = 'none';
+          callback(true, false);
+        } else {
+          headerElem.className = 'validation-header warning';
+          headerElem.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ⚠️ Hasil Pengecekan: Ditemukan ${data.violations.length} Aturan Terlanggar`;
+          
+          let html = '';
+          data.violations.forEach((v, index) => {
+            let detailsHtml = `
+              <table class="detail-table">
+                <thead>
+                  <tr>
+                    <th>Kode Duplikat</th>
+                    <th>Jumlah</th>
+                    <th>Lokasi Baris</th>
+                    <th>Konteks Parent</th>
+                  </tr>
+                </thead>
+                <tbody>
+            `;
+            
+            v.details.forEach(d => {
+              const rowsStr = d.rows.map(r => `Baris ${r}`).join(', ');
+              detailsHtml += `
+                <tr>
+                  <td><code>${d.code}</code></td>
+                  <td>${d.count}x</td>
+                  <td>${rowsStr}${d.taggings ? '<br><small style="color:#f87171;">' + d.taggings + '</small>' : ''}</td>
+                  <td><span style="color:#94a3b8;">${d.context}</span></td>
+                </tr>
+              `;
+            });
+            detailsHtml += '</tbody></table>';
+
+            html += `
+              <div class="rule-item">
+                <div class="rule-item-header" onclick="toggleRuleDetail('rule_det_${index}')">
+                  <span><i class="fa-solid fa-circle-exclamation"></i> Aturan ${v.ruleId}: ${v.ruleTitle}</span>
+                  <span class="rule-badge">${v.details.length} Kasus</span>
+                </div>
+                <div class="rule-details" id="rule_det_${index}">
+                  <p style="margin-bottom:6px; color:#cbd5e1;"><strong>Keterangan:</strong> ${v.patternDesc}</p>
+                  ${detailsHtml}
+                </div>
+              </div>
+            `;
+          });
+
+          listElem.innerHTML = html;
+          ackBoxElem.style.display = 'flex';
+          callback(true, true);
+        }
+      } catch (err) {
+        headerElem.className = 'validation-header warning';
+        headerElem.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> ❌ Gagal mengecek validasi: ' + err.message;
+        callback(false, false);
+      }
+    }
+
+    function toggleRuleDetail(id) {
+      const elem = document.getElementById(id);
+      if (elem) {
+        elem.classList.toggle('open');
+      }
     }
 
     // Process Flow 1
@@ -177,7 +331,7 @@
       } catch (err) {
         showStatus(status1, '❌ Error: ' + err.message, 'error');
       } finally {
-        btnProcess1.disabled = false;
+        updateButtonState1();
       }
     });
 
@@ -208,7 +362,7 @@
       } catch (err) {
         showStatus(status2, '❌ Error: ' + err.message, 'error');
       } finally {
-        btnProcess2.disabled = false;
+        updateButtonState2();
       }
     });
 
