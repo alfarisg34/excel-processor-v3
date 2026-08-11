@@ -1,12 +1,18 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Excel Processor V3 - Kemnaker</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- SheetJS & jsPDF CDN Libraries for Export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 </head>
+
 <body>
   <div class="container">
     <div class="header">
@@ -14,91 +20,276 @@
       <p>Unified Excel restructurer & formatter for Kemnaker (RAB Format Output)</p>
     </div>
 
-    <!-- FLOW 1: Semula Menjadi Processing (Tanpa Realisasi) -->
-    <div class="card">
-      <div class="card-title">
-        <i class="fa-solid fa-bolt" style="color: #38bdf8;"></i>
-        <span>Alur 1: Processing Standard (Semula Menjadi)</span>
-      </div>
-      <div class="card-subtitle">
-        Upload file RINCIAN KERTAS KERJA SATKER untuk menghasilkan file Excel format RAB baru
-      </div>
-
-      <div class="upload-zone" id="dropZone1">
-        <div class="upload-icon"><i class="fa-solid fa-file-excel"></i></div>
-        <div class="upload-text">Upload RINCIAN KERTAS KERJA SATKER</div>
-        <div class="upload-hint">Klik atau drag & drop file (.xlsx, .xls)</div>
-        <input type="file" id="fileInput1" accept=".xlsx,.xls" style="display: none;">
-        <div class="file-status" id="fileStatus1"></div>
-      </div>
-
-      <!-- Validation Panel Flow 1 -->
-      <div class="validation-card" id="valCard1">
-        <div class="validation-header" id="valHeader1"></div>
-        <div class="validation-rules-list" id="valList1"></div>
-        <div class="ack-container" id="ackBox1" style="display: none;">
-          <input type="checkbox" id="chkAck1">
-          <label for="chkAck1">Saya sudah mengetahui aturan yang terlanggar di atas dan ingin tetap melanjutkan proses.</label>
-        </div>
-      </div>
-
-      <button class="btn" id="btnProcess1" disabled>
-        <i class="fa-solid fa-gears"></i> Proses & Download Output
+    <!-- Top Navigation Bar Tabs -->
+    <div class="navbar">
+      <button class="nav-tab active" id="tabFlow1" onclick="switchTab('flow1')">
+        <i class="fa-solid fa-bolt" style="color: #38bdf8;"></i> Alur 1: Processing
       </button>
+      <button class="nav-tab" id="tabFlow2" onclick="switchTab('flow2')">
+        <i class="fa-solid fa-chart-pie" style="color: #22c55e;"></i> Alur 2: With Realisasi
+      </button>
+      <button class="nav-tab" id="tabRecap" onclick="switchTab('recap')">
+        <i class="fa-solid fa-sitemap" style="color: #f59e0b;"></i> Rekap Hirarki Satker
+      </button>
+    </div>
 
-      <div class="status-box" id="status1"></div>
-      <div class="level-val-panel" id="levelValPanel1"></div>
+    <!-- FLOW 1: Semula Menjadi Processing (Tanpa Realisasi) -->
+    <div class="view-section active" id="viewFlow1">
+      <div class="card">
+        <div class="card-title">
+          <i class="fa-solid fa-bolt" style="color: #38bdf8;"></i>
+          <span>Alur 1: Processing Standard (Semula Menjadi)</span>
+        </div>
+        <div class="card-subtitle">
+          Upload file RINCIAN KERTAS KERJA SATKER untuk menghasilkan file Excel format RAB baru
+        </div>
+
+        <div class="upload-zone" id="dropZone1">
+          <div class="upload-icon"><i class="fa-solid fa-file-excel"></i></div>
+          <div class="upload-text">Upload RINCIAN KERTAS KERJA SATKER</div>
+          <div class="upload-hint">Klik atau drag & drop file (.xlsx, .xls)</div>
+          <input type="file" id="fileInput1" accept=".xlsx,.xls" style="display: none;">
+          <div class="file-status" id="fileStatus1"></div>
+        </div>
+
+        <!-- Validation Panel Flow 1 -->
+        <div class="validation-card" id="valCard1">
+          <div class="validation-header" id="valHeader1"></div>
+          <div class="validation-rules-list" id="valList1"></div>
+          <div class="ack-container" id="ackBox1" style="display: none;">
+            <input type="checkbox" id="chkAck1">
+            <label for="chkAck1">Saya sudah mengetahui aturan yang terlanggar di atas dan ingin tetap melanjutkan
+              proses.</label>
+          </div>
+        </div>
+
+        <button class="btn" id="btnProcess1" disabled>
+          <i class="fa-solid fa-gears"></i> Proses & Download Output
+        </button>
+
+        <div class="status-box" id="status1"></div>
+        <div class="level-val-panel" id="levelValPanel1"></div>
+      </div>
     </div>
 
     <!-- FLOW 2: Semula Menjadi dengan Realisasi (Laporan FA + RINCIAN KERTAS KERJA) -->
-    <div class="card">
-      <div class="card-title">
-        <i class="fa-solid fa-chart-pie" style="color: #22c55e;"></i>
-        <span>Alur 2: Processing Dengan Realisasi (Laporan FA)</span>
+    <div class="view-section" id="viewFlow2">
+      <div class="card">
+        <div class="card-title">
+          <i class="fa-solid fa-chart-pie" style="color: #22c55e;"></i>
+          <span>Alur 2: Processing Dengan Realisasi (Laporan FA)</span>
+        </div>
+        <div class="card-subtitle">
+          Upload Laporan FA Detail (16 Segmen) + RINCIAN KERTAS KERJA SATKER untuk mengisi Sisa Anggaran (AV)
+        </div>
+
+        <!-- FA File Upload -->
+        <div class="upload-zone" id="dropZoneFA" style="margin-bottom: 15px;">
+          <div class="upload-icon" style="color: #22c55e;"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+          <div class="upload-text">1. Upload Laporan FA Detail (16 Segmen)</div>
+          <div class="upload-hint">File .xlsx / .xls berisi data realisasi/sisa anggaran</div>
+          <input type="file" id="fileInputFA" accept=".xlsx,.xls" style="display: none;">
+          <div class="file-status" id="fileStatusFA"></div>
+        </div>
+
+        <!-- RKK File Upload for Flow 2 -->
+        <div class="upload-zone" id="dropZone2">
+          <div class="upload-icon"><i class="fa-solid fa-file-excel"></i></div>
+          <div class="upload-text">2. Upload RINCIAN KERTAS KERJA SATKER</div>
+          <div class="upload-hint">File .xlsx / .xls rencana kertas kerja</div>
+          <input type="file" id="fileInput2" accept=".xlsx,.xls" style="display: none;">
+          <div class="file-status" id="fileStatus2"></div>
+        </div>
+
+        <!-- Validation Panel Flow 2 -->
+        <div class="validation-card" id="valCard2">
+          <div class="validation-header" id="valHeader2"></div>
+          <div class="validation-rules-list" id="valList2"></div>
+          <div class="ack-container" id="ackBox2" style="display: none;">
+            <input type="checkbox" id="chkAck2">
+            <label for="chkAck2">Saya sudah mengetahui aturan yang terlanggar di atas dan ingin tetap melanjutkan
+              proses.</label>
+          </div>
+        </div>
+
+        <button class="btn btn-success" id="btnProcess2" disabled>
+          <i class="fa-solid fa-cloud-arrow-down"></i> Proses & Download Output (Dengan Realisasi)
+        </button>
+
+        <div class="status-box" id="status2"></div>
+        <div class="level-val-panel" id="levelValPanel2"></div>
       </div>
-      <div class="card-subtitle">
-        Upload Laporan FA Detail (16 Segmen) + RINCIAN KERTAS KERJA SATKER untuk mengisi Sisa Anggaran (AV)
+    </div>
+
+    <!-- FLOW 3: REKAP HIRARKI SATKER (New Page / Tab) -->
+    <div class="view-section" id="viewRecap">
+      <div class="card">
+        <div class="card-title">
+          <i class="fa-solid fa-folder-tree" style="color: #f59e0b;"></i>
+          <span>Rekap Hirarki &amp; Pattern Digit 6 Satker</span>
+        </div>
+        <div class="card-subtitle">
+          Upload file RINCIAN KERTAS KERJA SATKER untuk menampilkan rekap hirarki kode, breakdown Digit 6, sumber dana
+          (RM/PNP), dan anggaran di-blokir (⭐)
+        </div>
+
+        <div class="upload-zone" id="dropZoneRecap">
+          <div class="upload-icon" style="color: #f59e0b;"><i class="fa-solid fa-sitemap"></i></div>
+          <div class="upload-text">Upload RINCIAN KERTAS KERJA SATKER</div>
+          <div class="upload-hint">Klik atau drag & drop file (.xlsx, .xls)</div>
+          <input type="file" id="fileInputRecap" accept=".xlsx,.xls" style="display: none;">
+          <div class="file-status" id="fileStatusRecap"></div>
+        </div>
+
+        <button class="btn" id="btnProcessRecap"
+          style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);"
+          disabled>
+          <i class="fa-solid fa-chart-bar"></i> Analisis &amp; Tampilkan Rekap Hirarki
+        </button>
+
+        <div class="status-box" id="statusRecap"></div>
       </div>
 
-      <!-- FA File Upload -->
-      <div class="upload-zone" id="dropZoneFA" style="margin-bottom: 15px;">
-        <div class="upload-icon" style="color: #22c55e;"><i class="fa-solid fa-file-invoice-dollar"></i></div>
-        <div class="upload-text">1. Upload Laporan FA Detail (16 Segmen)</div>
-        <div class="upload-hint">File .xlsx / .xls berisi data realisasi/sisa anggaran</div>
-        <input type="file" id="fileInputFA" accept=".xlsx,.xls" style="display: none;">
-        <div class="file-status" id="fileStatusFA"></div>
-      </div>
+      <!-- Result Panel for Rekap Hirarki -->
+      <div id="recapResultPanel" style="display: none;">
+        <!-- Hierarchy Level Filter Card -->
+        <div class="filter-card">
+          <div class="filter-grid">
+            <div class="form-group">
+              <label class="form-label" for="selectLevelFilter">
+                <i class="fa-solid fa-layer-group" style="color:#38bdf8;"></i> Filter Tingkat Hirarki:
+              </label>
+              <select class="form-select" id="selectLevelFilter">
+                <option value="0">Seluruh Satker (Total All Level)</option>
+                <option value="1" selected>Level Highest: Code 322 (Program)</option>
+                <option value="2">Level 2: Digit 4 (Kegiatan)</option>
+                <option value="3">Level 3: Code 43 (KRO)</option>
+                <option value="4">Level 4: Code 433 (RO)</option>
+                <option value="5">Level 5: Digit 3 (Komponen)</option>
+                <option value="6">Level 6: Single Alpha (Subkomponen)</option>
+              </select>
+            </div>
 
-      <!-- RKK File Upload for Flow 2 -->
-      <div class="upload-zone" id="dropZone2">
-        <div class="upload-icon"><i class="fa-solid fa-file-excel"></i></div>
-        <div class="upload-text">2. Upload RINCIAN KERTAS KERJA SATKER</div>
-        <div class="upload-hint">File .xlsx / .xls rencana kertas kerja</div>
-        <input type="file" id="fileInput2" accept=".xlsx,.xls" style="display: none;">
-        <div class="file-status" id="fileStatus2"></div>
-      </div>
+            <div class="form-group">
+              <label class="form-label" for="selectNodeParent">
+                <i class="fa-solid fa-diagram-project" style="color:#22c55e;"></i> Pilih Parent Node / Kode Spesifik:
+              </label>
+              <select class="form-select" id="selectNodeParent">
+                <!-- Dynamically populated -->
+              </select>
+            </div>
+          </div>
+        </div>
 
-      <!-- Validation Panel Flow 2 -->
-      <div class="validation-card" id="valCard2">
-        <div class="validation-header" id="valHeader2"></div>
-        <div class="validation-rules-list" id="valList2"></div>
-        <div class="ack-container" id="ackBox2" style="display: none;">
-          <input type="checkbox" id="chkAck2">
-          <label for="chkAck2">Saya sudah mengetahui aturan yang terlanggar di atas dan ingin tetap melanjutkan proses.</label>
+        <!-- Summary KPI Cards -->
+        <div class="recap-kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-title"><i class="fa-solid fa-wallet" style="color:#38bdf8;"></i> Total Pagu Anggaran</div>
+            <div class="kpi-value" id="kpiTotalPagu">Rp 0</div>
+            <div class="kpi-sub" id="kpiPathBreadcrumb">Satker</div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-title"><i class="fa-solid fa-building-columns" style="color:#60a5fa;"></i> Sumber Dana (RM /
+              PNP)</div>
+            <div style="display:flex; flex-direction:column; gap:6px; margin: 6px 0 2px 0;">
+              <div
+                style="display:flex; align-items:center; gap:8px; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:15px; color:#60a5fa;">
+                <span class="tag-badge rm">RM</span> <span id="kpiRM">Rp 0</span>
+              </div>
+              <div
+                style="display:flex; align-items:center; gap:8px; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:15px; color:#4ade80;">
+                <span class="tag-badge pnbp">PNP</span> <span id="kpiPNBP">Rp 0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="kpi-card star-card">
+            <div class="kpi-title">
+              <i class="fa-solid fa-star" style="color:#fbbf24;"></i> Total Diblokir <span class="rule-badge"
+                style="background:rgba(245,158,11,0.2); color:#fbbf24; border-color:rgba(245,158,11,0.4); font-size:10px; padding:1px 6px;">⭐
+                Blokir</span>
+            </div>
+            <div class="kpi-value" id="kpiTotalBlocked" style="color:#fbbf24;">Rp 0</div>
+            <div class="kpi-sub" id="kpiBlockedDetail"
+              style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+              <!-- Dynamically populated with RM & PNP color badges -->
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-title"><i class="fa-solid fa-list-ol" style="color:#a855f7;"></i> Total Pattern Digit 6
+              (Akun)</div>
+            <div class="kpi-value" id="kpiCountD6" style="color:#c084fc;">0 Akun</div>
+            <div class="kpi-sub" id="kpiPctBlocked">0% Anggaran Diblokir</div>
+          </div>
+        </div>
+
+        <!-- Digit 6 Table Card -->
+        <div class="d6-table-card">
+          <div class="d6-table-header" style="flex-wrap:wrap; gap:12px;">
+            <div class="d6-table-title" id="d6TableTitle">
+              <i class="fa-solid fa-table-list" style="color:#f59e0b;"></i>
+              Daftar Pattern Digit 6 (Akun) di bawah Target Kode
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <input type="text" id="searchD6" placeholder="🔍 Cari Kode / Uraian..." class="form-select"
+                style="padding:6px 12px; font-size:13px; width:190px;">
+
+              <select id="filterD6Tagging" class="form-select"
+                style="padding:6px 12px; font-size:13px; width:140px; background-color:#0f172a; color:#cbd5e1; border-color:rgba(148,163,184,0.3);">
+                <option value="ALL">🏷️ Semua Tagging</option>
+                <option value="RM">RM (Rupiah Murni)</option>
+                <option value="PNP">PNP / PNBP</option>
+              </select>
+
+              <select id="filterD6Blocked" class="form-select"
+                style="padding:6px 12px; font-size:13px; width:165px; background-color:#0f172a; color:#cbd5e1; border-color:rgba(148,163,184,0.3);">
+                <option value="ALL">⭐ Semua Status Blokir</option>
+                <option value="BLOCKED">⭐ Diblokir Only</option>
+                <option value="NORMAL">Normal (Tidak Diblokir)</option>
+              </select>
+
+              <button class="btn btn-sm" onclick="downloadRecapExcel()" style="padding:6px 12px; font-size:12px; background:linear-gradient(135deg, #16a34a 0%, #15803d 100%); color:#fff; border:none; border-radius:8px; display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:600;" title="Export Data Terfilter ke Excel (.xlsx)">
+                <i class="fa-solid fa-file-excel"></i> Excel
+              </button>
+              <button class="btn btn-sm" onclick="downloadRecapPdf()" style="padding:6px 12px; font-size:12px; background:linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color:#fff; border:none; border-radius:8px; display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:600;" title="Export Data Terfilter ke PDF (.pdf)">
+                <i class="fa-solid fa-file-pdf"></i> PDF
+              </button>
+            </div>
+          </div>
+
+          <div class="level-table-wrapper">
+            <table class="level-summary-table" id="tableRecapD6">
+              <thead>
+                <tr>
+                  <th style="width:110px;">Kode Akun</th>
+                  <th>Uraian Akun</th>
+                  <th style="width:90px;">Tagging</th>
+                  <th>Total Pagu (Rp)</th>
+                  <th>Pagu Sumber Dana (Rp)</th>
+                  <th>Diblokir ⭐ (Rp)</th>
+                  <th style="width:95px;">% Diblokir</th>
+                  <th style="width:80px; text-align:center;">Detail</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyRecapD6">
+                <!-- Dynamically rendered -->
+              </tbody>
+              <tfoot id="tfootRecapD6">
+                <!-- Dynamically rendered summary row -->
+              </tfoot>
+            </table>
+          </div>
         </div>
       </div>
-
-      <button class="btn btn-success" id="btnProcess2" disabled>
-        <i class="fa-solid fa-cloud-arrow-down"></i> Proses & Download Output (Dengan Realisasi)
-      </button>
-
-      <div class="status-box" id="status2"></div>
-      <div class="level-val-panel" id="levelValPanel2"></div>
     </div>
+
   </div>
 
   <footer>
-    <p><i class="fa-regular fa-copyright"></i> 2026 Kemnaker — Excel Processor V3 Unified | Alfari Sidnan Ghilmana (NIP. 20000403 202505 1 004)</p>
+    <p><i class="fa-regular fa-copyright"></i> 2026 Kemnaker — Excel Processor V3 Unified | Alfari Sidnan Ghilmana (NIP.
+      20000403 202505 1 004)</p>
   </footer>
 
   <script>
@@ -577,6 +768,643 @@
         </div>
       `;
     }
+
+    // Tab Navigation Switcher
+    function switchTab(tabName) {
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+
+      if (tabName === 'flow1') {
+        document.getElementById('tabFlow1').classList.add('active');
+        document.getElementById('viewFlow1').classList.add('active');
+      } else if (tabName === 'flow2') {
+        document.getElementById('tabFlow2').classList.add('active');
+        document.getElementById('viewFlow2').classList.add('active');
+      } else if (tabName === 'recap') {
+        document.getElementById('tabRecap').classList.add('active');
+        document.getElementById('viewRecap').classList.add('active');
+      }
+    }
+
+    // Elements for Recap Flow (Alur 3)
+    const dropZoneRecap = document.getElementById('dropZoneRecap');
+    const fileInputRecap = document.getElementById('fileInputRecap');
+    const fileStatusRecap = document.getElementById('fileStatusRecap');
+    const btnProcessRecap = document.getElementById('btnProcessRecap');
+    const statusRecap = document.getElementById('statusRecap');
+    const recapResultPanel = document.getElementById('recapResultPanel');
+
+    const selectLevelFilter = document.getElementById('selectLevelFilter');
+    const selectNodeParent = document.getElementById('selectNodeParent');
+    const searchD6 = document.getElementById('searchD6');
+    const filterD6Tagging = document.getElementById('filterD6Tagging');
+    const filterD6Blocked = document.getElementById('filterD6Blocked');
+    const tbodyRecapD6 = document.getElementById('tbodyRecapD6');
+
+    let fileRecap = null;
+    let currentRecapData = null;
+
+    setupDropZone(dropZoneRecap, fileInputRecap, (f) => {
+      fileRecap = f;
+      fileStatusRecap.textContent = '✅ Selected RKK: ' + f.name;
+      btnProcessRecap.disabled = false;
+    });
+
+    btnProcessRecap.addEventListener('click', async () => {
+      if (!fileRecap) return;
+      btnProcessRecap.disabled = true;
+      showStatus(statusRecap, '⏳ Menganalisis hirarki & breakdown Digit 6...', 'info');
+      recapResultPanel.style.display = 'none';
+
+      const formData = new FormData();
+      formData.append('file', fileRecap);
+
+      try {
+        const response = await fetch('/api/recap-hierarchy', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.detail || err.error || 'Server error');
+        }
+
+        currentRecapData = await response.json();
+        showStatus(statusRecap, '✅ Berhasil menganalisis rekap hirarki!', 'success');
+
+        recapResultPanel.style.display = 'block';
+        updateParentNodeDropdown(selectLevelFilter.value);
+        renderRecapForSelectedNode();
+      } catch (err) {
+        showStatus(statusRecap, '❌ Error: ' + err.message, 'error');
+      } finally {
+        btnProcessRecap.disabled = false;
+      }
+    });
+
+    selectLevelFilter.addEventListener('change', () => {
+      if (!currentRecapData) return;
+      updateParentNodeDropdown(selectLevelFilter.value);
+      renderRecapForSelectedNode();
+    });
+
+    selectNodeParent.addEventListener('change', () => {
+      renderRecapForSelectedNode();
+    });
+
+    searchD6.addEventListener('input', () => {
+      renderRecapForSelectedNode();
+    });
+
+    filterD6Tagging.addEventListener('change', () => {
+      renderRecapForSelectedNode();
+    });
+
+    filterD6Blocked.addEventListener('change', () => {
+      renderRecapForSelectedNode();
+    });
+
+    function updateParentNodeDropdown(levelVal) {
+      const lvl = parseInt(levelVal, 10);
+      selectNodeParent.innerHTML = '';
+
+      if (lvl === 0) {
+        const opt = document.createElement('option');
+        opt.value = 'ROOT';
+        opt.textContent = 'Seluruh Satker (Total All Level)';
+        selectNodeParent.appendChild(opt);
+        return;
+      }
+
+      const nodes = currentRecapData.nodesByLevel[lvl] || [];
+      if (nodes.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = '-- Tidak Ada Kode di Level Ini --';
+        selectNodeParent.appendChild(opt);
+        return;
+      }
+
+      nodes.forEach((n) => {
+        const opt = document.createElement('option');
+        opt.value = n.key;
+        const fullName = (n.name || n.fullPath || '').trim();
+        const truncatedName = fullName.length > 55 ? fullName.substring(0, 52) + '...' : fullName;
+        const labelText = `[${n.code}] ${truncatedName} (${formatRp(n.totalVal)})`;
+        const fullTitle = `[${n.code}] ${fullName} (${formatRp(n.totalVal)})`;
+        opt.textContent = labelText;
+        opt.title = fullTitle;
+        selectNodeParent.appendChild(opt);
+      });
+    }
+
+    function isTagMatch(tag, filterVal) {
+      if (filterVal === 'ALL') return true;
+      if (!tag) return false;
+      if (filterVal === 'RM') return tag === 'RM' || tag.includes('RM');
+      if (filterVal === 'PNP' || filterVal === 'PNBP') {
+        return tag === 'PNP' || tag === 'PNBP' || tag.includes('PNP') || tag.includes('PNBP');
+      }
+      return tag === filterVal;
+    }
+
+    function isDetailMatching(d6, det, query, tagFilter, blockedFilter) {
+      if (!isTagMatch(det.tagging, tagFilter)) return false;
+
+      if (blockedFilter === 'BLOCKED' && !det.isBlocked) return false;
+      if (blockedFilter === 'NORMAL' && det.isBlocked) return false;
+
+      if (query) {
+        const q = query.toLowerCase();
+        const matchesCodeOrName = (d6.code || '').toLowerCase().includes(q) || (d6.name || '').toLowerCase().includes(q);
+        const matchesUraian = (det.uraian || '').toLowerCase().includes(q);
+        if (!matchesCodeOrName && !matchesUraian) return false;
+      }
+
+      return true;
+    }
+
+    function renderRecapForSelectedNode() {
+      if (!currentRecapData) return;
+
+      const selectedKey = selectNodeParent.value || 'ROOT';
+      const nodeSummary = currentRecapData.nodeSummaries[selectedKey] || currentRecapData.rootSummary;
+
+      // Update KPI Cards
+      document.getElementById('kpiTotalPagu').textContent = formatRp(nodeSummary.totalVal);
+      document.getElementById('kpiPathBreadcrumb').textContent = nodeSummary.fullPath || 'Satker';
+
+      document.getElementById('kpiRM').textContent = formatRp(nodeSummary.totalRM);
+      document.getElementById('kpiPNBP').textContent = formatRp(nodeSummary.totalPNBP);
+
+      document.getElementById('kpiTotalBlocked').textContent = formatRp(nodeSummary.totalBlocked);
+      document.getElementById('kpiBlockedDetail').innerHTML = `
+        <span style="display:inline-flex; align-items:center; gap:5px; color:#60a5fa; font-weight:600; font-size:11px;">
+          <span class="tag-badge rm" style="font-size:9px; padding:1px 4px;">RM</span> ${formatRp(nodeSummary.blockedRM)}
+        </span>
+        <span style="color:#475569; margin:0 2px;">|</span>
+        <span style="display:inline-flex; align-items:center; gap:5px; color:#4ade80; font-weight:600; font-size:11px;">
+          <span class="tag-badge pnbp" style="font-size:9px; padding:1px 4px;">PNP</span> ${formatRp(nodeSummary.blockedPNBP)}
+        </span>
+      `;
+
+      document.getElementById('kpiCountD6').textContent = `${nodeSummary.digit6List.length} Akun`;
+      document.getElementById('kpiPctBlocked').innerHTML = `
+        <span style="color:#fbbf24; font-weight:600; font-size:12px;">⭐ ${nodeSummary.blockedPct}% Anggaran Diblokir</span>
+      `;
+
+      // Update Table Title
+      document.getElementById('d6TableTitle').innerHTML = `
+        <i class="fa-solid fa-table-list" style="color:#f59e0b;"></i>
+        Daftar Pattern Digit 6 (Akun) di bawah Level ${nodeSummary.levelName || 'Highest'}: <code>${nodeSummary.code}</code>
+      `;
+
+      // Filter Digit 6 Table by search query, tagging, and blocked status
+      const query = (searchD6.value || '').toLowerCase().trim();
+      const tagFilter = filterD6Tagging.value || 'ALL';
+      const blockedFilter = filterD6Blocked.value || 'ALL';
+
+      const isDetMatch = (d6, det) => isDetailMatching(d6, det, query, tagFilter, blockedFilter);
+
+      // Filter parent Digit 6 list: keep accounts that have matching detail items under active filters
+      let d6Items = (nodeSummary.digit6List || []).filter(d6 => {
+        // Tagging check at account level
+        if (!isTagMatch(d6.tagging, tagFilter)) return false;
+
+        // Account must have at least one detail row that matches all filter criteria
+        return (d6.details || []).some(det => isDetMatch(d6, det));
+      });
+
+      // Sort by code ascending, then RM before PNP
+      d6Items.sort((a, b) => {
+        const codeCmp = a.code.localeCompare(b.code, undefined, { numeric: true });
+        if (codeCmp !== 0) return codeCmp;
+        const tagPriority = { 'RM': 1, 'PNP': 2, 'PNBP': 2 };
+        const pA = tagPriority[a.tagging] || 9;
+        const pB = tagPriority[b.tagging] || 9;
+        return pA - pB;
+      });
+
+      const tfootRecapD6 = document.getElementById('tfootRecapD6');
+
+      if (d6Items.length === 0) {
+        tbodyRecapD6.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align:center; padding: 25px; color:#94a3b8;">
+              <i class="fa-solid fa-folder-open" style="font-size:24px; margin-bottom:8px;"></i><br>
+              Tidak ditemukan data Digit 6 (Akun) untuk filter ini.
+            </td>
+          </tr>
+        `;
+        if (tfootRecapD6) tfootRecapD6.innerHTML = '';
+        return;
+      }
+
+      let grandTotalVal = 0;
+      let grandTotalRM = 0;
+      let grandTotalPNBP = 0;
+      let grandTotalBlocked = 0;
+
+      let html = '';
+      d6Items.forEach((d6, idx) => {
+        const tagBadge = d6.tagging === 'RM'
+          ? '<span class="tag-badge rm">RM</span>'
+          : '<span class="tag-badge pnbp">PNP</span>';
+
+        // Filter sub-details according to active filters
+        const filteredDetails = (d6.details || []).filter(det => isDetailMatching(d6, det));
+
+        // Calculate values for filtered items under this account
+        const d6FilteredVal = filteredDetails.reduce((sum, det) => sum + (det.val || 0), 0);
+        const d6FilteredRM = filteredDetails.filter(det => det.tagging === 'RM').reduce((sum, det) => sum + (det.val || 0), 0);
+        const d6FilteredPNBP = filteredDetails.filter(det => det.tagging !== 'RM').reduce((sum, det) => sum + (det.val || 0), 0);
+        const d6FilteredBlocked = filteredDetails.filter(det => det.isBlocked).reduce((sum, det) => sum + (det.val || 0), 0);
+
+        grandTotalVal += d6FilteredVal;
+        grandTotalRM += d6FilteredRM;
+        grandTotalPNBP += d6FilteredPNBP;
+        grandTotalBlocked += d6FilteredBlocked;
+
+        const d6PctBlocked = d6FilteredVal > 0 ? ((d6FilteredBlocked / d6FilteredVal) * 100).toFixed(1) : '0.0';
+
+        const blockedCellStr = d6FilteredBlocked > 0
+          ? `<strong style="color:#fbbf24;">${formatRp(d6FilteredBlocked)}</strong> <span class="star-badge">⭐</span>`
+          : '<span style="color:#94a3b8;">Rp 0</span>';
+
+        const blockedPctBadge = d6FilteredBlocked > 0
+          ? `<span class="rule-badge" style="background:rgba(245,158,11,0.2); color:#fbbf24; border-color:rgba(245,158,11,0.4);">${d6PctBlocked}%</span>`
+          : '<span style="color:#64748b;">0.0%</span>';
+
+        const detailRowsHtml = filteredDetails.length > 0
+          ? filteredDetails.map(det => `
+              <tr>
+                <td><span class="row-num-badge">Baris ${det.rowNum}</span></td>
+                <td><strong>${det.uraian}</strong></td>
+                <td><span class="tag-badge ${det.tagging === 'RM' ? 'rm' : 'pnbp'}">${det.tagging}</span></td>
+                <td>${formatRp(det.val)}</td>
+                <td>
+                  ${det.isBlocked ? `<span class="star-badge">⭐ DIBLOKIR (${formatRp(det.val)})</span>` : '<span style="color:#4ade80;">Normal</span>'}
+                </td>
+              </tr>
+            `).join('')
+          : `
+              <tr>
+                <td colspan="5" style="text-align:center; padding: 15px; color:#94a3b8;">
+                  Tidak ada item rincian yang sesuai dengan filter.
+                </td>
+              </tr>
+            `;
+
+        const subTotalVal = filteredDetails.reduce((sum, det) => sum + (det.val || 0), 0);
+        const subTotalBlocked = filteredDetails.reduce((sum, det) => sum + (det.isBlocked ? (det.val || 0) : 0), 0);
+
+        const subFootHtml = filteredDetails.length > 0 ? `
+          <tfoot>
+            <tr style="background:rgba(30,41,59,0.95); font-weight:700; border-top:2px solid rgba(56,189,248,0.4); color:#f8fafc;">
+              <td colspan="3" style="text-align:right; padding:8px 12px; color:#38bdf8; text-transform:uppercase; font-size:11px; letter-spacing:0.5px;">
+                <i class="fa-solid fa-calculator" style="margin-right:4px;"></i> Total Terfilter:
+              </td>
+              <td style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#38bdf8;">${formatRp(subTotalVal)}</td>
+              <td>
+                ${subTotalBlocked > 0
+            ? `<strong style="color:#fbbf24; font-family:'JetBrains Mono',monospace; font-size:12px;">⭐ ${formatRp(subTotalBlocked)}</strong>`
+            : '<span style="color:#4ade80;">Rp 0</span>'}
+              </td>
+            </tr>
+          </tfoot>
+        ` : '';
+
+        const lineBadgeStr = filteredDetails.length !== d6.details.length
+          ? `${filteredDetails.length} / ${d6.details.length} Line`
+          : `${d6.details.length} Line`;
+
+        const activePaguStr = d6.tagging === 'RM'
+          ? `<span style="color:#60a5fa; font-weight:700; font-family:'JetBrains Mono',monospace;">${formatRp(d6FilteredRM || d6FilteredVal)}</span>`
+          : `<span style="color:#4ade80; font-weight:700; font-family:'JetBrains Mono',monospace;">${formatRp(d6FilteredPNBP || d6FilteredVal)}</span>`;
+
+        html += `
+          <tr>
+            <td><code style="font-size:13px; font-weight:700; color:#38bdf8;">${d6.code}</code></td>
+            <td><strong>${d6.name}</strong></td>
+            <td>${tagBadge}</td>
+            <td style="font-weight:700; font-family:'JetBrains Mono',monospace;">${formatRp(d6FilteredVal)}</td>
+            <td>${activePaguStr}</td>
+            <td>${blockedCellStr}</td>
+            <td>${blockedPctBadge}</td>
+            <td style="text-align:center;">
+              <button class="btn btn-sm" onclick="toggleSubDetail('d6_sub_${idx}')" style="padding:4px 8px; font-size:11px; background:rgba(56,189,248,0.2); border:1px solid rgba(56,189,248,0.4); color:#38bdf8;">
+                <i class="fa-solid fa-chevron-down"></i> ${lineBadgeStr}
+              </button>
+            </td>
+          </tr>
+          <tr id="d6_sub_${idx}" style="display:none;">
+            <td colspan="8" style="padding:0; background:rgba(15,23,42,0.95);">
+              <div class="sub-detail-rows">
+                <div style="font-weight:600; color:#cbd5e1; font-size:12px; margin-bottom:6px;">
+                  <i class="fa-solid fa-list-dots" style="color:#38bdf8;"></i> Rincian Item Detail (-) di bawah Akun ${d6.code} (${d6.tagging}):
+                </div>
+                <table class="sub-detail-table">
+                  <thead>
+                    <tr>
+                      <th style="width:70px;">Excel Row</th>
+                      <th>Uraian Rincian (-)</th>
+                      <th style="width:70px;">Sumber</th>
+                      <th>Jumlah (Rp)</th>
+                      <th>Status Blokir ⭐</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${detailRowsHtml}
+                  </tbody>
+                  ${subFootHtml}
+                </table>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+
+      tbodyRecapD6.innerHTML = html;
+
+      const grandPctBlocked = grandTotalVal > 0 ? ((grandTotalBlocked / grandTotalVal) * 100).toFixed(1) : '0.0';
+
+      if (tfootRecapD6) {
+        tfootRecapD6.innerHTML = `
+          <tr style="background:rgba(15,23,42,0.95); font-weight:700; border-top:2px solid rgba(245,158,11,0.5); color:#f8fafc;">
+            <td colspan="3" style="text-align:right; padding:12px; color:#fbbf24; text-transform:uppercase; font-size:12px; letter-spacing:0.5px;">
+              <i class="fa-solid fa-sigma" style="margin-right:6px;"></i> Total Terfilter (${d6Items.length} Akun):
+            </td>
+            <td style="font-family:'JetBrains Mono',monospace; font-size:13px; color:#f8fafc;">${formatRp(grandTotalVal)}</td>
+            <td style="font-family:'JetBrains Mono',monospace; font-size:12px;">
+              <div style="display:flex; flex-direction:column; gap:2px; line-height:1.3;">
+                ${grandTotalRM > 0 ? `<span style="color:#60a5fa;">RM: ${formatRp(grandTotalRM)}</span>` : ''}
+                ${grandTotalPNBP > 0 ? `<span style="color:#4ade80;">PNP: ${formatRp(grandTotalPNBP)}</span>` : ''}
+                ${grandTotalRM === 0 && grandTotalPNBP === 0 ? '<span style="color:#94a3b8;">Rp 0</span>' : ''}
+              </div>
+            </td>
+            <td style="font-family:'JetBrains Mono',monospace; font-size:13px;">
+              ${grandTotalBlocked > 0
+            ? `<strong style="color:#fbbf24;">${formatRp(grandTotalBlocked)} ⭐</strong>`
+            : '<span style="color:#94a3b8;">Rp 0</span>'}
+            </td>
+            <td style="color:#fbbf24; font-size:12px;">${grandPctBlocked}%</td>
+            <td></td>
+          </tr>
+        `;
+      }
+    }
+
+    function toggleSubDetail(id) {
+      const elem = document.getElementById(id);
+      if (elem) {
+        const isHidden = elem.style.display === 'none';
+        elem.style.display = isHidden ? 'table-row' : 'none';
+      }
+    }
+
+    function getFilteredRecapData() {
+      if (!currentRecapData) return null;
+
+      const selectedKey = selectNodeParent.value || 'ROOT';
+      const nodeSummary = currentRecapData.nodeSummaries[selectedKey] || currentRecapData.rootSummary;
+
+      const query = (searchD6.value || '').toLowerCase().trim();
+      const tagFilter = filterD6Tagging.value || 'ALL';
+      const blockedFilter = filterD6Blocked.value || 'ALL';
+
+      const isDetMatch = (d6, det) => isDetailMatching(d6, det, query, tagFilter, blockedFilter);
+
+      let d6Items = (nodeSummary.digit6List || []).filter(d6 => {
+        if (!isTagMatch(d6.tagging, tagFilter)) return false;
+        return (d6.details || []).some(det => isDetMatch(d6, det));
+      });
+
+      d6Items.sort((a, b) => {
+        const codeCmp = a.code.localeCompare(b.code, undefined, { numeric: true });
+        if (codeCmp !== 0) return codeCmp;
+        const tagPriority = { 'RM': 1, 'PNP': 2, 'PNBP': 2 };
+        const pA = tagPriority[a.tagging] || 9;
+        const pB = tagPriority[b.tagging] || 9;
+        return pA - pB;
+      });
+
+      const exportItems = d6Items.map(d6 => {
+        const filteredDetails = (d6.details || []).filter(det => isDetMatch(d6, det));
+        const d6FilteredVal = filteredDetails.reduce((sum, det) => sum + (det.val || 0), 0);
+        const d6FilteredRM = filteredDetails.filter(det => det.tagging === 'RM').reduce((sum, det) => sum + (det.val || 0), 0);
+        const d6FilteredPNBP = filteredDetails.filter(det => det.tagging !== 'RM').reduce((sum, det) => sum + (det.val || 0), 0);
+        const d6FilteredBlocked = filteredDetails.filter(det => det.isBlocked).reduce((sum, det) => sum + (det.val || 0), 0);
+
+        return {
+          code: d6.code,
+          name: d6.name,
+          tagging: d6.tagging,
+          val: d6FilteredVal,
+          rm: d6FilteredRM,
+          pnbp: d6FilteredPNBP,
+          blocked: d6FilteredBlocked,
+          pctBlocked: d6FilteredVal > 0 ? ((d6FilteredBlocked / d6FilteredVal) * 100).toFixed(1) : '0.0',
+          details: filteredDetails
+        };
+      });
+
+      const totalVal = exportItems.reduce((sum, it) => sum + it.val, 0);
+      const totalRM = exportItems.reduce((sum, it) => sum + it.rm, 0);
+      const totalPNBP = exportItems.reduce((sum, it) => sum + it.pnbp, 0);
+      const totalBlocked = exportItems.reduce((sum, it) => sum + it.blocked, 0);
+
+      return {
+        nodeSummary,
+        filters: { query, tagFilter, blockedFilter },
+        items: exportItems,
+        totals: { totalVal, totalRM, totalPNBP, totalBlocked }
+      };
+    }
+
+    function downloadRecapExcel() {
+      try {
+        const data = getFilteredRecapData();
+        if (!data || data.items.length === 0) {
+          alert('Tidak ada data terfilter untuk di-export!');
+          return;
+        }
+
+        if (typeof XLSX === 'undefined') {
+          alert('Library Excel (SheetJS) belum dimuat sempurna. Mohon periksa koneksi internet atau coba beberapa saat lagi.');
+          return;
+        }
+
+        const { nodeSummary, filters, items, totals } = data;
+        const rows = [];
+
+        // Title & Filter Header Metadata
+        rows.push(['REKAP PATTERN DIGIT 6 (AKUN) & RINCIAN ITEM DETAIL']);
+        rows.push(['Satker / Hirarki:', `[${nodeSummary.code}] ${nodeSummary.name || nodeSummary.fullPath}`]);
+        rows.push(['Filter Tagging:', filters.tagFilter === 'ALL' ? 'Semua Tagging' : filters.tagFilter]);
+        rows.push(['Filter Status Blokir:', filters.blockedFilter === 'ALL' ? 'Semua Status' : (filters.blockedFilter === 'BLOCKED' ? 'Diblokir Only' : 'Normal')]);
+        rows.push(['Filter Pencarian:', filters.query || '-']);
+        rows.push(['Tanggal Export:', new Date().toLocaleString('id-ID')]);
+        rows.push([]); // Blank separator row
+
+        // Table Header Row
+        rows.push(['Kode Akun / Baris', 'Uraian Akun / Item Detail (-)', 'Sumber Dana', 'Total Pagu (Rp)', 'Pagu RM (Rp)', 'Pagu PNP (Rp)', 'Diblokir (Rp)', 'Status']);
+
+        items.forEach(d6 => {
+          // Parent Account Row
+          rows.push([
+            d6.code,
+            d6.name,
+            d6.tagging,
+            d6.val,
+            d6.rm,
+            d6.pnbp,
+            d6.blocked,
+            d6.blocked > 0 ? `Diblokir (${d6.pctBlocked}%)` : 'Normal'
+          ]);
+
+          // Sub-detail rows under account
+          d6.details.forEach(det => {
+            rows.push([
+              `Baris ${det.rowNum}`,
+              `   - ${det.uraian}`,
+              det.tagging,
+              det.val,
+              det.tagging === 'RM' ? det.val : 0,
+              det.tagging !== 'RM' ? det.val : 0,
+              det.isBlocked ? det.val : 0,
+              det.isBlocked ? '⭐ DIBLOKIR' : 'Normal'
+            ]);
+          });
+        });
+
+        // Total Row
+        rows.push([]);
+        rows.push([
+          'TOTAL TERFILTER',
+          `${items.length} Akun`,
+          '',
+          totals.totalVal,
+          totals.totalRM,
+          totals.totalPNBP,
+          totals.totalBlocked,
+          totals.totalVal > 0 ? `${((totals.totalBlocked / totals.totalVal) * 100).toFixed(1)}% Diblokir` : '0%'
+        ]);
+
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+
+        // Set column widths
+        ws['!cols'] = [
+          { wch: 18 },
+          { wch: 55 },
+          { wch: 14 },
+          { wch: 18 },
+          { wch: 18 },
+          { wch: 18 },
+          { wch: 18 },
+          { wch: 20 }
+        ];
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Rekap Digit 6');
+
+        const safeCode = (nodeSummary.code || 'Satker').replace(/[^a-zA-Z0-9_-]/g, '_');
+        XLSX.writeFile(wb, `Rekap_Digit6_${safeCode}_${Date.now()}.xlsx`);
+      } catch (err) {
+        console.error('Export Excel Error:', err);
+        alert('Gagal membuat file Excel: ' + err.message);
+      }
+    }
+
+    function downloadRecapPdf() {
+      try {
+        const data = getFilteredRecapData();
+        if (!data || data.items.length === 0) {
+          alert('Tidak ada data terfilter untuk di-export!');
+          return;
+        }
+
+        if (!window.jspdf || !window.jspdf.jsPDF) {
+          alert('Library PDF (jsPDF) belum dimuat sempurna. Mohon periksa koneksi internet atau coba beberapa saat lagi.');
+          return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        const { nodeSummary, filters, items, totals } = data;
+
+        // Header Banner
+        doc.setFontSize(14);
+        doc.setTextColor(15, 23, 42);
+        doc.setFont('helvetica', 'bold');
+        doc.text('REKAP PATTERN DIGIT 6 (AKUN) & RINCIAN DETAIL SATKER', 14, 15);
+
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(71, 85, 105);
+        doc.text(`Satker / Hirarki: [${nodeSummary.code}] ${nodeSummary.name || nodeSummary.fullPath}`, 14, 21);
+        doc.text(`Filter: Tagging [${filters.tagFilter}], Status Blokir [${filters.blockedFilter}], Cari [${filters.query || '-'}] | Tanggal Export: ${new Date().toLocaleString('id-ID')}`, 14, 26);
+
+        const tableBody = [];
+
+        items.forEach(d6 => {
+          // Parent Account Row
+          tableBody.push([
+            { content: d6.code, styles: { fontStyle: 'bold', textColor: [2, 132, 199] } },
+            { content: d6.name, styles: { fontStyle: 'bold' } },
+            { content: d6.tagging, styles: { fontStyle: 'bold', textColor: d6.tagging === 'RM' ? [37, 99, 235] : [22, 163, 74] } },
+            { content: formatRp(d6.val), styles: { fontStyle: 'bold', halign: 'right' } },
+            { content: formatRp(d6.blocked), styles: { fontStyle: 'bold', halign: 'right', textColor: d6.blocked > 0 ? [217, 119, 6] : [100, 116, 139] } },
+            { content: d6.blocked > 0 ? `DIBLOKIR (${d6.pctBlocked}%)` : 'Normal', styles: { fontStyle: 'bold', textColor: d6.blocked > 0 ? [217, 119, 6] : [22, 163, 74] } }
+          ]);
+
+          // Sub-details
+          d6.details.forEach(det => {
+            tableBody.push([
+              { content: `Baris ${det.rowNum}`, styles: { fontSize: 8, textColor: [100, 116, 139] } },
+              { content: `   - ${det.uraian}`, styles: { fontSize: 8 } },
+              { content: det.tagging, styles: { fontSize: 8 } },
+              { content: formatRp(det.val), styles: { fontSize: 8, halign: 'right' } },
+              { content: det.isBlocked ? formatRp(det.val) : 'Rp 0', styles: { fontSize: 8, halign: 'right', textColor: det.isBlocked ? [217, 119, 6] : [100, 116, 139] } },
+              { content: det.isBlocked ? '⭐ DIBLOKIR' : 'Normal', styles: { fontSize: 8, textColor: det.isBlocked ? [217, 119, 6] : [22, 163, 74] } }
+            ]);
+          });
+        });
+
+        // Total Summary Row
+        const totalPct = totals.totalVal > 0 ? ((totals.totalBlocked / totals.totalVal) * 100).toFixed(1) : '0.0';
+        tableBody.push([
+          { content: 'TOTAL TERFILTER', colSpan: 3, styles: { fontStyle: 'bold', halign: 'right', fillColor: [241, 245, 249] } },
+          { content: formatRp(totals.totalVal), styles: { fontStyle: 'bold', halign: 'right', fillColor: [241, 245, 249] } },
+          { content: formatRp(totals.totalBlocked), styles: { fontStyle: 'bold', halign: 'right', textColor: [217, 119, 6], fillColor: [241, 245, 249] } },
+          { content: `${totalPct}% Diblokir`, styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } }
+        ]);
+
+        doc.autoTable({
+          startY: 30,
+          head: [['Kode / Row', 'Uraian Akun / Detail Rincian', 'Sumber', 'Jumlah Pagu (Rp)', 'Nilai Blokir (Rp)', 'Status']],
+          body: tableBody,
+          theme: 'grid',
+          headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: 'bold' },
+          styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 2 },
+          columnStyles: {
+            0: { cellWidth: 28 },
+            1: { cellWidth: 120 },
+            2: { cellWidth: 20 },
+            3: { cellWidth: 35 },
+            4: { cellWidth: 35 },
+            5: { cellWidth: 32 }
+          }
+        });
+
+        const safeCode = (nodeSummary.code || 'Satker').replace(/[^a-zA-Z0-9_-]/g, '_');
+        doc.save(`Rekap_Digit6_${safeCode}_${Date.now()}.pdf`);
+      } catch (err) {
+        console.error('Export PDF Error:', err);
+        alert('Gagal membuat file PDF: ' + err.message);
+      }
+    }
   </script>
 </body>
+
 </html>

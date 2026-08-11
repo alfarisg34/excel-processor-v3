@@ -74,6 +74,7 @@ async function handleProcess(req, res) {
 }
 
 const validateInput = require('./src/steps/00-validate-input');
+const parseHierarchyRecap = require('./src/utils/hierarchy-recap');
 
 // Multer upload fields configuration
 const uploadFields = upload.fields([
@@ -94,6 +95,24 @@ app.post('/api/validate', upload.single('file'), async (req, res) => {
     console.error('[Validation Error]', error);
     return res.status(500).json({
       error: 'Gagal melakukan validasi file Excel',
+      detail: error.message,
+    });
+  }
+});
+
+// Hierarchy Recap route
+app.post('/api/recap-hierarchy', upload.single('file'), async (req, res) => {
+  try {
+    const file = req.file;
+    if (!file) {
+      return res.status(400).json({ error: 'File Excel Rencana Kertas Kerja wajib di-upload' });
+    }
+    const recapData = await parseHierarchyRecap(file.buffer);
+    return res.status(200).json(recapData);
+  } catch (error) {
+    console.error('[Recap Hierarchy Error]', error);
+    return res.status(500).json({
+      error: 'Gagal memproses rekap hirarki file Excel',
       detail: error.message,
     });
   }
