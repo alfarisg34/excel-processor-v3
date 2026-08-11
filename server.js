@@ -24,6 +24,8 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Excel Processor V3 API is running' });
 });
 
+const validateLevelDifferences = require('./src/utils/level-validator');
+
 // Helper to handle Excel processing response
 async function handleProcess(req, res) {
   try {
@@ -37,6 +39,14 @@ async function handleProcess(req, res) {
 
     const processedWorkbook = await processExcel(mainFile.buffer, faFile ? faFile.buffer : null);
 
+    // Calculate level validation comparison (Sebelum vs Sesudah)
+    let validationReport = null;
+    try {
+      validationReport = await validateLevelDifferences(mainFile.buffer, processedWorkbook);
+    } catch (valErr) {
+      console.warn('[Validation Calculation Warning]', valErr.message);
+    }
+
     const buffer = await processedWorkbook.xlsx.writeBuffer();
 
     const timestamp = new Date().toISOString().slice(0, 19).replace(/[:]/g, '-');
@@ -47,6 +57,11 @@ async function handleProcess(req, res) {
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Content-Length', buffer.length);
+
+    if (validationReport) {
+      res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition, X-Validation-Summary');
+      res.setHeader('X-Validation-Summary', encodeURIComponent(JSON.stringify(validationReport)));
+    }
 
     return res.status(200).send(buffer);
   } catch (error) {

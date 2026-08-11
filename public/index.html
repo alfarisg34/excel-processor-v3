@@ -47,6 +47,7 @@
       </button>
 
       <div class="status-box" id="status1"></div>
+      <div class="level-val-panel" id="levelValPanel1"></div>
     </div>
 
     <!-- FLOW 2: Semula Menjadi dengan Realisasi (Laporan FA + RINCIAN KERTAS KERJA) -->
@@ -92,6 +93,7 @@
       </button>
 
       <div class="status-box" id="status2"></div>
+      <div class="level-val-panel" id="levelValPanel2"></div>
     </div>
   </div>
 
@@ -111,6 +113,7 @@
     const chkAck1 = document.getElementById('chkAck1');
     const btnProcess1 = document.getElementById('btnProcess1');
     const status1 = document.getElementById('status1');
+    const levelValPanel1 = document.getElementById('levelValPanel1');
 
     let file1 = null;
     let isValidated1 = false;
@@ -133,6 +136,7 @@
 
     const btnProcess2 = document.getElementById('btnProcess2');
     const status2 = document.getElementById('status2');
+    const levelValPanel2 = document.getElementById('levelValPanel2');
 
     let fileFA = null;
     let file2 = null;
@@ -143,6 +147,7 @@
     setupDropZone(dropZone1, fileInput1, async (f) => {
       file1 = f;
       fileStatus1.textContent = '✅ Selected: ' + f.name;
+      levelValPanel1.classList.remove('show');
       await handleValidation(file1, valCard1, valHeader1, valList1, ackBox1, chkAck1, (valid, hasViol) => {
         isValidated1 = valid;
         hasViolations1 = hasViol;
@@ -159,6 +164,7 @@
     setupDropZone(dropZone2, fileInput2, async (f) => {
       file2 = f;
       fileStatus2.textContent = '✅ Selected RKK: ' + f.name;
+      levelValPanel2.classList.remove('show');
       await handleValidation(file2, valCard2, valHeader2, valList2, ackBox2, chkAck2, (valid, hasViol) => {
         isValidated2 = valid;
         hasViolations2 = hasViol;
@@ -244,7 +250,7 @@
         } else {
           headerElem.className = 'validation-header warning';
           headerElem.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ⚠️ Hasil Pengecekan: Ditemukan ${data.violations.length} Aturan Terlanggar`;
-          
+
           let html = '';
           data.violations.forEach((v, index) => {
             let detailsHtml = `
@@ -259,7 +265,7 @@
                 </thead>
                 <tbody>
             `;
-            
+
             v.details.forEach(d => {
               const rowsStr = d.rows.map(r => `Baris ${r}`).join(', ');
               detailsHtml += `
@@ -310,6 +316,7 @@
       if (!file1) return;
       btnProcess1.disabled = true;
       showStatus(status1, '⏳ Memproses file Excel RKK...', 'info');
+      levelValPanel1.classList.remove('show');
 
       const formData = new FormData();
       formData.append('file', file1);
@@ -325,9 +332,24 @@
           throw new Error(err.detail || err.error || 'Server error');
         }
 
+        // Extract validation report header if available
+        const valHeaderRaw = response.headers.get('X-Validation-Summary');
+        let validationReport = null;
+        if (valHeaderRaw) {
+          try {
+            validationReport = JSON.parse(decodeURIComponent(valHeaderRaw));
+          } catch (e) {
+            console.warn('Failed to parse validation header', e);
+          }
+        }
+
         const blob = await response.blob();
         downloadBlob(blob, `output_${new Date().toISOString().slice(0, 19).replace(/[:]/g, '-')}.xlsx`);
         showStatus(status1, '✅ Berhasil memproses dan mengunduh file!', 'success');
+
+        if (validationReport) {
+          renderLevelValidationReport(levelValPanel1, validationReport, 'val_items_1');
+        }
       } catch (err) {
         showStatus(status1, '❌ Error: ' + err.message, 'error');
       } finally {
@@ -340,6 +362,7 @@
       if (!fileFA || !file2) return;
       btnProcess2.disabled = true;
       showStatus(status2, '⏳ Memproses Laporan FA + RKK...', 'info');
+      levelValPanel2.classList.remove('show');
 
       const formData = new FormData();
       formData.append('file', file2);
@@ -356,9 +379,24 @@
           throw new Error(err.detail || err.error || 'Server error');
         }
 
+        // Extract validation report header if available
+        const valHeaderRaw = response.headers.get('X-Validation-Summary');
+        let validationReport = null;
+        if (valHeaderRaw) {
+          try {
+            validationReport = JSON.parse(decodeURIComponent(valHeaderRaw));
+          } catch (e) {
+            console.warn('Failed to parse validation header', e);
+          }
+        }
+
         const blob = await response.blob();
         downloadBlob(blob, `output_${new Date().toISOString().slice(0, 19).replace(/[:]/g, '-')}_Dengan_Realisasi.xlsx`);
         showStatus(status2, '✅ Berhasil memproses dan mengunduh file dengan Realisasi!', 'success');
+
+        if (validationReport) {
+          renderLevelValidationReport(levelValPanel2, validationReport, 'val_items_2');
+        }
       } catch (err) {
         showStatus(status2, '❌ Error: ' + err.message, 'error');
       } finally {
@@ -380,6 +418,110 @@
     function showStatus(elem, text, type) {
       elem.textContent = text;
       elem.className = `status-box ${type}`;
+    }
+
+    // Helper formatting currency
+    function formatRp(val) {
+      if (val === null || val === undefined || isNaN(val)) return 'Rp 0';
+      const isNeg = val < 0;
+      const absVal = Math.abs(val);
+      const formatted = 'Rp ' + absVal.toLocaleString('id-ID');
+      return isNeg ? '-' + formatted : formatted;
+    }
+
+    // Render Level Validation Report Card focused on Detail Level (-)
+    function renderLevelValidationReport(panelElem, report, itemsId) {
+      panelElem.classList.add('show');
+
+      const isMatch = report.overallStatus === 'MATCH';
+      const badgeClass = isMatch ? 'match' : 'diff';
+      const badgeText = isMatch
+        ? '<i class="fa-solid fa-circle-check"></i> ✅ Semua Item Detail Sesuai 100%'
+        : `<i class="fa-solid fa-triangle-exclamation"></i> ⚠️ Ditemukan ${report.diffCount} Item Detail dengan Selisih Nilai (Total Selisih: ${formatRp(report.totalDiff)})`;
+
+      const matchPct = report.totalItemsCount > 0 ? ((report.matchCount / report.totalItemsCount) * 100).toFixed(1) : '100';
+
+      let itemsToRender = report.discrepancyItems || [];
+      if (!itemsToRender || itemsToRender.length === 0) {
+        itemsToRender = report.sampleAllItems || [];
+      }
+
+      let tableRowsHtml = '';
+      itemsToRender.forEach((it, idx) => {
+        const tagClass = it.status === 'MATCH' ? 'match' : 'diff';
+        const tagText = it.status === 'MATCH' ? '✅ Sesuai' : '⚠️ Beda';
+        const diffStr = it.diff === 0 ? 'Rp 0' : (it.diff > 0 ? '+' : '') + formatRp(it.diff);
+
+        const taggingVal = (it.tagging || '-').trim();
+        let tagBadgeClass = 'muted';
+        if (taggingVal.includes('RM')) tagBadgeClass = 'rm';
+        else if (taggingVal.includes('PNBP')) tagBadgeClass = 'pnbp';
+        else if (taggingVal.includes('*')) tagBadgeClass = 'blokir';
+
+        tableRowsHtml += `
+          <tr>
+            <td><span class="row-num-badge" title="Nomor Baris di File Excel Output">Row ${it.outRowNum || it.itemNumber || (idx + 1)}</span></td>
+            <td><span class="hierarchy-code">${it.fullCodePath}</span></td>
+            <td><span class="tag-badge ${tagBadgeClass}">${taggingVal}</span></td>
+            <td><strong>${it.uraian}</strong></td>
+            <td>${formatRp(it.valBefore || it.before)}</td>
+            <td>${formatRp(it.valAfter || it.after)}</td>
+            <td style="font-weight:600; color:${it.diff === 0 ? '#4ade80' : '#fbbf24'};">${diffStr}</td>
+            <td><span class="status-tag ${tagClass}">${tagText}</span></td>
+          </tr>
+        `;
+      });
+
+      panelElem.innerHTML = `
+        <div class="level-val-header">
+          <div class="level-val-title">
+            <i class="fa-solid fa-sitemap" style="color:#38bdf8;"></i>
+            Validasi Nilai Level Detail (-) &amp; Sumber Dana (Tracing Hirarki Kode Tertinggi &rarr; Terendah)
+          </div>
+          <div class="level-val-badge ${badgeClass}">
+            ${badgeText}
+          </div>
+        </div>
+
+        <div class="val-stats-grid">
+          <div class="val-stat-card">
+            <div class="val-stat-label">📌 Total Item Rincian (-)</div>
+            <div class="val-stat-value">${report.totalItemsCount} Items</div>
+          </div>
+          <div class="val-stat-card">
+            <div class="val-stat-label">✅ Item Sesuai (100%)</div>
+            <div class="val-stat-value" style="color:#4ade80;">${report.matchCount} Items (${matchPct}%)</div>
+          </div>
+          <div class="val-stat-card">
+            <div class="val-stat-label">⚠️ Item Memiliki Selisih</div>
+            <div class="val-stat-value" style="color:#fbbf24;">${report.diffCount} Items</div>
+          </div>
+          <div class="val-stat-card">
+            <div class="val-stat-label">💰 Total Selisih Anggaran</div>
+            <div class="val-stat-value" style="color:${report.totalDiff === 0 ? '#4ade80' : '#fbbf24'};">${report.totalDiff > 0 ? '+' : ''}${formatRp(report.totalDiff)}</div>
+          </div>
+        </div>
+
+        <div class="level-table-wrapper">
+          <table class="level-summary-table">
+            <thead>
+              <tr>
+                <th style="width:75px;">Row Output (#)</th>
+                <th style="min-width:280px;">Kode Hirarki (Tinggi &rarr; Rendah)</th>
+                <th style="width:110px;">Sumber Dana (L &rarr; T)</th>
+                <th>Uraian Rincian (-)</th>
+                <th>Sebelum (Col J Input)</th>
+                <th>Sesudah (Col S Output)</th>
+                <th>Selisih (Col S - Col J)</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRowsHtml}
+            </tbody>
+          </table>
+        </div>
+      `;
     }
   </script>
 </body>

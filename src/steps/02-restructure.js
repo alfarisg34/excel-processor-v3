@@ -61,7 +61,7 @@ function parseMultipliers(text) {
     return { cleanUraian: text.trim(), terms: [] };
   }
 
-  const cleanUraian = match[1].trim();
+  const cleanUraian = match[1].replace(/\s+/g, ' ').trim();
   const bracketText = match[2].trim();
 
   const rawTerms = bracketText.split(/\s*x\s*/i);
