@@ -110,10 +110,20 @@ function createSumForGreaterThan(worksheet, startRow) {
 function createSumFor6Digit(worksheet, startRow) {
   const sumCells = [];
   const total = worksheet.rowCount;
+  let inSubGroup = false;
+
   for (let r = startRow + 1; r <= total; r++) {
     const valA = getCellText(worksheet.getRow(r).getCell(1));
     if (PATTERNS.DIGIT_6.test(valA) || PATTERNS.SINGLE_ALPHA.test(valA) || PATTERNS.DIGIT_3.test(valA)) break;
-    if (valA === '-') sumCells.push(`S${r}`);
+
+    if (valA === '>' || valA === '>>') {
+      sumCells.push(`S${r}`);
+      inSubGroup = true;
+    } else if (valA === '-') {
+      if (!inSubGroup) {
+        sumCells.push(`S${r}`);
+      }
+    }
   }
   return sumCells.length > 0 ? `SUM(${sumCells.join(',')})` : null;
 }

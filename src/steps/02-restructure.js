@@ -56,7 +56,7 @@ function extractSignatureInfo(worksheet) {
 function parseMultipliers(text) {
   if (!text || typeof text !== 'string') return { cleanUraian: text || '', terms: [] };
 
-  const match = text.match(/^(.*?)\s*\[(.*?)\]\s*$/);
+  const match = text.match(/^(.*?)\s*\[(.*?)(?:\]\s*)?$/);
   if (!match) {
     return { cleanUraian: text.trim(), terms: [] };
   }

@@ -73,9 +73,12 @@ function generateOutSheetFormulas(worksheet) {
       const vol1 = getCellText(row.getCell(5));
       const vol2 = getCellText(row.getCell(8));
       const vol3 = getCellText(row.getCell(11));
+      const vol4 = getCellText(row.getCell(14));
 
       // SEMULA Volume (Col P / 16)
-      if (vol1 && vol2 && vol3) {
+      if (vol1 && vol2 && vol3 && vol4) {
+        row.getCell(16).value = { formula: `E${r}*H${r}*K${r}*N${r}` };
+      } else if (vol1 && vol2 && vol3) {
         row.getCell(16).value = { formula: `E${r}*H${r}*K${r}` };
       } else if (vol1 && vol2) {
         row.getCell(16).value = { formula: `E${r}*H${r}` };
@@ -91,8 +94,11 @@ function generateOutSheetFormulas(worksheet) {
       const mVol1 = getCellText(row.getCell(25));
       const mVol2 = getCellText(row.getCell(28));
       const mVol3 = getCellText(row.getCell(31));
+      const mVol4 = getCellText(row.getCell(34));
 
-      if (mVol1 && mVol2 && mVol3) {
+      if (mVol1 && mVol2 && mVol3 && mVol4) {
+        row.getCell(36).value = { formula: `Y${r}*AB${r}*AE${r}*AH${r}` };
+      } else if (mVol1 && mVol2 && mVol3) {
         row.getCell(36).value = { formula: `Y${r}*AB${r}*AE${r}` };
       } else if (mVol1 && mVol2) {
         row.getCell(36).value = { formula: `Y${r}*AB${r}` };
@@ -131,16 +137,32 @@ function generateOutSheetFormulas(worksheet) {
       }
 
       if (childRows.length > 0) {
-        // Find minimum child level among descendants
-        let minChildLevel = Infinity;
-        for (const cr of childRows) {
-          if (cr.level < minChildLevel) minChildLevel = cr.level;
-        }
+        let directChildren = [];
 
-        // Direct children are descendants with level === minChildLevel
-        const directChildren = childRows
-          .filter((cr) => cr.level === minChildLevel)
-          .map((cr) => cr.rowNumber);
+        if (level === 7) {
+          // Special case for 6-Digit codes: Collect direct '-' details (before any '>') AND '>' / '>>' sub-groups
+          let inSubGroup = false;
+          for (const cr of childRows) {
+            if (cr.level === 8 || cr.level === 9) {
+              directChildren.push(cr.rowNumber);
+              inSubGroup = true;
+            } else if (cr.level === 10) {
+              if (!inSubGroup) {
+                directChildren.push(cr.rowNumber);
+              }
+            }
+          }
+        } else {
+          // Standard hierarchical headers (Code 322, 4-Digit, Code 43, Code 433, 3-Digit, Single Alpha):
+          // Pick descendants with minimum child level
+          let minChildLevel = Infinity;
+          for (const cr of childRows) {
+            if (cr.level < minChildLevel) minChildLevel = cr.level;
+          }
+          directChildren = childRows
+            .filter((cr) => cr.level === minChildLevel)
+            .map((cr) => cr.rowNumber);
+        }
 
         if (directChildren.length > 0) {
           const formS = `SUM(${directChildren.map((r) => `S${r}`).join(',')})`;
