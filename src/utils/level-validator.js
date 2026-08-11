@@ -253,6 +253,107 @@ async function validateLevelDifferences(inputWorkbookOrBuffer, outputWorkbook) {
 
   const totalDiff = Math.round(totalAfter - totalBefore);
 
+  // 4. Calculate Code 322 (Program Level) Comparison using recursive formula evaluation
+  function evaluateRowS(rowNum) {
+    const row = wsOutput.getRow(rowNum);
+    const code = getCellText(row.getCell(1)).trim();
+
+    if (code === '-') {
+      const vol1Str = getCellText(row.getCell(5));
+      const vol2Str = getCellText(row.getCell(8));
+      const vol3Str = getCellText(row.getCell(11));
+      const vol4Str = getCellText(row.getCell(14));
+
+      const vol1 = parseFloat(vol1Str) || 1;
+      const vol2 = parseFloat(vol2Str) || 1;
+      const vol3 = parseFloat(vol3Str) || 1;
+      const vol4 = parseFloat(vol4Str) || 1;
+
+      let vol = 1;
+      if (vol1Str) vol *= vol1;
+      if (vol2Str) vol *= vol2;
+      if (vol3Str) vol *= vol3;
+      if (vol4Str) vol *= vol4;
+
+      if (!vol1Str && !vol2Str && !vol3Str && !vol4Str) {
+        vol = parseFloat(getCellText(row.getCell(16)).replace(/[^0-9.-]/g, '')) || 0;
+      }
+
+      const price = parseFloat(getCellText(row.getCell(18)).replace(/[^0-9.-]/g, '')) || 0;
+      let val = vol * price;
+      if (val === 0) {
+        let rawS = getCellText(row.getCell(19));
+        val = parseFloat(rawS.replace(/[^0-9.-]/g, '')) || 0;
+      }
+      return val;
+    }
+
+    const cellS = row.getCell(19);
+    const valObj = cellS.value;
+    if (valObj && valObj.formula) {
+      const refs = valObj.formula.replace(/^SUM\(/, '').replace(/\)$/, '').split(',');
+      let sum = 0;
+      refs.forEach((ref) => {
+        const rN = parseInt(ref.replace(/[^0-9]/g, ''));
+        if (rN) sum += evaluateRowS(rN);
+      });
+      return sum;
+    }
+    return parseFloat(getCellText(cellS).replace(/[^0-9.-]/g, '')) || 0;
+  }
+
+  const programSummary = [];
+  const inputPrograms = [];
+
+  wsInput.eachRow({ includeEmpty: false }, (row, rawRowNum) => {
+    const cells = [];
+    for (let c = 1; c <= 25; c++) cells.push(getCellText(row.getCell(c)));
+    if (isFooterRow(cells)) return;
+
+    let colA = (cells[0] || '').trim();
+    let colB = (cells[1] || '').trim();
+    let colD = (cells[3] || '').trim();
+    let colE = (cells[4] || '').trim();
+    let rawColJ = (cells[9] || '').trim();
+    let rawColK = (cells[10] || '').trim();
+
+    let colJ = rawColJ;
+    const numJ = parseFloat(rawColJ.replace(/[^0-9.-]/g, ''));
+    const numK = parseFloat(rawColK.replace(/[^0-9.-]/g, ''));
+    if ((!colJ || isNaN(numJ)) && !isNaN(numK) && numK > 1000) colJ = rawColK;
+
+    const code = colA || colB;
+    if (PATTERNS.CODE_322.test(code)) {
+      const valBefore = parseFloat(colJ.replace(/[^0-9.-]/g, '')) || 0;
+      const uraian = (colD || colE || '').replace(/\s+/g, ' ').trim();
+      inputPrograms.push({ rawRowNum, code, uraian, valBefore });
+    }
+  });
+
+  for (let r = 4; r <= maxR; r++) {
+    const row = wsOutput.getRow(r);
+    const code = getCellText(row.getCell(1)).trim();
+    const uraian = getCellText(row.getCell(2)).replace(/\s+/g, ' ').trim();
+
+    if (PATTERNS.CODE_322.test(code)) {
+      const sumAfter = evaluateRowS(r);
+
+      const inP = inputPrograms.find((i) => i.code === code);
+      const valBefore = inP ? inP.valBefore : 0;
+      const diff = Math.round(sumAfter - valBefore);
+
+      programSummary.push({
+        outRowNum: r,
+        code,
+        uraian,
+        before: valBefore,
+        after: sumAfter,
+        diff,
+        status: Math.abs(diff) === 0 ? 'MATCH' : 'DIFF',
+      });
+    }
+  }
+
   // Filter discrepancies (items with selisih)
   const discrepancyItems = allDetailItems.filter((i) => i.status === 'DIFF');
   discrepancyItems.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
@@ -268,6 +369,7 @@ async function validateLevelDifferences(inputWorkbookOrBuffer, outputWorkbook) {
     totalAfter,
     totalDiff,
     overallStatus: Math.abs(totalDiff) === 0 ? 'MATCH' : 'DIFF',
+    programSummary,
     discrepancyItems: headerDiscrepancyItems,
     sampleAllItems: allDetailItems.slice(0, 30), // Lightweight preview of first 30 items
   };

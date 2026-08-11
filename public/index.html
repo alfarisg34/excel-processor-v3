@@ -472,11 +472,32 @@
         `;
       });
 
+      let programRowsHtml = '';
+      if (report.programSummary && report.programSummary.length > 0) {
+        report.programSummary.forEach((p) => {
+          const tagClass = p.status === 'MATCH' ? 'match' : 'diff';
+          const tagText = p.status === 'MATCH' ? '✅ Sesuai' : '⚠️ Beda';
+          const diffStr = p.diff === 0 ? 'Rp 0' : (p.diff > 0 ? '+' : '') + formatRp(p.diff);
+
+          programRowsHtml += `
+            <tr>
+              <td><span class="row-num-badge">Row ${p.outRowNum}</span></td>
+              <td><span class="hierarchy-code">${p.code}</span></td>
+              <td><strong>${p.uraian}</strong></td>
+              <td>${formatRp(p.before)}</td>
+              <td>${formatRp(p.after)}</td>
+              <td style="font-weight:600; color:${p.diff === 0 ? '#4ade80' : '#fbbf24'};">${diffStr}</td>
+              <td><span class="status-tag ${tagClass}">${tagText}</span></td>
+            </tr>
+          `;
+        });
+      }
+
       panelElem.innerHTML = `
         <div class="level-val-header">
           <div class="level-val-title">
             <i class="fa-solid fa-sitemap" style="color:#38bdf8;"></i>
-            Validasi Nilai Level Detail (-) &amp; Sumber Dana (Tracing Hirarki Kode Tertinggi &rarr; Terendah)
+            Validasi Nilai Level Detail (-) &amp; Program (Kode 322) (Tracing Hirarki Kode Tertinggi &rarr; Terendah)
           </div>
           <div class="level-val-badge ${badgeClass}">
             ${badgeText}
@@ -502,24 +523,57 @@
           </div>
         </div>
 
-        <div class="level-table-wrapper">
-          <table class="level-summary-table">
-            <thead>
-              <tr>
-                <th style="width:75px;">Row Output (#)</th>
-                <th style="min-width:280px;">Kode Hirarki (Tinggi &rarr; Rendah)</th>
-                <th style="width:110px;">Sumber Dana (L &rarr; T)</th>
-                <th>Uraian Rincian (-)</th>
-                <th>Sebelum (Col J Input)</th>
-                <th>Sesudah (Col S Output)</th>
-                <th>Selisih (Col S - Col J)</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${tableRowsHtml}
-            </tbody>
-          </table>
+        <!-- Tabel Perbandingan Kode 322 (Program) -->
+        <div style="margin-bottom: 22px;">
+          <div style="font-weight: 700; color: #f8fafc; font-size: 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-folder-tree" style="color: #38bdf8;"></i>
+            Perbandingan Nilai Per Program (Kode 322)
+          </div>
+          <div class="level-table-wrapper">
+            <table class="level-summary-table">
+              <thead>
+                <tr>
+                  <th style="width:75px;">Row Output (#)</th>
+                  <th style="width:140px;">Kode Program (322)</th>
+                  <th>Nama Program</th>
+                  <th>Sebelum (Col J Input)</th>
+                  <th>Sesudah (Col S Output)</th>
+                  <th>Selisih (Col S - Col J)</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${programRowsHtml}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tabel Validasi Item Rincian Detail (-) -->
+        <div>
+          <div style="font-weight: 700; color: #f8fafc; font-size: 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-list-check" style="color: #38bdf8;"></i>
+            Perbandingan Nilai Level Detail Rincian (-)
+          </div>
+          <div class="level-table-wrapper">
+            <table class="level-summary-table">
+              <thead>
+                <tr>
+                  <th style="width:75px;">Row Output (#)</th>
+                  <th style="min-width:280px;">Kode Hirarki (Tinggi &rarr; Rendah)</th>
+                  <th style="width:110px;">Sumber Dana (L &rarr; T)</th>
+                  <th>Uraian Rincian (-)</th>
+                  <th>Sebelum (Col J Input)</th>
+                  <th>Sesudah (Col S Output)</th>
+                  <th>Selisih (Col S - Col J)</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${tableRowsHtml}
+              </tbody>
+            </table>
+          </div>
         </div>
       `;
     }
