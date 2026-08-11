@@ -17,14 +17,9 @@ async function formulas(workbook) {
       const valN = getCellText(row.getCell(14));
 
       // Multipliers: Col E (5), Col H (8), Col K (11), Col N (14)
-      const multipliers = [];
-      if (valE) multipliers.push('E' + rowNumber);
-      if (valH) multipliers.push('H' + rowNumber);
-      if (valK) multipliers.push('K' + rowNumber);
-      if (valN) multipliers.push('N' + rowNumber);
-
-      if (multipliers.length > 1) {
-        row.getCell(16).value = { formula: multipliers.join('*') };
+      const hasAnyMult = valE || valH || valK || valN;
+      if (hasAnyMult) {
+        row.getCell(16).value = { formula: `PRODUCT(E${rowNumber},H${rowNumber},K${rowNumber},N${rowNumber})` };
       }
 
       // If RO level (e.g. 2175.BDC.001), set VOL RO (Col C / 3) = P[rowNumber]

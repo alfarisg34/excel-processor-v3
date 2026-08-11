@@ -75,13 +75,9 @@ function generateOutSheetFormulas(worksheet) {
       const vol3 = getCellText(row.getCell(11));
       const vol4 = getCellText(row.getCell(14));
 
-      // SEMULA Volume (Col P / 16)
-      if (vol1 && vol2 && vol3 && vol4) {
-        row.getCell(16).value = { formula: `E${r}*H${r}*K${r}*N${r}` };
-      } else if (vol1 && vol2 && vol3) {
-        row.getCell(16).value = { formula: `E${r}*H${r}*K${r}` };
-      } else if (vol1 && vol2) {
-        row.getCell(16).value = { formula: `E${r}*H${r}` };
+      // SEMULA Volume (Col P / 16) - Dynamic PRODUCT formula
+      if (vol1 || vol2 || vol3 || vol4) {
+        row.getCell(16).value = { formula: `PRODUCT(E${r},H${r},K${r},N${r})` };
       }
 
       // SEMULA Jumlah (Col S / 19)
@@ -90,18 +86,14 @@ function generateOutSheetFormulas(worksheet) {
         row.getCell(19).value = { formula: `P${r}*R${r}` };
       }
 
-      // MENJADI Volume (Col AJ / 36)
+      // MENJADI Volume (Col AJ / 36) - Dynamic PRODUCT formula
       const mVol1 = getCellText(row.getCell(25));
       const mVol2 = getCellText(row.getCell(28));
       const mVol3 = getCellText(row.getCell(31));
       const mVol4 = getCellText(row.getCell(34));
 
-      if (mVol1 && mVol2 && mVol3 && mVol4) {
-        row.getCell(36).value = { formula: `Y${r}*AB${r}*AE${r}*AH${r}` };
-      } else if (mVol1 && mVol2 && mVol3) {
-        row.getCell(36).value = { formula: `Y${r}*AB${r}*AE${r}` };
-      } else if (mVol1 && mVol2) {
-        row.getCell(36).value = { formula: `Y${r}*AB${r}` };
+      if (mVol1 || mVol2 || mVol3 || mVol4) {
+        row.getCell(36).value = { formula: `PRODUCT(Y${r},AB${r},AE${r},AH${r})` };
       }
 
       // MENJADI Jumlah (Col AM / 39)
