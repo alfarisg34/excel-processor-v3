@@ -56,7 +56,7 @@ async function parseHierarchyRecap(buffer) {
     c433: '', c433Name: '',
     d3: '', d3Name: '',
     alpha: '', alphaName: '',
-    d6: '', d6Name: '', d6Tagging: ''
+    d6: '', d6Name: '', d6Tagging: '', d6BlockCode: ''
   };
 
   const nodeMap = new Map(); // key -> { key, code, name, level, levelName, parentKey, fullPath, records: [] }
@@ -113,6 +113,22 @@ async function parseHierarchyRecap(buffer) {
 
     if (!code && !uraian) return;
 
+    let rawColJ = (cells[9] || '').trim();
+    let rawColK = (cells[10] || '').trim();
+
+    let colJ = rawColJ;
+    let colK = rawColK;
+
+    const numJ = parseFloat(rawColJ.replace(/[^0-9.-]/g, ''));
+    const numK = parseFloat(rawColK.replace(/[^0-9.-]/g, ''));
+
+    const isShiftedJumlah = (!colJ || isNaN(numJ)) && !isNaN(numK) && numK > 1000;
+
+    if (isShiftedJumlah) {
+      colJ = rawColK; // Amount shifted to Col K
+      colK = '';      // Col K is monetary amount, NOT block code
+    }
+
     const lvl = getCodeLevel(code);
 
     if (lvl === 1) {
@@ -122,7 +138,7 @@ async function parseHierarchyRecap(buffer) {
       ctx.c433 = ''; ctx.c433Name = '';
       ctx.d3 = ''; ctx.d3Name = '';
       ctx.alpha = ''; ctx.alphaName = '';
-      ctx.d6 = ''; ctx.d6Name = ''; ctx.d6Tagging = '';
+      ctx.d6 = ''; ctx.d6Name = ''; ctx.d6Tagging = ''; ctx.d6BlockCode = '';
       getOrCreateNode(`L1_${code}`, code, uraian, 1, 'Code 322 (Program)', 'ROOT', code);
     } else if (lvl === 2) {
       ctx.d4 = code; ctx.d4Name = uraian;
@@ -130,7 +146,7 @@ async function parseHierarchyRecap(buffer) {
       ctx.c433 = ''; ctx.c433Name = '';
       ctx.d3 = ''; ctx.d3Name = '';
       ctx.alpha = ''; ctx.alphaName = '';
-      ctx.d6 = ''; ctx.d6Name = ''; ctx.d6Tagging = '';
+      ctx.d6 = ''; ctx.d6Name = ''; ctx.d6Tagging = ''; ctx.d6BlockCode = '';
       const pKey = ctx.c322 ? `L1_${ctx.c322}` : 'ROOT';
       const path = [ctx.c322, code].filter(Boolean).join(' > ');
       getOrCreateNode(`L2_${ctx.c322}_${code}`, code, uraian, 2, 'Digit 4 (Kegiatan)', pKey, path);
@@ -139,7 +155,7 @@ async function parseHierarchyRecap(buffer) {
       ctx.c433 = ''; ctx.c433Name = '';
       ctx.d3 = ''; ctx.d3Name = '';
       ctx.alpha = ''; ctx.alphaName = '';
-      ctx.d6 = ''; ctx.d6Name = ''; ctx.d6Tagging = '';
+      ctx.d6 = ''; ctx.d6Name = ''; ctx.d6Tagging = ''; ctx.d6BlockCode = '';
       const pKey = ctx.d4 ? `L2_${ctx.c322}_${ctx.d4}` : (ctx.c322 ? `L1_${ctx.c322}` : 'ROOT');
       const path = [ctx.c322, ctx.d4, code].filter(Boolean).join(' > ');
       getOrCreateNode(`L3_${ctx.c322}_${ctx.d4}_${code}`, code, uraian, 3, 'Code 43 (KRO)', pKey, path);
@@ -147,31 +163,38 @@ async function parseHierarchyRecap(buffer) {
       ctx.c433 = code; ctx.c433Name = uraian;
       ctx.d3 = ''; ctx.d3Name = '';
       ctx.alpha = ''; ctx.alphaName = '';
-      ctx.d6 = ''; ctx.d6Name = ''; ctx.d6Tagging = '';
+      ctx.d6 = ''; ctx.d6Name = ''; ctx.d6Tagging = ''; ctx.d6BlockCode = '';
       const pKey = ctx.c43 ? `L3_${ctx.c322}_${ctx.d4}_${ctx.c43}` : (ctx.d4 ? `L2_${ctx.c322}_${ctx.d4}` : 'ROOT');
       const path = [ctx.c322, ctx.d4, ctx.c43, code].filter(Boolean).join(' > ');
       getOrCreateNode(`L4_${ctx.c322}_${ctx.d4}_${ctx.c43}_${code}`, code, uraian, 4, 'Code 433 (RO)', pKey, path);
     } else if (lvl === 5) {
       ctx.d3 = code; ctx.d3Name = uraian;
       ctx.alpha = ''; ctx.alphaName = '';
-      ctx.d6 = ''; ctx.d6Name = ''; ctx.d6Tagging = '';
+      ctx.d6 = ''; ctx.d6Name = ''; ctx.d6Tagging = ''; ctx.d6BlockCode = '';
       const pKey = ctx.c433 ? `L4_${ctx.c322}_${ctx.d4}_${ctx.c43}_${ctx.c433}` : 'ROOT';
       const path = [ctx.c322, ctx.d4, ctx.c43, ctx.c433, code].filter(Boolean).join(' > ');
       getOrCreateNode(`L5_${ctx.c322}_${ctx.d4}_${ctx.c43}_${ctx.c433}_${code}`, code, uraian, 5, 'Digit 3 (Komponen)', pKey, path);
     } else if (lvl === 6) {
       ctx.alpha = code; ctx.alphaName = uraian;
-      ctx.d6 = ''; ctx.d6Name = ''; ctx.d6Tagging = '';
+      ctx.d6 = ''; ctx.d6Name = ''; ctx.d6Tagging = ''; ctx.d6BlockCode = '';
       const pKey = ctx.d3 ? `L5_${ctx.c322}_${ctx.d4}_${ctx.c43}_${ctx.c433}_${ctx.d3}` : 'ROOT';
       const path = [ctx.c322, ctx.d4, ctx.c43, ctx.c433, ctx.d3, code].filter(Boolean).join(' > ');
       getOrCreateNode(`L6_${ctx.c322}_${ctx.d4}_${ctx.c43}_${ctx.c433}_${ctx.d3}_${code}`, code, uraian, 6, 'Single Alpha (Subkomponen)', pKey, path);
     } else if (lvl === 7) {
       ctx.d6 = code; ctx.d6Name = uraian;
       ctx.d6Tagging = extractTagging(cells) || 'RM';
+
+      let blockCandidate = colK;
+      const numCand = parseFloat(blockCandidate.replace(/[^0-9.-]/g, ''));
+      if (blockCandidate && !isNaN(numCand) && numCand > 99) {
+        blockCandidate = '';
+      }
+      ctx.d6BlockCode = blockCandidate;
     }
 
     if (code === '-') {
-      // Determine value from Column J (9) / K (10) / H (7)
-      let valStr = cells[9] || cells[10] || cells[7] || '0';
+      // Determine value from colJ (normalized), fallback to cells[9] / cells[10] / cells[7]
+      let valStr = colJ || cells[9] || cells[10] || cells[7] || '0';
       let val = parseFloat(valStr.replace(/[^0-9.-]/g, '')) || 0;
 
       // Check if blocked: star in column 10 (11th cell) or any cell has '*' or uraian contains 'blokir'
@@ -188,6 +211,7 @@ async function parseHierarchyRecap(buffer) {
         alpha: ctx.alpha, alphaName: ctx.alphaName,
         d6: ctx.d6, d6Name: ctx.d6Name,
         tagging,
+        blockCode: ctx.d6BlockCode || '',
         uraian,
         val,
         isBlocked
@@ -222,6 +246,7 @@ async function parseHierarchyRecap(buffer) {
     let blockedRM = 0;
     let blockedPNBP = 0;
     let totalBlocked = 0;
+    const blockedByCodeMap = new Map();
 
     const d6Map = new Map();
 
@@ -234,6 +259,9 @@ async function parseHierarchyRecap(buffer) {
         totalBlocked += r.val;
         if (r.tagging === 'RM') blockedRM += r.val;
         else blockedPNBP += r.val;
+
+        const codeKey = r.blockCode || 'Tanpa Kode';
+        blockedByCodeMap.set(codeKey, (blockedByCodeMap.get(codeKey) || 0) + r.val);
       }
 
       // Group Digit 6 under node by code & tagging
@@ -246,6 +274,7 @@ async function parseHierarchyRecap(buffer) {
           code: d6Code,
           name: r.d6Name || 'Detail Akun',
           tagging: d6Tagging,
+          blockCode: r.blockCode || '',
           totalVal: 0,
           totalRM: 0,
           totalPNBP: 0,
@@ -257,6 +286,9 @@ async function parseHierarchyRecap(buffer) {
       }
 
       const d6Summary = d6Map.get(d6Key);
+      if (r.blockCode && !d6Summary.blockCode) {
+        d6Summary.blockCode = r.blockCode;
+      }
       d6Summary.totalVal += r.val;
       if (r.tagging === 'RM') d6Summary.totalRM += r.val;
       else d6Summary.totalPNBP += r.val;
@@ -272,6 +304,7 @@ async function parseHierarchyRecap(buffer) {
         uraian: r.uraian,
         val: r.val,
         tagging: r.tagging,
+        blockCode: r.blockCode || '',
         isBlocked: r.isBlocked
       });
     });
@@ -293,6 +326,14 @@ async function parseHierarchyRecap(buffer) {
       return pA - pB;
     });
 
+    const blockedByCode = {};
+    const blockedByCodeList = [];
+    for (const [bCode, bVal] of blockedByCodeMap.entries()) {
+      blockedByCode[bCode] = bVal;
+      blockedByCodeList.push({ code: bCode, val: bVal });
+    }
+    blockedByCodeList.sort((a, b) => a.code.localeCompare(b.code));
+
     nodeSummaries[key] = {
       key: node.key,
       code: node.code,
@@ -308,6 +349,8 @@ async function parseHierarchyRecap(buffer) {
       blockedPNBP,
       totalBlocked,
       blockedPct: totalVal > 0 ? ((totalBlocked / totalVal) * 100).toFixed(1) : '0.0',
+      blockedByCode,
+      blockedByCodeList,
       recordCount: node.records.length,
       digit6List
     };

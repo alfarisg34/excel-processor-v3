@@ -250,6 +250,11 @@
                 <option value="NORMAL">Normal (Tidak Diblokir)</option>
               </select>
 
+              <select id="filterD6BlockCode" class="form-select"
+                style="padding:6px 12px; font-size:13px; width:160px; background-color:#0f172a; color:#cbd5e1; border-color:rgba(148,163,184,0.3);">
+                <option value="ALL">🔒 Semua Kode Blokir</option>
+              </select>
+
               <button class="btn btn-sm" onclick="downloadRecapExcel()" style="padding:6px 12px; font-size:12px; background:linear-gradient(135deg, #16a34a 0%, #15803d 100%); color:#fff; border:none; border-radius:8px; display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:600;" title="Export Data Terfilter ke Excel (.xlsx)">
                 <i class="fa-solid fa-file-excel"></i> Excel
               </button>
@@ -265,7 +270,8 @@
                 <tr>
                   <th style="width:110px;">Kode Akun</th>
                   <th>Uraian Akun</th>
-                  <th style="width:90px;">Tagging</th>
+                  <th style="width:80px;">Tagging</th>
+                  <th style="width:105px;">Kode Blokir</th>
                   <th>Total Pagu (Rp)</th>
                   <th>Pagu Sumber Dana (Rp)</th>
                   <th>Diblokir ⭐ (Rp)</th>
@@ -799,6 +805,7 @@
     const searchD6 = document.getElementById('searchD6');
     const filterD6Tagging = document.getElementById('filterD6Tagging');
     const filterD6Blocked = document.getElementById('filterD6Blocked');
+    const filterD6BlockCode = document.getElementById('filterD6BlockCode');
     const tbodyRecapD6 = document.getElementById('tbodyRecapD6');
 
     let fileRecap = null;
@@ -865,6 +872,12 @@
       renderRecapForSelectedNode();
     });
 
+    if (filterD6BlockCode) {
+      filterD6BlockCode.addEventListener('change', () => {
+        renderRecapForSelectedNode();
+      });
+    }
+
     function updateParentNodeDropdown(levelVal) {
       const lvl = parseInt(levelVal, 10);
       selectNodeParent.innerHTML = '';
@@ -899,6 +912,37 @@
       });
     }
 
+    function updateBlockCodeFilterDropdown(nodeSummary) {
+      if (!filterD6BlockCode) return;
+      const currentVal = filterD6BlockCode.value || 'ALL';
+      filterD6BlockCode.innerHTML = '<option value="ALL">🔒 Semua Kode Blokir</option>';
+
+      const codeMap = new Map();
+      (nodeSummary.blockedByCodeList || []).forEach(b => {
+        if (b.code) codeMap.set(b.code, b.val);
+      });
+      (nodeSummary.digit6List || []).forEach(d => {
+        if (d.blockCode && !codeMap.has(d.blockCode)) {
+          codeMap.set(d.blockCode, 0);
+        }
+      });
+
+      const sortedCodes = Array.from(codeMap.keys()).sort();
+      sortedCodes.forEach(code => {
+        const opt = document.createElement('option');
+        opt.value = code;
+        const val = codeMap.get(code) || 0;
+        opt.textContent = val > 0 ? `Kode ${code} (${formatRp(val)})` : `Kode ${code}`;
+        filterD6BlockCode.appendChild(opt);
+      });
+
+      if (Array.from(filterD6BlockCode.options).some(o => o.value === currentVal)) {
+        filterD6BlockCode.value = currentVal;
+      } else {
+        filterD6BlockCode.value = 'ALL';
+      }
+    }
+
     function isTagMatch(tag, filterVal) {
       if (filterVal === 'ALL') return true;
       if (!tag) return false;
@@ -909,11 +953,16 @@
       return tag === filterVal;
     }
 
-    function isDetailMatching(d6, det, query, tagFilter, blockedFilter) {
+    function isDetailMatching(d6, det, query, tagFilter, blockedFilter, blockCodeFilter) {
       if (!isTagMatch(det.tagging, tagFilter)) return false;
 
       if (blockedFilter === 'BLOCKED' && !det.isBlocked) return false;
       if (blockedFilter === 'NORMAL' && det.isBlocked) return false;
+
+      if (blockCodeFilter && blockCodeFilter !== 'ALL') {
+        const codeToMatch = d6.blockCode || det.blockCode || 'Tanpa Kode';
+        if (codeToMatch !== blockCodeFilter) return false;
+      }
 
       if (query) {
         const q = query.toLowerCase();
@@ -931,6 +980,9 @@
       const selectedKey = selectNodeParent.value || 'ROOT';
       const nodeSummary = currentRecapData.nodeSummaries[selectedKey] || currentRecapData.rootSummary;
 
+      // Dynamic dropdown options for Block Code filter
+      updateBlockCodeFilterDropdown(nodeSummary);
+
       // Update KPI Cards
       document.getElementById('kpiTotalPagu').textContent = formatRp(nodeSummary.totalVal);
       document.getElementById('kpiPathBreadcrumb').textContent = nodeSummary.fullPath || 'Satker';
@@ -939,14 +991,24 @@
       document.getElementById('kpiPNBP').textContent = formatRp(nodeSummary.totalPNBP);
 
       document.getElementById('kpiTotalBlocked').textContent = formatRp(nodeSummary.totalBlocked);
+
+      const blockCodeBadgesHtml = (nodeSummary.blockedByCodeList || []).map(b => `
+        <span style="background:rgba(251,191,36,0.15); color:#fbbf24; border:1px solid rgba(251,191,36,0.3); border-radius:4px; padding:1px 6px; font-weight:600; font-size:10px;">
+          Kode ${b.code}: ${formatRp(b.val)}
+        </span>
+      `).join('');
+
       document.getElementById('kpiBlockedDetail').innerHTML = `
-        <span style="display:inline-flex; align-items:center; gap:5px; color:#60a5fa; font-weight:600; font-size:11px;">
-          <span class="tag-badge rm" style="font-size:9px; padding:1px 4px;">RM</span> ${formatRp(nodeSummary.blockedRM)}
-        </span>
-        <span style="color:#475569; margin:0 2px;">|</span>
-        <span style="display:inline-flex; align-items:center; gap:5px; color:#4ade80; font-weight:600; font-size:11px;">
-          <span class="tag-badge pnbp" style="font-size:9px; padding:1px 4px;">PNP</span> ${formatRp(nodeSummary.blockedPNBP)}
-        </span>
+        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; width:100%; margin-bottom:4px;">
+          <span style="display:inline-flex; align-items:center; gap:4px; color:#60a5fa; font-weight:600; font-size:11px;">
+            <span class="tag-badge rm" style="font-size:9px; padding:1px 4px;">RM</span> ${formatRp(nodeSummary.blockedRM)}
+          </span>
+          <span style="color:#475569;">|</span>
+          <span style="display:inline-flex; align-items:center; gap:4px; color:#4ade80; font-weight:600; font-size:11px;">
+            <span class="tag-badge pnbp" style="font-size:9px; padding:1px 4px;">PNP</span> ${formatRp(nodeSummary.blockedPNBP)}
+          </span>
+        </div>
+        ${blockCodeBadgesHtml ? `<div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap; width:100%; margin-top:2px;">${blockCodeBadgesHtml}</div>` : ''}
       `;
 
       document.getElementById('kpiCountD6').textContent = `${nodeSummary.digit6List.length} Akun`;
@@ -960,12 +1022,13 @@
         Daftar Pattern Digit 6 (Akun) di bawah Level ${nodeSummary.levelName || 'Highest'}: <code>${nodeSummary.code}</code>
       `;
 
-      // Filter Digit 6 Table by search query, tagging, and blocked status
+      // Filter Digit 6 Table by search query, tagging, blocked status, and block code
       const query = (searchD6.value || '').toLowerCase().trim();
       const tagFilter = filterD6Tagging.value || 'ALL';
       const blockedFilter = filterD6Blocked.value || 'ALL';
+      const blockCodeFilter = filterD6BlockCode ? filterD6BlockCode.value || 'ALL' : 'ALL';
 
-      const isDetMatch = (d6, det) => isDetailMatching(d6, det, query, tagFilter, blockedFilter);
+      const isDetMatch = (d6, det) => isDetailMatching(d6, det, query, tagFilter, blockedFilter, blockCodeFilter);
 
       // Filter parent Digit 6 list: keep accounts that have matching detail items under active filters
       let d6Items = (nodeSummary.digit6List || []).filter(d6 => {
@@ -991,7 +1054,7 @@
       if (d6Items.length === 0) {
         tbodyRecapD6.innerHTML = `
           <tr>
-            <td colspan="8" style="text-align:center; padding: 25px; color:#94a3b8;">
+            <td colspan="9" style="text-align:center; padding: 25px; color:#94a3b8;">
               <i class="fa-solid fa-folder-open" style="font-size:24px; margin-bottom:8px;"></i><br>
               Tidak ditemukan data Digit 6 (Akun) untuk filter ini.
             </td>
@@ -1011,6 +1074,10 @@
         const tagBadge = d6.tagging === 'RM'
           ? '<span class="tag-badge rm">RM</span>'
           : '<span class="tag-badge pnbp">PNP</span>';
+
+        const blockCodeBadge = d6.blockCode
+          ? `<span class="rule-badge" style="background:rgba(168,85,247,0.2); color:#c084fc; border-color:rgba(168,85,247,0.4); font-size:11px; font-weight:600;">Kode ${d6.blockCode}</span>`
+          : '<span style="color:#64748b; font-size:12px;">-</span>';
 
         // Filter sub-details according to active filters
         const filteredDetails = (d6.details || []).filter(det => isDetMatch(d6, det));
@@ -1044,7 +1111,7 @@
                 <td><span class="tag-badge ${det.tagging === 'RM' ? 'rm' : 'pnbp'}">${det.tagging}</span></td>
                 <td>${formatRp(det.val)}</td>
                 <td>
-                  ${det.isBlocked ? `<span class="star-badge">⭐ DIBLOKIR (${formatRp(det.val)})</span>` : '<span style="color:#4ade80;">Normal</span>'}
+                  ${det.isBlocked ? `<span class="star-badge">⭐ DIBLOKIR (${formatRp(det.val)}) ${det.blockCode ? `<span style="color:#c084fc; font-weight:600;">[Kode ${det.blockCode}]</span>` : ''}</span>` : '<span style="color:#4ade80;">Normal</span>'}
                 </td>
               </tr>
             `).join('')
@@ -1088,6 +1155,7 @@
             <td><code style="font-size:13px; font-weight:700; color:#38bdf8;">${d6.code}</code></td>
             <td><strong>${d6.name}</strong></td>
             <td>${tagBadge}</td>
+            <td>${blockCodeBadge}</td>
             <td style="font-weight:700; font-family:'JetBrains Mono',monospace;">${formatRp(d6FilteredVal)}</td>
             <td>${activePaguStr}</td>
             <td>${blockedCellStr}</td>
@@ -1099,10 +1167,10 @@
             </td>
           </tr>
           <tr id="d6_sub_${idx}" style="display:none;">
-            <td colspan="8" style="padding:0; background:rgba(15,23,42,0.95);">
+            <td colspan="9" style="padding:0; background:rgba(15,23,42,0.95);">
               <div class="sub-detail-rows">
                 <div style="font-weight:600; color:#cbd5e1; font-size:12px; margin-bottom:6px;">
-                  <i class="fa-solid fa-list-dots" style="color:#38bdf8;"></i> Rincian Item Detail (-) di bawah Akun ${d6.code} (${d6.tagging}):
+                  <i class="fa-solid fa-list-dots" style="color:#38bdf8;"></i> Rincian Item Detail (-) di bawah Akun ${d6.code} (${d6.tagging}) ${d6.blockCode ? `[Kode Blokir: ${d6.blockCode}]` : ''}:
                 </div>
                 <table class="sub-detail-table">
                   <thead>
@@ -1132,7 +1200,7 @@
       if (tfootRecapD6) {
         tfootRecapD6.innerHTML = `
           <tr style="background:rgba(15,23,42,0.95); font-weight:700; border-top:2px solid rgba(245,158,11,0.5); color:#f8fafc;">
-            <td colspan="3" style="text-align:right; padding:12px; color:#fbbf24; text-transform:uppercase; font-size:12px; letter-spacing:0.5px;">
+            <td colspan="4" style="text-align:right; padding:12px; color:#fbbf24; text-transform:uppercase; font-size:12px; letter-spacing:0.5px;">
               <i class="fa-solid fa-sigma" style="margin-right:6px;"></i> Total Terfilter (${d6Items.length} Akun):
             </td>
             <td style="font-family:'JetBrains Mono',monospace; font-size:13px; color:#f8fafc;">${formatRp(grandTotalVal)}</td>
@@ -1172,8 +1240,9 @@
       const query = (searchD6.value || '').toLowerCase().trim();
       const tagFilter = filterD6Tagging.value || 'ALL';
       const blockedFilter = filterD6Blocked.value || 'ALL';
+      const blockCodeFilter = filterD6BlockCode ? filterD6BlockCode.value || 'ALL' : 'ALL';
 
-      const isDetMatch = (d6, det) => isDetailMatching(d6, det, query, tagFilter, blockedFilter);
+      const isDetMatch = (d6, det) => isDetailMatching(d6, det, query, tagFilter, blockedFilter, blockCodeFilter);
 
       let d6Items = (nodeSummary.digit6List || []).filter(d6 => {
         if (!isTagMatch(d6.tagging, tagFilter)) return false;
@@ -1200,6 +1269,7 @@
           code: d6.code,
           name: d6.name,
           tagging: d6.tagging,
+          blockCode: d6.blockCode || '-',
           val: d6FilteredVal,
           rm: d6FilteredRM,
           pnbp: d6FilteredPNBP,
@@ -1216,7 +1286,7 @@
 
       return {
         nodeSummary,
-        filters: { query, tagFilter, blockedFilter },
+        filters: { query, tagFilter, blockedFilter, blockCodeFilter },
         items: exportItems,
         totals: { totalVal, totalRM, totalPNBP, totalBlocked }
       };
@@ -1243,12 +1313,19 @@
         rows.push(['Satker / Hirarki:', `[${nodeSummary.code}] ${nodeSummary.name || nodeSummary.fullPath}`]);
         rows.push(['Filter Tagging:', filters.tagFilter === 'ALL' ? 'Semua Tagging' : filters.tagFilter]);
         rows.push(['Filter Status Blokir:', filters.blockedFilter === 'ALL' ? 'Semua Status' : (filters.blockedFilter === 'BLOCKED' ? 'Diblokir Only' : 'Normal')]);
+        rows.push(['Filter Kode Blokir:', filters.blockCodeFilter === 'ALL' ? 'Semua Kode Blokir' : `Kode ${filters.blockCodeFilter}`]);
         rows.push(['Filter Pencarian:', filters.query || '-']);
+
+        if (nodeSummary.blockedByCodeList && nodeSummary.blockedByCodeList.length > 0) {
+          const blockSummaryStr = nodeSummary.blockedByCodeList.map(b => `Kode ${b.code}: Rp ${b.val.toLocaleString('id-ID')}`).join(' | ');
+          rows.push(['Rincian Dana Blokir per Kode:', blockSummaryStr]);
+        }
+
         rows.push(['Tanggal Export:', new Date().toLocaleString('id-ID')]);
         rows.push([]); // Blank separator row
 
         // Table Header Row
-        rows.push(['Kode Akun / Baris', 'Uraian Akun / Item Detail (-)', 'Sumber Dana', 'Total Pagu (Rp)', 'Pagu RM (Rp)', 'Pagu PNP (Rp)', 'Diblokir (Rp)', 'Status']);
+        rows.push(['Kode Akun / Baris', 'Uraian Akun / Item Detail (-)', 'Sumber Dana', 'Kode Blokir', 'Total Pagu (Rp)', 'Pagu RM (Rp)', 'Pagu PNP (Rp)', 'Diblokir (Rp)', 'Status']);
 
         items.forEach(d6 => {
           // Parent Account Row
@@ -1256,6 +1333,7 @@
             d6.code,
             d6.name,
             d6.tagging,
+            d6.blockCode || '-',
             d6.val,
             d6.rm,
             d6.pnbp,
@@ -1269,11 +1347,12 @@
               `Baris ${det.rowNum}`,
               `   - ${det.uraian}`,
               det.tagging,
+              det.blockCode || '-',
               det.val,
               det.tagging === 'RM' ? det.val : 0,
               det.tagging !== 'RM' ? det.val : 0,
               det.isBlocked ? det.val : 0,
-              det.isBlocked ? '⭐ DIBLOKIR' : 'Normal'
+              det.isBlocked ? `⭐ DIBLOKIR ${det.blockCode ? `(Kode ${det.blockCode})` : ''}` : 'Normal'
             ]);
           });
         });
@@ -1283,6 +1362,7 @@
         rows.push([
           'TOTAL TERFILTER',
           `${items.length} Akun`,
+          '',
           '',
           totals.totalVal,
           totals.totalRM,
@@ -1298,11 +1378,12 @@
           { wch: 18 },
           { wch: 55 },
           { wch: 14 },
+          { wch: 14 },
           { wch: 18 },
           { wch: 18 },
           { wch: 18 },
           { wch: 18 },
-          { wch: 20 }
+          { wch: 22 }
         ];
 
         const wb = XLSX.utils.book_new();
@@ -1337,13 +1418,18 @@
         doc.setFontSize(14);
         doc.setTextColor(15, 23, 42);
         doc.setFont('helvetica', 'bold');
-        doc.text('REKAP PATTERN DIGIT 6 (AKUN) & RINCIAN DETAIL SATKER', 14, 15);
+        doc.text('REKAP PATTERN DIGIT 6 (AKUN) & RINCIAN DETAIL SATKER', 14, 13);
 
-        doc.setFontSize(9);
+        doc.setFontSize(8.5);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(71, 85, 105);
-        doc.text(`Satker / Hirarki: [${nodeSummary.code}] ${nodeSummary.name || nodeSummary.fullPath}`, 14, 21);
-        doc.text(`Filter: Tagging [${filters.tagFilter}], Status Blokir [${filters.blockedFilter}], Cari [${filters.query || '-'}] | Tanggal Export: ${new Date().toLocaleString('id-ID')}`, 14, 26);
+        doc.text(`Satker / Hirarki: [${nodeSummary.code}] ${nodeSummary.name || nodeSummary.fullPath}`, 14, 18);
+
+        const blockSummaryText = (nodeSummary.blockedByCodeList || []).map(b => `Kode ${b.code}: ${formatRp(b.val)}`).join(' | ');
+        doc.text(`Filter: Tagging [${filters.tagFilter}], Status Blokir [${filters.blockedFilter}], Kode Blokir [${filters.blockCodeFilter}], Cari [${filters.query || '-'}] | Export: ${new Date().toLocaleString('id-ID')}`, 14, 23);
+        if (blockSummaryText) {
+          doc.text(`Rincian Blokir: ${blockSummaryText}`, 14, 27);
+        }
 
         const tableBody = [];
 
@@ -1353,6 +1439,7 @@
             { content: d6.code, styles: { fontStyle: 'bold', textColor: [2, 132, 199] } },
             { content: d6.name, styles: { fontStyle: 'bold' } },
             { content: d6.tagging, styles: { fontStyle: 'bold', textColor: d6.tagging === 'RM' ? [37, 99, 235] : [22, 163, 74] } },
+            { content: d6.blockCode || '-', styles: { fontStyle: 'bold', textColor: [147, 51, 234] } },
             { content: formatRp(d6.val), styles: { fontStyle: 'bold', halign: 'right' } },
             { content: formatRp(d6.blocked), styles: { fontStyle: 'bold', halign: 'right', textColor: d6.blocked > 0 ? [217, 119, 6] : [100, 116, 139] } },
             { content: d6.blocked > 0 ? `DIBLOKIR (${d6.pctBlocked}%)` : 'Normal', styles: { fontStyle: 'bold', textColor: d6.blocked > 0 ? [217, 119, 6] : [22, 163, 74] } }
@@ -1364,9 +1451,10 @@
               { content: `Baris ${det.rowNum}`, styles: { fontSize: 8, textColor: [100, 116, 139] } },
               { content: `   - ${det.uraian}`, styles: { fontSize: 8 } },
               { content: det.tagging, styles: { fontSize: 8 } },
+              { content: det.blockCode || '-', styles: { fontSize: 8 } },
               { content: formatRp(det.val), styles: { fontSize: 8, halign: 'right' } },
               { content: det.isBlocked ? formatRp(det.val) : 'Rp 0', styles: { fontSize: 8, halign: 'right', textColor: det.isBlocked ? [217, 119, 6] : [100, 116, 139] } },
-              { content: det.isBlocked ? '⭐ DIBLOKIR' : 'Normal', styles: { fontSize: 8, textColor: det.isBlocked ? [217, 119, 6] : [22, 163, 74] } }
+              { content: det.isBlocked ? `⭐ DIBLOKIR ${det.blockCode ? `[${det.blockCode}]` : ''}` : 'Normal', styles: { fontSize: 8, textColor: det.isBlocked ? [217, 119, 6] : [22, 163, 74] } }
             ]);
           });
         });
@@ -1374,26 +1462,27 @@
         // Total Summary Row
         const totalPct = totals.totalVal > 0 ? ((totals.totalBlocked / totals.totalVal) * 100).toFixed(1) : '0.0';
         tableBody.push([
-          { content: 'TOTAL TERFILTER', colSpan: 3, styles: { fontStyle: 'bold', halign: 'right', fillColor: [241, 245, 249] } },
+          { content: 'TOTAL TERFILTER', colSpan: 4, styles: { fontStyle: 'bold', halign: 'right', fillColor: [241, 245, 249] } },
           { content: formatRp(totals.totalVal), styles: { fontStyle: 'bold', halign: 'right', fillColor: [241, 245, 249] } },
           { content: formatRp(totals.totalBlocked), styles: { fontStyle: 'bold', halign: 'right', textColor: [217, 119, 6], fillColor: [241, 245, 249] } },
           { content: `${totalPct}% Diblokir`, styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } }
         ]);
 
         doc.autoTable({
-          startY: 30,
-          head: [['Kode / Row', 'Uraian Akun / Detail Rincian', 'Sumber', 'Jumlah Pagu (Rp)', 'Nilai Blokir (Rp)', 'Status']],
+          startY: blockSummaryText ? 30 : 27,
+          head: [['Kode / Row', 'Uraian Akun / Detail Rincian', 'Sumber', 'Kode Blokir', 'Jumlah Pagu (Rp)', 'Nilai Blokir (Rp)', 'Status']],
           body: tableBody,
           theme: 'grid',
           headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: 'bold' },
-          styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 2 },
+          styles: { font: 'helvetica', fontSize: 8, cellPadding: 2 },
           columnStyles: {
-            0: { cellWidth: 28 },
-            1: { cellWidth: 120 },
-            2: { cellWidth: 20 },
-            3: { cellWidth: 35 },
-            4: { cellWidth: 35 },
-            5: { cellWidth: 32 }
+            0: { cellWidth: 26 },
+            1: { cellWidth: 110 },
+            2: { cellWidth: 18 },
+            3: { cellWidth: 22 },
+            4: { cellWidth: 32 },
+            5: { cellWidth: 32 },
+            6: { cellWidth: 30 }
           }
         });
 
