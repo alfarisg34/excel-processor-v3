@@ -441,7 +441,31 @@
         if (data.valid) {
           headerElem.className = 'validation-header success';
           headerElem.innerHTML = '<i class="fa-solid fa-circle-check"></i> ✅ Hasil Pengecekan: Semua aturan pola kode terpenuhi!';
-          listElem.innerHTML = '<p style="font-size:13px; color:#94a3b8; margin-top:5px;">Tidak ditemukan duplikasi kode yang melanggar aturan hierarki.</p>';
+
+          let noteHtml = '<p style="font-size:13px; color:#94a3b8; margin-top:5px;">Tidak ditemukan duplikasi kode yang melanggar aturan hierarki.</p>';
+
+          if (data.multiLineContinuations && data.multiLineContinuations.length > 0) {
+            let multilineDetails = data.multiLineContinuations.map(m => `
+              <div style="background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.3); border-radius:6px; padding:8px 12px; margin-top:8px; font-size:12px; color:#cbd5e1;">
+                <div style="font-weight:700; color:#38bdf8; margin-bottom:2px;">
+                  <i class="fa-solid fa-align-left"></i> Multi-line Header (Digabungkan Otomatis): <code>${m.code}</code> (Baris ${m.prevRow} & Baris ${m.currRow})
+                </div>
+                <div>Baris ${m.prevRow}: "<em>${m.prevUraian}</em>"</div>
+                <div>Baris ${m.currRow}: "<em>${m.currUraian}</em>"</div>
+              </div>
+            `).join('');
+
+            noteHtml += `
+              <div style="margin-top:12px;">
+                <div style="font-size:12px; font-weight:700; color:#38bdf8; text-transform:uppercase; letter-spacing:0.5px;">
+                  <i class="fa-solid fa-circle-info"></i> Catatan Konsolidasi Judul Beruntun (${data.multiLineContinuations.length} Kasus):
+                </div>
+                ${multilineDetails}
+              </div>
+            `;
+          }
+
+          listElem.innerHTML = noteHtml;
           ackBoxElem.style.display = 'none';
           callback(true, false);
         } else {

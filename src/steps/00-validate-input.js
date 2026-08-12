@@ -45,28 +45,43 @@ async function validateInput(buffer) {
   const singleAlphaMap = new Map(); // parentDigit3Key (parent433+digit3) -> Map(alpha -> list of { row, val })
   const digit6Map = new Map();      // parentAlphaKey (parent433+digit3+alpha) -> Map(digit6 -> list of { row, tagging, val })
 
-  // Context trackers as we iterate rows
-  let current433 = null;
-  let currentDigit3 = null;
-  let currentAlpha = null;
+  const multiLineContinuations = []; // list of { code, prevRow, currRow, prevUraian, currUraian }
 
   let lastCode = null;
   let lastRow = null;
+  let lastUraian = null;
 
   worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-    const code = getCellText(row.getCell(1)).trim();
+    const colA = getCellText(row.getCell(1)).trim();
+    const colB = getCellText(row.getCell(2)).trim();
+    const colC = getCellText(row.getCell(3)).trim();
+    const code = colA || colB || colC;
     if (!code) return;
 
-    const isConsecutiveSameCode = (code === lastCode && rowNumber === lastRow + 1);
-    lastCode = code;
-    lastRow = rowNumber;
+    const colD = getCellText(row.getCell(4)).trim();
+    const colE = getCellText(row.getCell(5)).trim();
+    const uraian = colD || colE;
 
-    const level = getCodeLevel(code);
+    const isConsecutiveSameCode = (code === lastCode && rowNumber === lastRow + 1);
 
     if (isConsecutiveSameCode) {
       // Multi-line header continuation row (e.g. 2175.QEA.002 on consecutive rows 558 & 559)
+      multiLineContinuations.push({
+        code,
+        prevRow: lastRow,
+        currRow: rowNumber,
+        prevUraian: lastUraian,
+        currUraian: uraian
+      });
+      lastRow = rowNumber;
       return;
     }
+
+    lastCode = code;
+    lastRow = rowNumber;
+    lastUraian = uraian;
+
+    const level = getCodeLevel(code);
 
     // Extract tagging / sumber anggaran from Column L (12th column in input) or nearby tagging candidates
     const colLRaw = getCellText(row.getCell(12)).trim().toUpperCase();
@@ -269,6 +284,7 @@ async function validateInput(buffer) {
   return {
     valid: violations.length === 0,
     violations,
+    multiLineContinuations,
   };
 }
 

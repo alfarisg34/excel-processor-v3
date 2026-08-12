@@ -132,64 +132,92 @@ async function parseHierarchyRecap(buffer) {
     const lvl = getCodeLevel(code);
 
     if (lvl === 1) {
-      ctx.c322 = code; ctx.c322Name = uraian;
-      ctx.d4 = ''; ctx.d4Name = '';
-      ctx.c43 = ''; ctx.c43Name = '';
-      ctx.c433 = ''; ctx.c433Name = '';
-      ctx.d3 = ''; ctx.d3Name = '';
-      ctx.alpha = ''; ctx.alphaName = '';
-      ctx.d6 = ''; ctx.d6Name = ''; ctx.d6Tagging = ''; ctx.d6BlockCode = '';
-      getOrCreateNode(`L1_${code}`, code, uraian, 1, 'Code 322 (Program)', 'ROOT', code);
-    } else if (lvl === 2) {
-      ctx.d4 = code; ctx.d4Name = uraian;
-      ctx.c43 = ''; ctx.c43Name = '';
-      ctx.c433 = ''; ctx.c433Name = '';
-      ctx.d3 = ''; ctx.d3Name = '';
-      ctx.alpha = ''; ctx.alphaName = '';
-      ctx.d6 = ''; ctx.d6Name = ''; ctx.d6Tagging = ''; ctx.d6BlockCode = '';
-      const pKey = ctx.c322 ? `L1_${ctx.c322}` : 'ROOT';
-      const path = [ctx.c322, code].filter(Boolean).join(' > ');
-      getOrCreateNode(`L2_${ctx.c322}_${code}`, code, uraian, 2, 'Digit 4 (Kegiatan)', pKey, path);
-    } else if (lvl === 3) {
-      ctx.c43 = code; ctx.c43Name = uraian;
-      ctx.c433 = ''; ctx.c433Name = '';
-      ctx.d3 = ''; ctx.d3Name = '';
-      ctx.alpha = ''; ctx.alphaName = '';
-      ctx.d6 = ''; ctx.d6Name = ''; ctx.d6Tagging = ''; ctx.d6BlockCode = '';
-      const pKey = ctx.d4 ? `L2_${ctx.c322}_${ctx.d4}` : (ctx.c322 ? `L1_${ctx.c322}` : 'ROOT');
-      const path = [ctx.c322, ctx.d4, code].filter(Boolean).join(' > ');
-      getOrCreateNode(`L3_${ctx.c322}_${ctx.d4}_${code}`, code, uraian, 3, 'Code 43 (KRO)', pKey, path);
-    } else if (lvl === 4) {
-      ctx.c433 = code; ctx.c433Name = uraian;
-      ctx.d3 = ''; ctx.d3Name = '';
-      ctx.alpha = ''; ctx.alphaName = '';
-      ctx.d6 = ''; ctx.d6Name = ''; ctx.d6Tagging = ''; ctx.d6BlockCode = '';
-      const pKey = ctx.c43 ? `L3_${ctx.c322}_${ctx.d4}_${ctx.c43}` : (ctx.d4 ? `L2_${ctx.c322}_${ctx.d4}` : 'ROOT');
-      const path = [ctx.c322, ctx.d4, ctx.c43, code].filter(Boolean).join(' > ');
-      getOrCreateNode(`L4_${ctx.c322}_${ctx.d4}_${ctx.c43}_${code}`, code, uraian, 4, 'Code 433 (RO)', pKey, path);
-    } else if (lvl === 5) {
-      ctx.d3 = code; ctx.d3Name = uraian;
-      ctx.alpha = ''; ctx.alphaName = '';
-      ctx.d6 = ''; ctx.d6Name = ''; ctx.d6Tagging = ''; ctx.d6BlockCode = '';
-      const pKey = ctx.c433 ? `L4_${ctx.c322}_${ctx.d4}_${ctx.c43}_${ctx.c433}` : 'ROOT';
-      const path = [ctx.c322, ctx.d4, ctx.c43, ctx.c433, code].filter(Boolean).join(' > ');
-      getOrCreateNode(`L5_${ctx.c322}_${ctx.d4}_${ctx.c43}_${ctx.c433}_${code}`, code, uraian, 5, 'Digit 3 (Komponen)', pKey, path);
-    } else if (lvl === 6) {
-      ctx.alpha = code; ctx.alphaName = uraian;
-      ctx.d6 = ''; ctx.d6Name = ''; ctx.d6Tagging = ''; ctx.d6BlockCode = '';
-      const pKey = ctx.d3 ? `L5_${ctx.c322}_${ctx.d4}_${ctx.c43}_${ctx.c433}_${ctx.d3}` : 'ROOT';
-      const path = [ctx.c322, ctx.d4, ctx.c43, ctx.c433, ctx.d3, code].filter(Boolean).join(' > ');
-      getOrCreateNode(`L6_${ctx.c322}_${ctx.d4}_${ctx.c43}_${ctx.c433}_${ctx.d3}_${code}`, code, uraian, 6, 'Single Alpha (Subkomponen)', pKey, path);
-    } else if (lvl === 7) {
-      ctx.d6 = code; ctx.d6Name = uraian;
-      ctx.d6Tagging = extractTagging(cells) || 'RM';
-
-      let blockCandidate = colK;
-      const numCand = parseFloat(blockCandidate.replace(/[^0-9.-]/g, ''));
-      if (blockCandidate && !isNaN(numCand) && numCand > 99) {
-        blockCandidate = '';
+      if (ctx.c322 === code && ctx.c322Name && uraian) {
+        ctx.c322Name += ' ' + uraian;
+      } else {
+        ctx.c322 = code; ctx.c322Name = uraian;
+        ctx.d4 = ''; ctx.d4Name = '';
+        ctx.c43 = ''; ctx.c43Name = '';
+        ctx.c433 = ''; ctx.c433Name = '';
+        ctx.d3 = ''; ctx.d3Name = '';
+        ctx.alpha = ''; ctx.alphaName = '';
+        ctx.d6 = ''; ctx.d6Name = ''; ctx.d6Tagging = ''; ctx.d6BlockCode = '';
+        getOrCreateNode(`L1_${code}`, code, uraian, 1, 'Code 322 (Program)', 'ROOT', code);
       }
-      ctx.d6BlockCode = blockCandidate;
+    } else if (lvl === 2) {
+      if (ctx.d4 === code && ctx.d4Name && uraian) {
+        ctx.d4Name += ' ' + uraian;
+      } else {
+        ctx.d4 = code; ctx.d4Name = uraian;
+        ctx.c43 = ''; ctx.c43Name = '';
+        ctx.c433 = ''; ctx.c433Name = '';
+        ctx.d3 = ''; ctx.d3Name = '';
+        ctx.alpha = ''; ctx.alphaName = '';
+        ctx.d6 = ''; ctx.d6Name = ''; ctx.d6Tagging = ''; ctx.d6BlockCode = '';
+        const pKey = ctx.c322 ? `L1_${ctx.c322}` : 'ROOT';
+        const path = [ctx.c322, code].filter(Boolean).join(' > ');
+        getOrCreateNode(`L2_${ctx.c322}_${code}`, code, uraian, 2, 'Digit 4 (Kegiatan)', pKey, path);
+      }
+    } else if (lvl === 3) {
+      if (ctx.c43 === code && ctx.c43Name && uraian) {
+        ctx.c43Name += ' ' + uraian;
+      } else {
+        ctx.c43 = code; ctx.c43Name = uraian;
+        ctx.c433 = ''; ctx.c433Name = '';
+        ctx.d3 = ''; ctx.d3Name = '';
+        ctx.alpha = ''; ctx.alphaName = '';
+        ctx.d6 = ''; ctx.d6Name = ''; ctx.d6Tagging = ''; ctx.d6BlockCode = '';
+        const pKey = ctx.d4 ? `L2_${ctx.c322}_${ctx.d4}` : (ctx.c322 ? `L1_${ctx.c322}` : 'ROOT');
+        const path = [ctx.c322, ctx.d4, code].filter(Boolean).join(' > ');
+        getOrCreateNode(`L3_${ctx.c322}_${ctx.d4}_${code}`, code, uraian, 3, 'Code 43 (KRO)', pKey, path);
+      }
+    } else if (lvl === 4) {
+      if (ctx.c433 === code && ctx.c433Name && uraian) {
+        ctx.c433Name += ' ' + uraian;
+      } else {
+        ctx.c433 = code; ctx.c433Name = uraian;
+        ctx.d3 = ''; ctx.d3Name = '';
+        ctx.alpha = ''; ctx.alphaName = '';
+        ctx.d6 = ''; ctx.d6Name = ''; ctx.d6Tagging = ''; ctx.d6BlockCode = '';
+        const pKey = ctx.c43 ? `L3_${ctx.c322}_${ctx.d4}_${ctx.c43}` : (ctx.d4 ? `L2_${ctx.c322}_${ctx.d4}` : 'ROOT');
+        const path = [ctx.c322, ctx.d4, ctx.c43, code].filter(Boolean).join(' > ');
+        getOrCreateNode(`L4_${ctx.c322}_${ctx.d4}_${ctx.c43}_${code}`, code, uraian, 4, 'Code 433 (RO)', pKey, path);
+      }
+    } else if (lvl === 5) {
+      if (ctx.d3 === code && ctx.d3Name && uraian) {
+        ctx.d3Name += ' ' + uraian;
+      } else {
+        ctx.d3 = code; ctx.d3Name = uraian;
+        ctx.alpha = ''; ctx.alphaName = '';
+        ctx.d6 = ''; ctx.d6Name = ''; ctx.d6Tagging = ''; ctx.d6BlockCode = '';
+        const pKey = ctx.c433 ? `L4_${ctx.c322}_${ctx.d4}_${ctx.c43}_${ctx.c433}` : 'ROOT';
+        const path = [ctx.c322, ctx.d4, ctx.c43, ctx.c433, code].filter(Boolean).join(' > ');
+        getOrCreateNode(`L5_${ctx.c322}_${ctx.d4}_${ctx.c43}_${ctx.c433}_${code}`, code, uraian, 5, 'Digit 3 (Komponen)', pKey, path);
+      }
+    } else if (lvl === 6) {
+      if (ctx.alpha === code && ctx.alphaName && uraian) {
+        ctx.alphaName += ' ' + uraian;
+      } else {
+        ctx.alpha = code; ctx.alphaName = uraian;
+        ctx.d6 = ''; ctx.d6Name = ''; ctx.d6Tagging = ''; ctx.d6BlockCode = '';
+        const pKey = ctx.d3 ? `L5_${ctx.c322}_${ctx.d4}_${ctx.c43}_${ctx.c433}_${ctx.d3}` : 'ROOT';
+        const path = [ctx.c322, ctx.d4, ctx.c43, ctx.c433, ctx.d3, code].filter(Boolean).join(' > ');
+        getOrCreateNode(`L6_${ctx.c322}_${ctx.d4}_${ctx.c43}_${ctx.c433}_${ctx.d3}_${code}`, code, uraian, 6, 'Single Alpha (Subkomponen)', pKey, path);
+      }
+    } else if (lvl === 7) {
+      if (ctx.d6 === code && ctx.d6Name && uraian) {
+        ctx.d6Name += ' ' + uraian;
+      } else {
+        ctx.d6 = code; ctx.d6Name = uraian;
+        ctx.d6Tagging = extractTagging(cells) || 'RM';
+
+        let blockCandidate = colK;
+        const numCand = parseFloat(blockCandidate.replace(/[^0-9.-]/g, ''));
+        if (blockCandidate && !isNaN(numCand) && numCand > 99) {
+          blockCandidate = '';
+        }
+        ctx.d6BlockCode = blockCandidate;
+      }
     }
 
     if (code === '-') {

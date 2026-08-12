@@ -175,6 +175,30 @@ async function restructure(workbook) {
 
       if (!code && !rawUraian) continue;
 
+      // Multi-line header consolidation: Check if subsequent raw rows have the exact same code
+      if (code && code !== '-' && code !== '>' && code !== '>>') {
+        while (i + 1 < rawRows.length) {
+          const nextCells = rawRows[i + 1];
+          if (isFooterRow(nextCells)) break;
+
+          const nextColA = (nextCells[0] || '').trim();
+          const nextColB = (nextCells[1] || '').trim();
+          const nextColC = (nextCells[2] || '').trim();
+          const nextCode = nextColA || nextColB || nextColC;
+
+          if (nextCode === code) {
+            // Next row is a consecutive multi-line header continuation of the same code
+            const nextUraian = (nextCells[3] || nextCells[4] || nextCells[5] || '').trim();
+            if (nextUraian) {
+              rawUraian += ' ' + nextUraian;
+            }
+            i++; // Advance loop to consume the continuation row
+          } else {
+            break;
+          }
+        }
+      }
+
       const { cleanUraian, terms } = parseMultipliers(rawUraian);
       const { vol: numVolG, sat: satG } = parseVolSat(colG);
 
