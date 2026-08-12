@@ -1013,7 +1013,7 @@
           : '<span class="tag-badge pnbp">PNP</span>';
 
         // Filter sub-details according to active filters
-        const filteredDetails = (d6.details || []).filter(det => isDetailMatching(d6, det));
+        const filteredDetails = (d6.details || []).filter(det => isDetMatch(d6, det));
 
         // Calculate values for filtered items under this account
         const d6FilteredVal = filteredDetails.reduce((sum, det) => sum + (det.val || 0), 0);

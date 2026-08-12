@@ -50,11 +50,23 @@ async function validateInput(buffer) {
   let currentDigit3 = null;
   let currentAlpha = null;
 
+  let lastCode = null;
+  let lastRow = null;
+
   worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
     const code = getCellText(row.getCell(1)).trim();
     if (!code) return;
 
+    const isConsecutiveSameCode = (code === lastCode && rowNumber === lastRow + 1);
+    lastCode = code;
+    lastRow = rowNumber;
+
     const level = getCodeLevel(code);
+
+    if (isConsecutiveSameCode) {
+      // Multi-line header continuation row (e.g. 2175.QEA.002 on consecutive rows 558 & 559)
+      return;
+    }
 
     // Extract tagging / sumber anggaran from Column L (12th column in input) or nearby tagging candidates
     const colLRaw = getCellText(row.getCell(12)).trim().toUpperCase();
