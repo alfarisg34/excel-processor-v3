@@ -152,6 +152,12 @@ async function styling(workbook) {
       colMenjadi.width = w;
     }
     worksheet.getColumn(41).width = 14; // AO SELISIH
+    worksheet.getColumn(42).width = 3;  // AP Gap
+    for (let c = 43; c <= 54; c++) {
+      worksheet.getColumn(c).width = 14; // AQ..BB (12 Summary Columns)
+    }
+    worksheet.getColumn(55).width = 3;  // BC Gap
+    worksheet.getColumn(56).width = 18; // BD Sisa Anggaran FA
   });
 }
 

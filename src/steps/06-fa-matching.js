@@ -71,8 +71,8 @@ async function faMatching(workbook, faBuffer) {
   const usedCount = {};
 
   workbook.worksheets.forEach((worksheet) => {
-    // Target Column 51 (AY)
-    const colFA = 51;
+    // Target Column 56 (BD)
+    const colFA = 56;
 
     // Set header at row 1 & row 2
     worksheet.getRow(1).getCell(colFA).value = 'SISA ANGGARAN';

@@ -439,6 +439,8 @@ function populateSummaryColumns(worksheet) {
   const triggerRows = [];
   const rows524Semula = [];
   const rows524Menjadi = [];
+  const rowsNon524Semula = [];
+  const rowsNon524Menjadi = [];
   const rowsRMSemula = [];
   const rowsRMMenjadi = [];
   const rowsPNPSemula = [];
@@ -451,16 +453,16 @@ function populateSummaryColumns(worksheet) {
     const valT = getCellText(row.getCell(20));
     const valAN = getCellText(row.getCell(40));
 
-    if (
-      PATTERNS.CODE_433.test(valA) ||
-      PATTERNS.CODE_43.test(valA) ||
-      PATTERNS.CODE_322.test(valA)
-    ) {
+    // Trigger row ONLY for Code 433 (RO level)
+    if (PATTERNS.CODE_433.test(valA)) {
       triggerRows.push(rowNumber);
     }
 
     if (PATTERNS.PREFIX_524.test(valA)) rows524Semula.push(rowNumber);
     if (PATTERNS.PREFIX_524.test(valU)) rows524Menjadi.push(rowNumber);
+
+    if (PATTERNS.DIGIT_6.test(valA) && !PATTERNS.PREFIX_524.test(valA)) rowsNon524Semula.push(rowNumber);
+    if (PATTERNS.DIGIT_6.test(valU) && !PATTERNS.PREFIX_524.test(valU)) rowsNon524Menjadi.push(rowNumber);
 
     if (valT === 'RM') rowsRMSemula.push(rowNumber);
     if (valAN === 'RM') rowsRMMenjadi.push(rowNumber);
@@ -472,53 +474,69 @@ function populateSummaryColumns(worksheet) {
   triggerRows.forEach((Y) => {
     const nextY = triggerRows.find((r) => r > Y) || Infinity;
 
-    // 524 SEMULA (col 42 / AP)
-    worksheet.getRow(Y).getCell(42).value = '524 SEMULA';
+    // 1. 524 SEMULA (col 43 / AQ)
+    worksheet.getRow(Y).getCell(43).value = '524 SEMULA';
     const inRange524S = rows524Semula.filter((r) => r > Y && r < nextY);
     const form524S = inRange524S.length > 0 ? inRange524S.map((r) => `S${r}`).join('+') : '0';
-    worksheet.getRow(Y + 1).getCell(42).value = { formula: form524S };
+    worksheet.getRow(Y + 1).getCell(43).value = { formula: form524S };
 
-    // 524 MENJADI (col 43 / AQ)
-    worksheet.getRow(Y).getCell(43).value = '524 MENJADI';
+    // 2. 524 MENJADI (col 44 / AR)
+    worksheet.getRow(Y).getCell(44).value = '524 MENJADI';
     const inRange524M = rows524Menjadi.filter((r) => r > Y && r < nextY);
     const form524M = inRange524M.length > 0 ? inRange524M.map((r) => `AM${r}`).join('+') : '0';
-    worksheet.getRow(Y + 1).getCell(43).value = { formula: form524M };
+    worksheet.getRow(Y + 1).getCell(44).value = { formula: form524M };
 
-    // SELISIH 524 (col 44 / AR)
-    worksheet.getRow(Y).getCell(44).value = 'SELISIH';
-    worksheet.getRow(Y + 1).getCell(44).value = { formula: `AQ${Y + 1}-AP${Y + 1}` };
+    // 3. SELISIH 524 (col 45 / AS)
+    worksheet.getRow(Y).getCell(45).value = 'SELISIH 524';
+    worksheet.getRow(Y + 1).getCell(45).value = { formula: `AR${Y + 1}-AQ${Y + 1}` };
 
-    // RM SEMULA (col 45 / AS)
-    worksheet.getRow(Y).getCell(45).value = 'RM SEMULA';
+    // 4. NON 524 SEMULA (col 46 / AT)
+    worksheet.getRow(Y).getCell(46).value = 'NON 524 SEMULA';
+    const inRangeNon524S = rowsNon524Semula.filter((r) => r > Y && r < nextY);
+    const formNon524S = inRangeNon524S.length > 0 ? inRangeNon524S.map((r) => `S${r}`).join('+') : '0';
+    worksheet.getRow(Y + 1).getCell(46).value = { formula: formNon524S };
+
+    // 5. NON 524 MENJADI (col 47 / AU)
+    worksheet.getRow(Y).getCell(47).value = 'NON 524 MENJADI';
+    const inRangeNon524M = rowsNon524Menjadi.filter((r) => r > Y && r < nextY);
+    const formNon524M = inRangeNon524M.length > 0 ? inRangeNon524M.map((r) => `AM${r}`).join('+') : '0';
+    worksheet.getRow(Y + 1).getCell(47).value = { formula: formNon524M };
+
+    // 6. SELISIH NON 524 (col 48 / AV)
+    worksheet.getRow(Y).getCell(48).value = 'SELISIH NON 524';
+    worksheet.getRow(Y + 1).getCell(48).value = { formula: `AU${Y + 1}-AT${Y + 1}` };
+
+    // 7. RM SEMULA (col 49 / AW)
+    worksheet.getRow(Y).getCell(49).value = 'RM SEMULA';
     const inRangeRMS = rowsRMSemula.filter((r) => r > Y && r < nextY);
     const formRMS = inRangeRMS.length > 0 ? inRangeRMS.map((r) => `S${r}`).join('+') : '0';
-    worksheet.getRow(Y + 1).getCell(45).value = { formula: formRMS };
+    worksheet.getRow(Y + 1).getCell(49).value = { formula: formRMS };
 
-    // RM MENJADI (col 46 / AT)
-    worksheet.getRow(Y).getCell(46).value = 'RM MENJADI';
+    // 8. RM MENJADI (col 50 / AX)
+    worksheet.getRow(Y).getCell(50).value = 'RM MENJADI';
     const inRangeRMM = rowsRMMenjadi.filter((r) => r > Y && r < nextY);
     const formRMM = inRangeRMM.length > 0 ? inRangeRMM.map((r) => `AM${r}`).join('+') : '0';
-    worksheet.getRow(Y + 1).getCell(46).value = { formula: formRMM };
+    worksheet.getRow(Y + 1).getCell(50).value = { formula: formRMM };
 
-    // SELISIH RM (col 47 / AU)
-    worksheet.getRow(Y).getCell(47).value = 'SELISIH';
-    worksheet.getRow(Y + 1).getCell(47).value = { formula: `AT${Y + 1}-AS${Y + 1}` };
+    // 9. SELISIH RM (col 51 / AY)
+    worksheet.getRow(Y).getCell(51).value = 'SELISIH RM';
+    worksheet.getRow(Y + 1).getCell(51).value = { formula: `AX${Y + 1}-AW${Y + 1}` };
 
-    // PNBP SEMULA (col 48 / AV)
-    worksheet.getRow(Y).getCell(48).value = 'PNBP SEMULA';
+    // 10. PNBP SEMULA (col 52 / AZ)
+    worksheet.getRow(Y).getCell(52).value = 'PNBP SEMULA';
     const inRangePNPS = rowsPNPSemula.filter((r) => r > Y && r < nextY);
     const formPNPS = inRangePNPS.length > 0 ? inRangePNPS.map((r) => `S${r}`).join('+') : '0';
-    worksheet.getRow(Y + 1).getCell(48).value = { formula: formPNPS };
+    worksheet.getRow(Y + 1).getCell(52).value = { formula: formPNPS };
 
-    // PNBP MENJADI (col 49 / AW)
-    worksheet.getRow(Y).getCell(49).value = 'PNBP MENJADI';
+    // 11. PNBP MENJADI (col 53 / BA)
+    worksheet.getRow(Y).getCell(53).value = 'PNBP MENJADI';
     const inRangePNPM = rowsPNPMenjadi.filter((r) => r > Y && r < nextY);
     const formPNPM = inRangePNPM.length > 0 ? inRangePNPM.map((r) => `AM${r}`).join('+') : '0';
-    worksheet.getRow(Y + 1).getCell(49).value = { formula: formPNPM };
+    worksheet.getRow(Y + 1).getCell(53).value = { formula: formPNPM };
 
-    // SELISIH PNBP (col 50 / AX)
-    worksheet.getRow(Y).getCell(50).value = 'SELISIH';
-    worksheet.getRow(Y + 1).getCell(50).value = { formula: `AW${Y + 1}-AV${Y + 1}` };
+    // 12. SELISIH PNBP (col 54 / BB)
+    worksheet.getRow(Y).getCell(54).value = 'SELISIH PNBP';
+    worksheet.getRow(Y + 1).getCell(54).value = { formula: `BA${Y + 1}-AZ${Y + 1}` };
   });
 }
 
