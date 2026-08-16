@@ -128,7 +128,7 @@ function createSumForSingleAlphabet(worksheet, startRow) {
   const total = worksheet.rowCount;
   for (let r = startRow + 1; r <= total; r++) {
     const valA = getCellText(worksheet.getRow(r).getCell(1));
-    if (PATTERNS.SINGLE_ALPHA.test(valA) || PATTERNS.DIGIT_3.test(valA)) break;
+    if (PATTERNS.SINGLE_ALPHA.test(valA) || PATTERNS.DIGIT_3.test(valA) || PATTERNS.CODE_433.test(valA) || PATTERNS.CODE_43.test(valA) || PATTERNS.DIGIT_4.test(valA) || PATTERNS.CODE_322.test(valA)) break;
     if (PATTERNS.DIGIT_6.test(valA)) sumCells.push(`S${r}`);
   }
   return sumCells.length > 0 ? `SUM(${sumCells.join(',')})` : null;
@@ -139,7 +139,7 @@ function createSumFor3Digit(worksheet, startRow) {
   const total = worksheet.rowCount;
   for (let r = startRow + 1; r <= total; r++) {
     const valA = getCellText(worksheet.getRow(r).getCell(1));
-    if (PATTERNS.DIGIT_3.test(valA) || PATTERNS.CODE_433.test(valA)) break;
+    if (PATTERNS.DIGIT_3.test(valA) || PATTERNS.CODE_433.test(valA) || PATTERNS.CODE_43.test(valA) || PATTERNS.DIGIT_4.test(valA) || PATTERNS.CODE_322.test(valA)) break;
     if (PATTERNS.SINGLE_ALPHA.test(valA)) sumCells.push(`S${r}`);
   }
   return sumCells.length > 0 ? `SUM(${sumCells.join(',')})` : null;
@@ -150,7 +150,7 @@ function createSumFor433Code(worksheet, startRow) {
   const total = worksheet.rowCount;
   for (let r = startRow + 1; r <= total; r++) {
     const valA = getCellText(worksheet.getRow(r).getCell(1));
-    if (PATTERNS.CODE_433.test(valA) || PATTERNS.CODE_43.test(valA)) break;
+    if (PATTERNS.CODE_433.test(valA) || PATTERNS.CODE_43.test(valA) || PATTERNS.DIGIT_4.test(valA) || PATTERNS.CODE_322.test(valA)) break;
     if (PATTERNS.DIGIT_3.test(valA)) sumCells.push(`S${r}`);
   }
   return sumCells.length > 0 ? `SUM(${sumCells.join(',')})` : null;
@@ -161,7 +161,7 @@ function createSumFor43Code(worksheet, startRow) {
   const total = worksheet.rowCount;
   for (let r = startRow + 1; r <= total; r++) {
     const valA = getCellText(worksheet.getRow(r).getCell(1));
-    if (PATTERNS.CODE_43.test(valA) || PATTERNS.DIGIT_4.test(valA)) break;
+    if (PATTERNS.CODE_43.test(valA) || PATTERNS.DIGIT_4.test(valA) || PATTERNS.CODE_322.test(valA)) break;
     if (PATTERNS.CODE_433.test(valA)) sumCells.push(`S${r}`);
   }
   return sumCells.length > 0 ? `SUM(${sumCells.join(',')})` : null;

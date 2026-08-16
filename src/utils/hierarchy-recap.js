@@ -134,6 +134,8 @@ async function parseHierarchyRecap(buffer) {
     if (lvl === 1) {
       if (ctx.c322 === code && ctx.c322Name && uraian) {
         ctx.c322Name += ' ' + uraian;
+        const node = nodeMap.get(`L1_${code}`);
+        if (node) node.name = ctx.c322Name;
       } else {
         ctx.c322 = code; ctx.c322Name = uraian;
         ctx.d4 = ''; ctx.d4Name = '';
@@ -147,6 +149,8 @@ async function parseHierarchyRecap(buffer) {
     } else if (lvl === 2) {
       if (ctx.d4 === code && ctx.d4Name && uraian) {
         ctx.d4Name += ' ' + uraian;
+        const node = nodeMap.get(`L2_${ctx.c322}_${code}`);
+        if (node) node.name = ctx.d4Name;
       } else {
         ctx.d4 = code; ctx.d4Name = uraian;
         ctx.c43 = ''; ctx.c43Name = '';
@@ -161,6 +165,8 @@ async function parseHierarchyRecap(buffer) {
     } else if (lvl === 3) {
       if (ctx.c43 === code && ctx.c43Name && uraian) {
         ctx.c43Name += ' ' + uraian;
+        const node = nodeMap.get(`L3_${ctx.c322}_${ctx.d4}_${code}`);
+        if (node) node.name = ctx.c43Name;
       } else {
         ctx.c43 = code; ctx.c43Name = uraian;
         ctx.c433 = ''; ctx.c433Name = '';
@@ -174,6 +180,8 @@ async function parseHierarchyRecap(buffer) {
     } else if (lvl === 4) {
       if (ctx.c433 === code && ctx.c433Name && uraian) {
         ctx.c433Name += ' ' + uraian;
+        const node = nodeMap.get(`L4_${ctx.c322}_${ctx.d4}_${ctx.c43}_${code}`);
+        if (node) node.name = ctx.c433Name;
       } else {
         ctx.c433 = code; ctx.c433Name = uraian;
         ctx.d3 = ''; ctx.d3Name = '';
@@ -186,6 +194,8 @@ async function parseHierarchyRecap(buffer) {
     } else if (lvl === 5) {
       if (ctx.d3 === code && ctx.d3Name && uraian) {
         ctx.d3Name += ' ' + uraian;
+        const node = nodeMap.get(`L5_${ctx.c322}_${ctx.d4}_${ctx.c43}_${ctx.c433}_${code}`);
+        if (node) node.name = ctx.d3Name;
       } else {
         ctx.d3 = code; ctx.d3Name = uraian;
         ctx.alpha = ''; ctx.alphaName = '';
@@ -197,6 +207,8 @@ async function parseHierarchyRecap(buffer) {
     } else if (lvl === 6) {
       if (ctx.alpha === code && ctx.alphaName && uraian) {
         ctx.alphaName += ' ' + uraian;
+        const node = nodeMap.get(`L6_${ctx.c322}_${ctx.d4}_${ctx.c43}_${ctx.c433}_${ctx.d3}_${code}`);
+        if (node) node.name = ctx.alphaName;
       } else {
         ctx.alpha = code; ctx.alphaName = uraian;
         ctx.d6 = ''; ctx.d6Name = ''; ctx.d6Tagging = ''; ctx.d6BlockCode = '';

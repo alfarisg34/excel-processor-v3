@@ -175,7 +175,7 @@ async function restructure(workbook) {
 
       if (!code && !rawUraian) continue;
 
-      // Multi-line header consolidation: Check if subsequent raw rows have the exact same code
+      // Multi-line header consolidation: Check if subsequent raw rows have the exact same code OR are blank-code continuation lines
       if (code && code !== '-' && code !== '>' && code !== '>>') {
         while (i + 1 < rawRows.length) {
           const nextCells = rawRows[i + 1];
@@ -186,12 +186,29 @@ async function restructure(workbook) {
           const nextColC = (nextCells[2] || '').trim();
           const nextCode = nextColA || nextColB || nextColC;
 
-          if (nextCode === code) {
-            // Next row is a consecutive multi-line header continuation of the same code
-            const nextUraian = (nextCells[3] || nextCells[4] || nextCells[5] || '').trim();
+          const nextColD = (nextCells[3] || '').trim();
+          const nextColE = (nextCells[4] || '').trim();
+          const nextColF = (nextCells[5] || '').trim();
+          const nextUraian = nextColD || nextColE || nextColF;
+
+          const nextHargasat = (nextCells[7] || '').trim();
+          const nextJumlah = (nextCells[9] || '').trim();
+
+          const isSameCode = nextCode && nextCode === code;
+          const isBlankCodeContinuation = !nextCode && nextUraian &&
+            !nextColD.startsWith('-') && !nextColD.startsWith('>') &&
+            !nextColE.startsWith('-') && !nextColE.startsWith('>') &&
+            !nextHargasat && !nextJumlah;
+
+          if (isSameCode || isBlankCodeContinuation) {
+            // Next row is a consecutive multi-line header continuation of the current code
             if (nextUraian) {
               rawUraian += ' ' + nextUraian;
             }
+            if (!colG && nextCells[6]) colG = nextCells[6].trim();
+            if (!rawColH && nextCells[7]) rawColH = nextCells[7].trim();
+            if (!colJ && nextCells[9]) colJ = nextCells[9].trim();
+            if (!colK && nextCells[10]) colK = nextCells[10].trim();
             i++; // Advance loop to consume the continuation row
           } else {
             break;
