@@ -236,8 +236,32 @@
               Daftar Pattern Digit 6 (Akun) di bawah Target Kode
             </div>
             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-              <input type="text" id="searchD6" placeholder="🔍 Cari Kode / Uraian..." class="form-select"
-                style="padding:6px 12px; font-size:13px; width:190px;">
+              <input type="text" id="searchD6" placeholder="🔍 Cari Uraian..." class="form-select"
+                style="padding:6px 12px; font-size:13px; width:170px;">
+
+              <!-- Custom Multi-Select Dropdown for Kode Akun -->
+              <div class="custom-multiselect" id="multiSelectD6CodeContainer">
+                <button type="button" class="multiselect-btn" id="btnMultiSelectD6Code" title="Pilih Kode Akun (Bisa Banyak)">
+                  <span class="btn-text" id="labelMultiSelectD6Code">🔢 Semua Kode</span>
+                  <i class="fa-solid fa-chevron-down" style="font-size:11px; color:#94a3b8;"></i>
+                </button>
+                <div class="multiselect-dropdown" id="dropdownMultiSelectD6Code">
+                  <div class="multiselect-header">
+                    <input type="text" id="searchMultiSelectD6Code" placeholder="🔍 Cari kode / uraian..." class="multiselect-search">
+                    <div class="multiselect-actions">
+                      <button type="button" class="multiselect-action-btn" id="btnSelectAllD6Codes">
+                        <i class="fa-solid fa-check-double"></i> Pilih Semua
+                      </button>
+                      <button type="button" class="multiselect-action-btn btn-clear" id="btnClearD6Codes">
+                        <i class="fa-solid fa-rotate-left"></i> Bersihkan
+                      </button>
+                    </div>
+                  </div>
+                  <div class="multiselect-list" id="listMultiSelectD6Code">
+                    <!-- Populated dynamically -->
+                  </div>
+                </div>
+              </div>
 
               <select id="filterD6Tagging" class="form-select"
                 style="padding:6px 12px; font-size:13px; width:140px; background-color:#0f172a; color:#cbd5e1; border-color:rgba(148,163,184,0.3);">
@@ -1023,8 +1047,19 @@
     const filterD6BlockCode = document.getElementById('filterD6BlockCode');
     const tbodyRecapD6 = document.getElementById('tbodyRecapD6');
 
+    // Multi-Select Elements for Kode Akun
+    const btnMultiSelectD6Code = document.getElementById('btnMultiSelectD6Code');
+    const dropdownMultiSelectD6Code = document.getElementById('dropdownMultiSelectD6Code');
+    const labelMultiSelectD6Code = document.getElementById('labelMultiSelectD6Code');
+    const listMultiSelectD6Code = document.getElementById('listMultiSelectD6Code');
+    const searchMultiSelectD6Code = document.getElementById('searchMultiSelectD6Code');
+    const btnSelectAllD6Codes = document.getElementById('btnSelectAllD6Codes');
+    const btnClearD6Codes = document.getElementById('btnClearD6Codes');
+
     let fileRecap = null;
     let currentRecapData = null;
+    let selectedD6Codes = new Set();
+    let currentAvailableD6Codes = [];
 
     setupDropZone(dropZoneRecap, fileInputRecap, (f) => {
       fileRecap = f;
@@ -1053,11 +1088,12 @@
         }
 
         currentRecapData = await response.json();
+        selectedD6Codes.clear();
         showStatus(statusRecap, '✅ Berhasil menganalisis rekap hirarki!', 'success');
 
         recapResultPanel.style.display = 'block';
         updateParentNodeDropdown(selectLevelFilter.value);
-        renderRecapForSelectedNode();
+        renderRecapForSelectedNode(true);
       } catch (err) {
         showStatus(statusRecap, '❌ Error: ' + err.message, 'error');
       } finally {
@@ -1068,28 +1104,192 @@
     selectLevelFilter.addEventListener('change', () => {
       if (!currentRecapData) return;
       updateParentNodeDropdown(selectLevelFilter.value);
-      renderRecapForSelectedNode();
+      renderRecapForSelectedNode(true);
     });
 
     selectNodeParent.addEventListener('change', () => {
-      renderRecapForSelectedNode();
+      renderRecapForSelectedNode(true);
     });
 
     searchD6.addEventListener('input', () => {
-      renderRecapForSelectedNode();
+      renderRecapForSelectedNode(false);
     });
 
+    // Multi-Select Event Listeners
+    if (btnMultiSelectD6Code && dropdownMultiSelectD6Code) {
+      btnMultiSelectD6Code.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = dropdownMultiSelectD6Code.classList.toggle('show');
+        btnMultiSelectD6Code.classList.toggle('open', isOpen);
+        if (isOpen && searchMultiSelectD6Code) {
+          searchMultiSelectD6Code.value = '';
+          filterD6CodeListItems('');
+          searchMultiSelectD6Code.focus();
+        }
+      });
+
+      dropdownMultiSelectD6Code.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+
+      document.addEventListener('click', () => {
+        dropdownMultiSelectD6Code.classList.remove('show');
+        btnMultiSelectD6Code.classList.remove('open');
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          dropdownMultiSelectD6Code.classList.remove('show');
+          btnMultiSelectD6Code.classList.remove('open');
+        }
+      });
+    }
+
+    if (searchMultiSelectD6Code) {
+      searchMultiSelectD6Code.addEventListener('input', (e) => {
+        filterD6CodeListItems(e.target.value);
+      });
+    }
+
+    if (btnSelectAllD6Codes) {
+      btnSelectAllD6Codes.addEventListener('click', () => {
+        currentAvailableD6Codes.forEach(c => selectedD6Codes.add(c.code));
+        renderD6CodeDropdownList();
+        updateD6CodeButtonLabel();
+        renderRecapForSelectedNode(false);
+      });
+    }
+
+    if (btnClearD6Codes) {
+      btnClearD6Codes.addEventListener('click', () => {
+        selectedD6Codes.clear();
+        renderD6CodeDropdownList();
+        updateD6CodeButtonLabel();
+        renderRecapForSelectedNode(false);
+      });
+    }
+
+    window.handleD6CodeCheckboxChange = function(cb) {
+      if (cb.checked) {
+        selectedD6Codes.add(cb.value);
+      } else {
+        selectedD6Codes.delete(cb.value);
+      }
+      updateD6CodeButtonLabel();
+      renderRecapForSelectedNode(false);
+    };
+
+    function filterD6CodeListItems(query) {
+      if (!listMultiSelectD6Code) return;
+      const q = (query || '').toLowerCase().trim();
+      const items = listMultiSelectD6Code.querySelectorAll('.multiselect-item');
+      items.forEach(el => {
+        const code = el.getAttribute('data-code') || '';
+        const name = el.getAttribute('data-name') || '';
+        if (!q || code.includes(q) || name.includes(q)) {
+          el.style.display = 'flex';
+        } else {
+          el.style.display = 'none';
+        }
+      });
+    }
+
+    function updateD6CodeButtonLabel() {
+      if (!labelMultiSelectD6Code) return;
+      const total = currentAvailableD6Codes.length;
+      const count = selectedD6Codes.size;
+
+      if (count === 0 || count === total) {
+        labelMultiSelectD6Code.innerHTML = `🔢 Semua Kode`;
+        btnMultiSelectD6Code.title = 'Semua Kode Akun Dipilih';
+      } else if (count === 1) {
+        const singleCode = Array.from(selectedD6Codes)[0];
+        labelMultiSelectD6Code.innerHTML = `🔢 [${singleCode}]`;
+        btnMultiSelectD6Code.title = `Kode Akun: ${singleCode}`;
+      } else if (count <= 2) {
+        const codesStr = Array.from(selectedD6Codes).join(', ');
+        labelMultiSelectD6Code.innerHTML = `🔢 ${codesStr}`;
+        btnMultiSelectD6Code.title = `Kode Akun: ${codesStr}`;
+      } else {
+        labelMultiSelectD6Code.innerHTML = `🔢 ${count} Kode Dipilih`;
+        btnMultiSelectD6Code.title = `${count} Kode Akun Terpilih: ${Array.from(selectedD6Codes).join(', ')}`;
+      }
+    }
+
+    function renderD6CodeDropdownList() {
+      if (!listMultiSelectD6Code) return;
+
+      if (currentAvailableD6Codes.length === 0) {
+        listMultiSelectD6Code.innerHTML = `
+          <div style="padding: 10px; text-align: center; color: #94a3b8; font-size: 11px;">
+            Tidak ada kode akun
+          </div>
+        `;
+        return;
+      }
+
+      const query = (searchMultiSelectD6Code ? searchMultiSelectD6Code.value : '').toLowerCase().trim();
+
+      let html = '';
+      currentAvailableD6Codes.forEach(item => {
+        const isChecked = selectedD6Codes.has(item.code);
+        const matchesSearch = !query || 
+          item.code.toLowerCase().includes(query) || 
+          (item.name || '').toLowerCase().includes(query);
+
+        html += `
+          <label class="multiselect-item" style="display: ${matchesSearch ? 'flex' : 'none'};" data-code="${item.code}" data-name="${(item.name || '').toLowerCase()}">
+            <input type="checkbox" value="${item.code}" ${isChecked ? 'checked' : ''} onchange="handleD6CodeCheckboxChange(this)">
+            <span class="multiselect-code-badge">${item.code}</span>
+            <span class="multiselect-item-name" title="${item.name}">${item.name}</span>
+          </label>
+        `;
+      });
+
+      listMultiSelectD6Code.innerHTML = html;
+    }
+
+    function updateD6CodeFilterDropdown(nodeSummary) {
+      if (!listMultiSelectD6Code) return;
+      
+      const codeMap = new Map();
+      (nodeSummary.digit6List || []).forEach(d6 => {
+        if (!codeMap.has(d6.code)) {
+          codeMap.set(d6.code, {
+            code: d6.code,
+            name: d6.name,
+            totalVal: d6.totalVal || 0,
+            count: (d6.details || []).length
+          });
+        } else {
+          const existing = codeMap.get(d6.code);
+          existing.totalVal += (d6.totalVal || 0);
+          existing.count += (d6.details || []).length;
+        }
+      });
+
+      currentAvailableD6Codes = Array.from(codeMap.values()).sort((a, b) => 
+        a.code.localeCompare(b.code, undefined, { numeric: true })
+      );
+
+      // Keep previously selected codes if they still exist in the new node
+      selectedD6Codes = new Set([...selectedD6Codes].filter(c => codeMap.has(c)));
+
+      renderD6CodeDropdownList();
+      updateD6CodeButtonLabel();
+    }
+
     filterD6Tagging.addEventListener('change', () => {
-      renderRecapForSelectedNode();
+      renderRecapForSelectedNode(false);
     });
 
     filterD6Blocked.addEventListener('change', () => {
-      renderRecapForSelectedNode();
+      renderRecapForSelectedNode(false);
     });
 
     if (filterD6BlockCode) {
       filterD6BlockCode.addEventListener('change', () => {
-        renderRecapForSelectedNode();
+        renderRecapForSelectedNode(false);
       });
     }
 
@@ -1181,15 +1381,14 @@
 
       if (query) {
         const q = query.toLowerCase();
-        const matchesCodeOrName = (d6.code || '').toLowerCase().includes(q) || (d6.name || '').toLowerCase().includes(q);
-        const matchesUraian = (det.uraian || '').toLowerCase().includes(q);
-        if (!matchesCodeOrName && !matchesUraian) return false;
+        const matchesUraian = (d6.name || '').toLowerCase().includes(q) || (det.uraian || '').toLowerCase().includes(q);
+        if (!matchesUraian) return false;
       }
 
       return true;
     }
 
-    function renderRecapForSelectedNode() {
+    function renderRecapForSelectedNode(rebuildCodeFilter = true) {
       if (!currentRecapData) return;
 
       const selectedKey = selectNodeParent.value || 'ROOT';
@@ -1197,6 +1396,11 @@
 
       // Dynamic dropdown options for Block Code filter
       updateBlockCodeFilterDropdown(nodeSummary);
+
+      // Dynamic dropdown options for D6 Code Multi-Select filter
+      if (rebuildCodeFilter) {
+        updateD6CodeFilterDropdown(nodeSummary);
+      }
 
       // Update KPI Cards
       document.getElementById('kpiTotalPagu').textContent = formatRp(nodeSummary.totalVal);
@@ -1237,7 +1441,7 @@
         Daftar Pattern Digit 6 (Akun) di bawah Level ${nodeSummary.levelName || 'Highest'}: <code>${nodeSummary.code}</code>
       `;
 
-      // Filter Digit 6 Table by search query, tagging, blocked status, and block code
+      // Filter Digit 6 Table by search query, code selection, tagging, blocked status, and block code
       const query = (searchD6.value || '').toLowerCase().trim();
       const tagFilter = filterD6Tagging.value || 'ALL';
       const blockedFilter = filterD6Blocked.value || 'ALL';
@@ -1247,6 +1451,11 @@
 
       // Filter parent Digit 6 list: keep accounts that have matching detail items under active filters
       let d6Items = (nodeSummary.digit6List || []).filter(d6 => {
+        // Multi-select Code filter
+        if (selectedD6Codes.size > 0 && selectedD6Codes.size < currentAvailableD6Codes.length) {
+          if (!selectedD6Codes.has(d6.code)) return false;
+        }
+
         // Tagging check at account level
         if (!isTagMatch(d6.tagging, tagFilter)) return false;
 
@@ -1460,6 +1669,11 @@
       const isDetMatch = (d6, det) => isDetailMatching(d6, det, query, tagFilter, blockedFilter, blockCodeFilter);
 
       let d6Items = (nodeSummary.digit6List || []).filter(d6 => {
+        // Multi-select Code filter
+        if (selectedD6Codes.size > 0 && selectedD6Codes.size < currentAvailableD6Codes.length) {
+          if (!selectedD6Codes.has(d6.code)) return false;
+        }
+
         if (!isTagMatch(d6.tagging, tagFilter)) return false;
         return (d6.details || []).some(det => isDetMatch(d6, det));
       });
@@ -1499,9 +1713,13 @@
       const totalPNBP = exportItems.reduce((sum, it) => sum + it.pnbp, 0);
       const totalBlocked = exportItems.reduce((sum, it) => sum + it.blocked, 0);
 
+      const activeSelectedCodes = selectedD6Codes.size > 0 && selectedD6Codes.size < currentAvailableD6Codes.length
+        ? Array.from(selectedD6Codes)
+        : [];
+
       return {
         nodeSummary,
-        filters: { query, tagFilter, blockedFilter, blockCodeFilter },
+        filters: { query, selectedCodes: activeSelectedCodes, tagFilter, blockedFilter, blockCodeFilter },
         items: exportItems,
         totals: { totalVal, totalRM, totalPNBP, totalBlocked }
       };
@@ -1526,10 +1744,11 @@
         // Title & Filter Header Metadata
         rows.push(['REKAP PATTERN DIGIT 6 (AKUN) & RINCIAN ITEM DETAIL']);
         rows.push(['Satker / Hirarki:', `[${nodeSummary.code}] ${nodeSummary.name || nodeSummary.fullPath}`]);
+        rows.push(['Filter Kode Akun:', filters.selectedCodes && filters.selectedCodes.length > 0 ? filters.selectedCodes.join(', ') : 'Semua Kode Akun']);
         rows.push(['Filter Tagging:', filters.tagFilter === 'ALL' ? 'Semua Tagging' : filters.tagFilter]);
         rows.push(['Filter Status Blokir:', filters.blockedFilter === 'ALL' ? 'Semua Status' : (filters.blockedFilter === 'BLOCKED' ? 'Diblokir Only' : 'Normal')]);
         rows.push(['Filter Kode Blokir:', filters.blockCodeFilter === 'ALL' ? 'Semua Kode Blokir' : `Kode ${filters.blockCodeFilter}`]);
-        rows.push(['Filter Pencarian:', filters.query || '-']);
+        rows.push(['Filter Pencarian (Uraian):', filters.query || '-']);
 
         if (nodeSummary.blockedByCodeList && nodeSummary.blockedByCodeList.length > 0) {
           const blockSummaryStr = nodeSummary.blockedByCodeList.map(b => `Kode ${b.code}: Rp ${b.val.toLocaleString('id-ID')}`).join(' | ');
@@ -1641,7 +1860,8 @@
         doc.text(`Satker / Hirarki: [${nodeSummary.code}] ${nodeSummary.name || nodeSummary.fullPath}`, 14, 18);
 
         const blockSummaryText = (nodeSummary.blockedByCodeList || []).map(b => `Kode ${b.code}: ${formatRp(b.val)}`).join(' | ');
-        doc.text(`Filter: Tagging [${filters.tagFilter}], Status Blokir [${filters.blockedFilter}], Kode Blokir [${filters.blockCodeFilter}], Cari [${filters.query || '-'}] | Export: ${new Date().toLocaleString('id-ID')}`, 14, 23);
+        const codeFilterStr = filters.selectedCodes && filters.selectedCodes.length > 0 ? filters.selectedCodes.join(', ') : 'Semua';
+        doc.text(`Filter: Kode [${codeFilterStr}], Tagging [${filters.tagFilter}], Status Blokir [${filters.blockedFilter}], Kode Blokir [${filters.blockCodeFilter}], Cari Uraian [${filters.query || '-'}] | Export: ${new Date().toLocaleString('id-ID')}`, 14, 23);
         if (blockSummaryText) {
           doc.text(`Rincian Blokir: ${blockSummaryText}`, 14, 27);
         }
