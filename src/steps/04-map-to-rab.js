@@ -257,11 +257,12 @@ async function mapToRab(inWorkbook) {
     }
 
     // 2. Build Header (Rows 1-3)
-    // Row 1: SEMULA (Cols A-T / 1-20), MENJADI (Cols U-AN / 21-40), SELISIH (Col AO / 41)
+    // Row 1: SEMULA (Cols A-T / 1-20), MENJADI (Cols U-AN / 21-40), SELISIH (Col AO / 41), SISA ANGGARAN (Col AP / 42)
     const row1 = new Array(65).fill('');
     row1[0] = 'SEMULA';
     row1[20] = 'MENJADI';
     row1[40] = 'SELISIH';
+    row1[41] = 'SISA ANGGARAN';
     outSheet.addRow(row1);
 
     // Row 2: Titles for SEMULA (A-T) and MENJADI (U-AN)
@@ -289,6 +290,7 @@ async function mapToRab(inWorkbook) {
     row2[39] = 'TAGGING RM/ PNBP';
 
     row2[40] = 'SELISIH';
+    row2[41] = 'SISA ANGGARAN';
     outSheet.addRow(row2);
 
     // Row 3: Column Numbers (1-10 for SEMULA and MENJADI)
@@ -316,13 +318,15 @@ async function mapToRab(inWorkbook) {
     row3[39] = '10';
 
     row3[40] = 'SELISIH';
+    row3[41] = 'SISA ANGGARAN';
     outSheet.addRow(row3);
 
-    // Merge header ranges including E2:O2, Y2:AI2, E3:O3, Y3:AI3
+    // Merge header ranges including E2:O2, Y2:AI2, E3:O3, Y3:AI3, AO1:AO3, AP1:AP3
     const mergeRanges = [
       'A1:T1',
       'U1:AN1',
       'AO1:AO3',
+      'AP1:AP3',
       'E2:O2',
       'Y2:AI2',
       'E3:O3',

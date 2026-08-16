@@ -41,14 +41,14 @@ async function styling(workbook) {
     applyRange(worksheet, 2, 2, 1, 40, (cell) => (cell.font.size = 10));
     applyRange(worksheet, 3, 3, 1, 40, (cell) => (cell.font.size = 9));
 
-    // AO1:AO3 (SELISIH header) -> Fill #FFFF00, font Calibri 12pt Red
-    applyRange(worksheet, 1, 3, 41, 41, (cell) => {
+    // AO1:AP3 (SELISIH & SISA ANGGARAN headers) -> Fill #FFFF00, font Calibri 12pt Red
+    applyRange(worksheet, 1, 3, 41, 42, (cell) => {
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF00' } };
       cell.font = { name: 'Calibri', size: 12, color: { argb: 'FFFF0000' }, bold: true };
     });
 
     // Header alignment: center, middle, wrapText
-    applyRange(worksheet, 1, 3, 1, 41, (cell) => {
+    applyRange(worksheet, 1, 3, 1, 42, (cell) => {
       cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
     });
 
@@ -59,12 +59,12 @@ async function styling(workbook) {
       cell.border = { top: whiteBorder, bottom: whiteBorder, left: whiteBorder, right: whiteBorder };
     });
 
-    // Black border A3:AN3 and AO1:AO3
+    // Black border A3:AN3 and AO1:AP3
     applyRange(worksheet, 3, 3, 1, 40, (cell) => {
       const blackBorder = { style: 'thin', color: { argb: 'FF000000' } };
       cell.border = { top: blackBorder, bottom: blackBorder, left: blackBorder, right: blackBorder };
     });
-    applyRange(worksheet, 1, 3, 41, 41, (cell) => {
+    applyRange(worksheet, 1, 3, 41, 42, (cell) => {
       const blackBorder = { style: 'thin', color: { argb: 'FF000000' } };
       cell.border = { top: blackBorder, bottom: blackBorder, left: blackBorder, right: blackBorder };
     });
@@ -98,9 +98,10 @@ async function styling(workbook) {
     outsideBorder(worksheet, 4, XX, 1, 20);
     outsideBorder(worksheet, 4, XX, 21, 40);
     outsideBorder(worksheet, 4, XX, 41, 41);
+    outsideBorder(worksheet, 4, XX, 42, 42);
 
-    // Bottom border AXX:AOXX
-    bottomBorder(worksheet, XX, XX, 1, 41);
+    // Bottom border AXX:APXX
+    bottomBorder(worksheet, XX, XX, 1, 42);
 
     // 6. Signature Block Styling (ONLY for rows r > XX)
     const maxR = worksheet.rowCount;
@@ -152,12 +153,10 @@ async function styling(workbook) {
       colMenjadi.width = w;
     }
     worksheet.getColumn(41).width = 14; // AO SELISIH
-    worksheet.getColumn(42).width = 3;  // AP Gap
+    worksheet.getColumn(42).width = 18; // AP SISA ANGGARAN REALISASI FA
     for (let c = 43; c <= 54; c++) {
       worksheet.getColumn(c).width = 14; // AQ..BB (12 Summary Columns)
     }
-    worksheet.getColumn(55).width = 3;  // BC Gap
-    worksheet.getColumn(56).width = 18; // BD Sisa Anggaran FA
   });
 }
 

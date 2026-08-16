@@ -58,9 +58,15 @@ async function handleProcess(req, res) {
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Content-Length', buffer.length);
 
+    const exposeHeaders = ['Content-Disposition', 'X-Validation-Summary', 'X-FA-Matching-Summary'];
+    res.setHeader('Access-Control-Expose-Headers', exposeHeaders.join(', '));
+
     if (validationReport) {
-      res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition, X-Validation-Summary');
       res.setHeader('X-Validation-Summary', encodeURIComponent(JSON.stringify(validationReport)));
+    }
+
+    if (processedWorkbook.faMatchingReport) {
+      res.setHeader('X-FA-Matching-Summary', encodeURIComponent(JSON.stringify(processedWorkbook.faMatchingReport)));
     }
 
     return res.status(200).send(buffer);

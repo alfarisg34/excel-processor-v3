@@ -120,6 +120,7 @@
 
         <div class="status-box" id="status2"></div>
         <div class="level-val-panel" id="levelValPanel2"></div>
+        <div class="fa-matching-panel" id="faMatchingPanel2"></div>
       </div>
     </div>
 
@@ -586,6 +587,8 @@
       btnProcess2.disabled = true;
       showStatus(status2, '⏳ Memproses Laporan FA + RKK...', 'info');
       levelValPanel2.classList.remove('show');
+      faMatchingPanel2.classList.remove('show');
+      faMatchingPanel2.innerHTML = '';
 
       const formData = new FormData();
       formData.append('file', file2);
@@ -613,12 +616,27 @@
           }
         }
 
+        // Extract FA Matching report header if available
+        const faHeaderRaw = response.headers.get('X-FA-Matching-Summary');
+        let faReport = null;
+        if (faHeaderRaw) {
+          try {
+            faReport = JSON.parse(decodeURIComponent(faHeaderRaw));
+          } catch (e) {
+            console.warn('Failed to parse FA matching header', e);
+          }
+        }
+
         const blob = await response.blob();
         downloadBlob(blob, `output_${new Date().toISOString().slice(0, 19).replace(/[:]/g, '-')}_Dengan_Realisasi.xlsx`);
         showStatus(status2, '✅ Berhasil memproses dan mengunduh file dengan Realisasi!', 'success');
 
         if (validationReport) {
           renderLevelValidationReport(levelValPanel2, validationReport, 'val_items_2');
+        }
+
+        if (faReport) {
+          renderFaMatchingReport(faMatchingPanel2, faReport);
         }
       } catch (err) {
         showStatus(status2, '❌ Error: ' + err.message, 'error');
@@ -799,6 +817,177 @@
           </div>
         </div>
       `;
+    }
+
+    // Render FA Matching Summary & Unmatched Items
+    function renderFaMatchingReport(panelElem, report) {
+      panelElem.classList.add('show');
+
+      const isAllMatched = (report.unmatchedCount || 0) === 0;
+      const headerClass = isAllMatched ? 'success' : 'warning';
+      const headerTitle = isAllMatched
+        ? '<i class="fa-solid fa-circle-check"></i> ✅ 100% Seluruh Item Aktif RKK Berhasil Dicocokkan dengan Laporan FA'
+        : `<i class="fa-solid fa-triangle-exclamation"></i> ⚠️ Rekap Hasil Pencocokan Realisasi Laporan FA (${report.unmatchedCount} Item Normal Tidak Ditemukan)`;
+
+      let blockedRowsHtml = '';
+      if (report.blockedItems && report.blockedItems.length > 0) {
+        report.blockedItems.forEach((it, idx) => {
+          blockedRowsHtml += `
+            <tr class="fa-blocked-row">
+              <td style="font-family:'JetBrains Mono',monospace; text-align:center; color:#94a3b8;">${idx + 1}</td>
+              <td><span class="row-num-badge">Row #${it.rowNumber}</span></td>
+              <td><span class="hierarchy-code">${it.hierarchyPath || '-'}</span></td>
+              <td style="font-weight:600; color:#f8fafc;">${it.uraian}</td>
+              <td style="font-family:'JetBrains Mono',monospace; text-align:right; font-weight:700; color:#fbbf24;">${formatRp(it.pagu)}</td>
+              <td style="text-align:center;"><span class="tag-badge blokir">⭐ Tagging *</span></td>
+              <td style="text-align:center; font-size:11px; color:#cbd5e1;"><i class="fa-solid fa-lock" style="color:#fbbf24;"></i> Lock Pagu (Sisa = Rp 0)</td>
+            </tr>
+          `;
+        });
+      }
+
+      let unmatchedRowsHtml = '';
+      if (report.unmatchedItems && report.unmatchedItems.length > 0) {
+        report.unmatchedItems.forEach((it, idx) => {
+          unmatchedRowsHtml += `
+            <tr class="fa-unmatched-row">
+              <td style="font-family:'JetBrains Mono',monospace; text-align:center; color:#94a3b8;">${idx + 1}</td>
+              <td><span class="row-num-badge">Row #${it.rowNumber}</span></td>
+              <td><span class="hierarchy-code">${it.hierarchyPath || '-'}</span></td>
+              <td style="font-weight:600; color:#f8fafc;" class="fa-unmatched-uraian">${it.uraian}</td>
+              <td style="font-family:'JetBrains Mono',monospace; text-align:right; font-weight:700; color:#cbd5e1;">${formatRp(it.pagu)}</td>
+              <td style="text-align:center;"><span class="tag-badge blokir"><i class="fa-solid fa-circle-xmark"></i> Tidak Ada di FA</span></td>
+            </tr>
+          `;
+        });
+      }
+
+      panelElem.innerHTML = `
+        <div class="level-val-header">
+          <div class="level-val-title">
+            <i class="fa-solid fa-file-invoice-dollar" style="color:#38bdf8;"></i>
+            Rekapitulasi Pencocokan Realisasi Laporan FA Detail (16 Segmen)
+          </div>
+          <div class="fa-header-badge ${headerClass}">
+            ${headerTitle}
+          </div>
+        </div>
+
+        <div class="val-stats-grid">
+          <div class="val-stat-card">
+            <div class="val-stat-label">📌 Total Rincian RKK (-)</div>
+            <div class="val-stat-value">${report.totalRkkDetails} Items</div>
+          </div>
+          <div class="val-stat-card">
+            <div class="val-stat-label">💼 Anggaran Normal / Aktif</div>
+            <div class="val-stat-value" style="color:#38bdf8;">${report.normalDetailsCount} Items</div>
+          </div>
+          <div class="val-stat-card">
+            <div class="val-stat-label">✅ Berhasil Dicocokkan (FA)</div>
+            <div class="val-stat-value" style="color:#4ade80;">${report.matchedCount} Items (${report.matchPercentage}%)</div>
+          </div>
+          <div class="val-stat-card">
+            <div class="val-stat-label">⭐ Anggaran Diblokir (Tagging *)</div>
+            <div class="val-stat-value" style="color:#fbbf24;">${report.blockedDetailsCount} Items</div>
+          </div>
+        </div>
+
+        ${report.blockedDetailsCount > 0 ? `
+          <div style="margin-top: 15px;">
+            <button class="level-items-toggle" onclick="toggleFaItems('fa_blocked_container')">
+              <span><i class="fa-solid fa-lock" style="color:#fbbf24;"></i> Daftar Item RKK Diblokir / Tagging * (${report.blockedDetailsCount} Item - Pasti Tidak Ada di FA)</span>
+              <i class="fa-solid fa-chevron-down"></i>
+            </button>
+
+            <div class="level-items-list" id="fa_blocked_container" style="display:none; margin-top:14px;">
+              <div style="margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+                <div style="font-size:12px; color:#cbd5e1;">
+                  <i class="fa-solid fa-info-circle" style="color:#fbbf24;"></i> Item-item dengan Tagging <strong>*</strong> merupakan anggaran yang diblokir (*Lock Pagu*), sehingga kolom Sisa Anggaran otomatis diset <strong>Rp 0</strong> dan tidak dicari di FA Detail.
+                </div>
+                <input type="text" id="searchFaBlocked" placeholder="🔍 Cari item blokir..." onkeyup="filterFaBlockedTable()" class="form-select" style="padding:5px 10px; font-size:12px; width:200px; background-color:#0f172a; color:#cbd5e1; border-color:rgba(148,163,184,0.3);">
+              </div>
+              <div class="level-table-wrapper">
+                <table class="level-summary-table" id="tableFaBlocked">
+                  <thead>
+                    <tr>
+                      <th style="width:45px; text-align:center;">No</th>
+                      <th style="width:85px;">Baris (#)</th>
+                      <th style="min-width:240px;">Kode Hirarki</th>
+                      <th>Uraian Rincian RKK</th>
+                      <th style="text-align:right;">Pagu RKK (Rp)</th>
+                      <th style="width:110px; text-align:center;">Tagging</th>
+                      <th style="width:170px; text-align:center;">Status Realisasi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${blockedRowsHtml}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        ` : ''}
+
+        ${report.unmatchedCount > 0 ? `
+          <div style="margin-top: 15px;">
+            <button class="level-items-toggle" onclick="toggleFaItems('fa_unmatched_container')">
+              <span><i class="fa-solid fa-eye"></i> Tampilkan Daftar Item Normal yang Tidak Ada di FA (${report.unmatchedCount} Item)</span>
+              <i class="fa-solid fa-chevron-down"></i>
+            </button>
+
+            <div class="level-items-list" id="fa_unmatched_container" style="display:block; margin-top:14px;">
+              <div style="margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+                <div style="font-size:12px; color:#94a3b8;">
+                  <i class="fa-solid fa-info-circle"></i> Item di bawah ini berstatus normal tetapi tidak ditemukan di Laporan FA (kolom Sisa Anggaran diisi Rp 0).
+                </div>
+                <input type="text" id="searchFaUnmatched" placeholder="🔍 Cari item tidak cocok..." onkeyup="filterFaUnmatchedTable()" class="form-select" style="padding:5px 10px; font-size:12px; width:220px; background-color:#0f172a; color:#cbd5e1; border-color:rgba(148,163,184,0.3);">
+              </div>
+              <div class="level-table-wrapper">
+                <table class="level-summary-table" id="tableFaUnmatched">
+                  <thead>
+                    <tr>
+                      <th style="width:45px; text-align:center;">No</th>
+                      <th style="width:85px;">Baris (#)</th>
+                      <th style="min-width:250px;">Kode Hirarki</th>
+                      <th>Uraian Rincian RKK</th>
+                      <th style="text-align:right;">Pagu RKK (Rp)</th>
+                      <th style="width:130px; text-align:center;">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${unmatchedRowsHtml}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        ` : ''}
+      `;
+    }
+
+    function toggleFaItems(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.style.display = el.style.display === 'none' ? 'block' : 'none';
+      }
+    }
+
+    function filterFaBlockedTable() {
+      const query = (document.getElementById('searchFaBlocked')?.value || '').toLowerCase();
+      const rows = document.querySelectorAll('#tableFaBlocked tbody tr.fa-blocked-row');
+      rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(query) ? '' : 'none';
+      });
+    }
+
+    function filterFaUnmatchedTable() {
+      const query = (document.getElementById('searchFaUnmatched')?.value || '').toLowerCase();
+      const rows = document.querySelectorAll('#tableFaUnmatched tbody tr.fa-unmatched-row');
+      rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(query) ? '' : 'none';
+      });
     }
 
     // Tab Navigation Switcher
