@@ -13,6 +13,8 @@ function isFooterRow(cells) {
   if (/\bNIP\s*\d{8}/i.test(line)) return true;
   if (/\bJakarta\b.*,\s*\d+\s+[A-Za-z]+\s+\d{4}/i.test(line)) return true;
   if (/^\s*NURYANTI\s*$/i.test(line)) return true;
+  if (/\b\(?KPPN[\.\s\d]/i.test(line) || /\(KPPN[^\)]*\)/i.test(line)) return true;
+  if (/^\s*Lokasi\s*:/i.test(line) || (line.startsWith('Lokasi :') && !cells.some(c => c === '-' || c === '>' || c === '>>'))) return true;
 
   return false;
 }
@@ -56,9 +58,12 @@ function extractSignatureInfo(worksheet) {
 function parseMultipliers(text) {
   if (!text || typeof text !== 'string') return { cleanUraian: text || '', terms: [] };
 
-  const match = text.match(/^(.*?)\s*\[(.*?)(?:\]\s*)?$/);
+  // Remove any stray KPPN patterns if present
+  let cleanText = text.replace(/\s*\(KPPN[^\)]*\)\s*/gi, ' ').replace(/\s+/g, ' ').trim();
+
+  const match = cleanText.match(/^(.*?)\s*\[(.*?)(?:\]\s*)?$/);
   if (!match) {
-    return { cleanUraian: text.trim(), terms: [] };
+    return { cleanUraian: cleanText, terms: [] };
   }
 
   const cleanUraian = match[1].replace(/\s+/g, ' ').trim();

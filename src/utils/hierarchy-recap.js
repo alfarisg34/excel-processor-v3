@@ -26,6 +26,8 @@ function isFooterRow(cells) {
   if (/\bNIP\s*\d{8}/i.test(line)) return true;
   if (/\bJakarta\b.*,\s*\d+\s+[A-Za-z]+\s+\d{4}/i.test(line)) return true;
   if (/^\s*NURYANTI\s*$/i.test(line)) return true;
+  if (/\b\(?KPPN[\.\s\d]/i.test(line) || /\(KPPN[^\)]*\)/i.test(line)) return true;
+  if (/^\s*Lokasi\s*:/i.test(line) || (line.startsWith('Lokasi :') && !cells.some(c => c === '-' || c === '>' || c === '>>'))) return true;
   return false;
 }
 

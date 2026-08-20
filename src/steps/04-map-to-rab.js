@@ -420,9 +420,7 @@ function cleanupBottomRows(worksheet) {
         PATTERNS.CODE_433.test(valA) ||
         PATTERNS.DIGIT_3.test(valA) ||
         PATTERNS.SINGLE_ALPHA.test(valA) ||
-        PATTERNS.DIGIT_6.test(valA) ||
-        valB.startsWith('(KPPN') ||
-        valB.startsWith('Lokasi');
+        PATTERNS.DIGIT_6.test(valA);
 
       if (isTableRow) {
         lastTableDataRow = Math.max(lastTableDataRow, rowNumber);
