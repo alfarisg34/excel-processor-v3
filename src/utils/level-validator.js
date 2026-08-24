@@ -30,21 +30,10 @@ function getLevelNumericOrder(c) {
 }
 
 function extractTagging(cells) {
-  let rawColK = (cells[10] || '').trim();
-  let rawColL = (cells[11] || '').trim();
-  let rawColM = (cells[12] || '').trim();
-  let rawColN = (cells[13] || '').trim();
-  let rawColO = (cells[14] || '').trim();
-
-  const taggingCandidates = [rawColK, rawColL, rawColM, rawColN, rawColO];
-  for (const cand of taggingCandidates) {
-    const t = cand.trim().toUpperCase();
-    if (t === 'RM' || t === 'PNBP' || t === 'PNP' || t === '*' || t.includes('*')) {
-      if (t === 'PNP') return 'PNBP';
-      if (t.includes('RM')) return 'RM';
-      if (t.includes('PNBP')) return 'PNBP';
-      if (t.includes('*')) return '*';
-      return t;
+  for (let c = 8; c <= 16; c++) {
+    const t = (cells[c] || '').trim().toUpperCase();
+    if (t === 'RM' || t === 'PNP' || t === 'PNBP') {
+      return t === 'PNP' ? 'PNBP' : t;
     }
   }
   return '';
@@ -118,16 +107,16 @@ async function validateLevelDifferences(inputWorkbookOrBuffer, outputWorkbook) {
     if (!code && !rawUraian) return;
 
     const lvl = getLevelNumericOrder(code);
-    if (lvl === 1) { ctx.program = code; ctx.kegiatan = ''; ctx.kro = ''; ctx.ro = ''; ctx.komponen = ''; ctx.subKomponen = ''; ctx.akun = ''; ctx.subGroup = ''; }
-    else if (lvl === 2) { ctx.kegiatan = code; ctx.kro = ''; ctx.ro = ''; ctx.komponen = ''; ctx.subKomponen = ''; ctx.akun = ''; ctx.subGroup = ''; }
-    else if (lvl === 3) { ctx.kro = code; ctx.ro = ''; ctx.komponen = ''; ctx.subKomponen = ''; ctx.akun = ''; ctx.subGroup = ''; }
-    else if (lvl === 4) { ctx.ro = code; ctx.komponen = ''; ctx.subKomponen = ''; ctx.akun = ''; ctx.subGroup = ''; }
-    else if (lvl === 5) { ctx.komponen = code; ctx.subKomponen = ''; ctx.akun = ''; ctx.subGroup = ''; }
-    else if (lvl === 6) { ctx.subKomponen = code; ctx.akun = ''; ctx.subGroup = ''; }
-    else if (lvl === 7) { ctx.akun = code; ctx.subGroup = ''; }
+    if (lvl === 1) { ctx.program = code; ctx.kegiatan = ''; ctx.kro = ''; ctx.ro = ''; ctx.komponen = ''; ctx.subKomponen = ''; ctx.akun = ''; ctx.subGroup = ''; ctx.tagging = ''; }
+    else if (lvl === 2) { ctx.kegiatan = code; ctx.kro = ''; ctx.ro = ''; ctx.komponen = ''; ctx.subKomponen = ''; ctx.akun = ''; ctx.subGroup = ''; ctx.tagging = ''; }
+    else if (lvl === 3) { ctx.kro = code; ctx.ro = ''; ctx.komponen = ''; ctx.subKomponen = ''; ctx.akun = ''; ctx.subGroup = ''; ctx.tagging = ''; }
+    else if (lvl === 4) { ctx.ro = code; ctx.komponen = ''; ctx.subKomponen = ''; ctx.akun = ''; ctx.subGroup = ''; ctx.tagging = ''; }
+    else if (lvl === 5) { ctx.komponen = code; ctx.subKomponen = ''; ctx.akun = ''; ctx.subGroup = ''; ctx.tagging = ''; }
+    else if (lvl === 6) { ctx.subKomponen = code; ctx.akun = ''; ctx.subGroup = ''; ctx.tagging = ''; }
+    else if (lvl === 7) { ctx.akun = code; ctx.subGroup = ''; ctx.tagging = extractTagging(cells) || 'RM'; }
     else if (lvl === 8) { ctx.subGroup = rawUraian; }
 
-    const tagging = extractTagging(cells);
+    const tagging = extractTagging(cells) || ctx.tagging || 'RM';
     let valBefore = parseFloat(colJ.replace(/[^0-9.-]/g, ''));
     if (isNaN(valBefore)) valBefore = 0;
 
@@ -146,24 +135,26 @@ async function validateLevelDifferences(inputWorkbookOrBuffer, outputWorkbook) {
 
   // 2. Extract Output Detail Rows with Full Hierarchy Breadcrumb & Tagging (Col T / index 20)
   const outputDetails = [];
-  const outCtx = { program: '', kegiatan: '', kro: '', ro: '', komponen: '', subKomponen: '', akun: '', subGroup: '' };
+  const outCtx = { program: '', kegiatan: '', kro: '', ro: '', komponen: '', subKomponen: '', akun: '', subGroup: '', tagging: '' };
   const maxR = wsOutput.rowCount;
 
   for (let r = 4; r <= maxR; r++) {
     const row = wsOutput.getRow(r);
     const code = getCellText(row.getCell(1)).trim();
     const uraian = getCellText(row.getCell(2)).replace(/\s+/g, ' ').trim();
-    const tagging = getCellText(row.getCell(20)).trim(); // Col T (index 20)
+    const rowTag = getCellText(row.getCell(20)).trim(); // Col T (index 20)
 
     const lvl = getLevelNumericOrder(code);
-    if (lvl === 1) { outCtx.program = code; outCtx.kegiatan = ''; outCtx.kro = ''; outCtx.ro = ''; outCtx.komponen = ''; outCtx.subKomponen = ''; outCtx.akun = ''; outCtx.subGroup = ''; }
-    else if (lvl === 2) { outCtx.kegiatan = code; outCtx.kro = ''; outCtx.ro = ''; outCtx.komponen = ''; outCtx.subKomponen = ''; outCtx.akun = ''; outCtx.subGroup = ''; }
-    else if (lvl === 3) { outCtx.kro = code; outCtx.ro = ''; outCtx.komponen = ''; outCtx.subKomponen = ''; outCtx.akun = ''; outCtx.subGroup = ''; }
-    else if (lvl === 4) { outCtx.ro = code; outCtx.komponen = ''; outCtx.subKomponen = ''; outCtx.akun = ''; outCtx.subGroup = ''; }
-    else if (lvl === 5) { outCtx.komponen = code; outCtx.subKomponen = ''; outCtx.akun = ''; outCtx.subGroup = ''; }
-    else if (lvl === 6) { outCtx.subKomponen = code; outCtx.akun = ''; outCtx.subGroup = ''; }
-    else if (lvl === 7) { outCtx.akun = code; outCtx.subGroup = ''; }
+    if (lvl === 1) { outCtx.program = code; outCtx.kegiatan = ''; outCtx.kro = ''; outCtx.ro = ''; outCtx.komponen = ''; outCtx.subKomponen = ''; outCtx.akun = ''; outCtx.subGroup = ''; outCtx.tagging = ''; }
+    else if (lvl === 2) { outCtx.kegiatan = code; outCtx.kro = ''; outCtx.ro = ''; outCtx.komponen = ''; outCtx.subKomponen = ''; outCtx.akun = ''; outCtx.subGroup = ''; outCtx.tagging = ''; }
+    else if (lvl === 3) { outCtx.kro = code; outCtx.ro = ''; outCtx.komponen = ''; outCtx.subKomponen = ''; outCtx.akun = ''; outCtx.subGroup = ''; outCtx.tagging = ''; }
+    else if (lvl === 4) { outCtx.ro = code; outCtx.komponen = ''; outCtx.subKomponen = ''; outCtx.akun = ''; outCtx.subGroup = ''; outCtx.tagging = ''; }
+    else if (lvl === 5) { outCtx.komponen = code; outCtx.subKomponen = ''; outCtx.akun = ''; outCtx.subGroup = ''; outCtx.tagging = ''; }
+    else if (lvl === 6) { outCtx.subKomponen = code; outCtx.akun = ''; outCtx.subGroup = ''; outCtx.tagging = ''; }
+    else if (lvl === 7) { outCtx.akun = code; outCtx.subGroup = ''; outCtx.tagging = rowTag || 'RM'; }
     else if (lvl === 8) { outCtx.subGroup = uraian; }
+
+    const tagging = rowTag || outCtx.tagging || 'RM';
 
     if (code === '-') {
       const vol1Str = getCellText(row.getCell(5));

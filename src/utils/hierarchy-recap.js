@@ -32,7 +32,7 @@ function isFooterRow(cells) {
 }
 
 function extractTagging(cells) {
-  for (let c = 9; c <= 15; c++) {
+  for (let c = 8; c <= 16; c++) {
     const t = (cells[c] || '').trim().toUpperCase();
     if (t === 'RM' || t === 'PNP' || t === 'PNBP') {
       return t === 'PNP' ? 'PNBP' : t;
@@ -219,19 +219,16 @@ async function parseHierarchyRecap(buffer) {
         getOrCreateNode(`L6_${ctx.c322}_${ctx.d4}_${ctx.c43}_${ctx.c433}_${ctx.d3}_${code}`, code, uraian, 6, 'Single Alpha (Subkomponen)', pKey, path);
       }
     } else if (lvl === 7) {
-      if (ctx.d6 === code && ctx.d6Name && uraian) {
-        ctx.d6Name += ' ' + uraian;
-      } else {
-        ctx.d6 = code; ctx.d6Name = uraian;
-        ctx.d6Tagging = extractTagging(cells) || 'RM';
+      ctx.d6 = code;
+      ctx.d6Name = uraian;
+      ctx.d6Tagging = extractTagging(cells) || 'RM';
 
-        let blockCandidate = colK;
-        const numCand = parseFloat(blockCandidate.replace(/[^0-9.-]/g, ''));
-        if (blockCandidate && !isNaN(numCand) && numCand > 99) {
-          blockCandidate = '';
-        }
-        ctx.d6BlockCode = blockCandidate;
+      let blockCandidate = colK;
+      const numCand = parseFloat(blockCandidate.replace(/[^0-9.-]/g, ''));
+      if (blockCandidate && !isNaN(numCand) && numCand > 99) {
+        blockCandidate = '';
       }
+      ctx.d6BlockCode = blockCandidate;
     }
 
     if (code === '-') {
