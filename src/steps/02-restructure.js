@@ -123,6 +123,7 @@ async function restructure(workbook) {
       rawRows.push(cells);
     });
 
+    let currentAccountTagging = 'RM';
     for (let i = 0; i < rawRows.length; i++) {
       const cells = rawRows[i];
 
@@ -266,16 +267,37 @@ async function restructure(workbook) {
 
       // Tagging extraction from colK, colL, colM, colN, colO
       let tagging = '';
-      const taggingCandidates = [colK, rawColL, rawColM, rawColN, rawColO];
-      for (const cand of taggingCandidates) {
-        const t = cand.trim().toUpperCase();
-        if (t === 'RM' || t === 'PNBP' || t === 'PNP' || t === '*' || t.includes('*')) {
-          if (t === 'PNP') tagging = 'PNBP';
-          else if (t.includes('RM')) tagging = 'RM';
-          else if (t.includes('PNBP')) tagging = 'PNBP';
-          else if (t.includes('*')) tagging = '*';
-          else tagging = t;
-          break;
+      const isDigit6 = PATTERNS.DIGIT_6.test(code);
+      const isDetailRow = (code === '-' || code === '>' || code === '>>');
+
+      if (isDigit6) {
+        const taggingCandidates = [colK, rawColL, rawColM, rawColN, rawColO];
+        for (const cand of taggingCandidates) {
+          const t = cand.trim().toUpperCase();
+          if (t === 'RM' || t === 'PNBP' || t === 'PNP' || t === 'PLN' || t === 'PHLN') {
+            if (t === 'PNP') tagging = 'PNBP';
+            else if (t.includes('RM')) tagging = 'RM';
+            else if (t.includes('PNBP')) tagging = 'PNBP';
+            else if (t.includes('PLN') || t.includes('PHLN')) tagging = 'PLN';
+            else tagging = t;
+            break;
+          }
+        }
+        currentAccountTagging = tagging || 'RM';
+      } else if (isDetailRow) {
+        const taggingCandidates = [colK, rawColL, rawColM, rawColN, rawColO];
+        for (const cand of taggingCandidates) {
+          const t = cand.trim().toUpperCase();
+          if (t === 'RK' || t.includes('RK')) {
+            tagging = 'RK';
+            break;
+          } else if (t === '*' || t.includes('*')) {
+            tagging = '*';
+            break;
+          }
+        }
+        if (!tagging && cleanUraian.toLowerCase().includes('blokir')) {
+          tagging = (currentAccountTagging === 'PLN') ? 'RK' : '*';
         }
       }
 

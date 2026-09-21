@@ -22,13 +22,13 @@ function getCodeLevel(code) {
  * Validates hierarchy pattern and duplicate rules for RINCIAN KERTAS KERJA SATKER file buffer.
  *
  * Rules:
- * Rule 1: Code 322 (global duplicate check)
- * Rule 2: Digit 4 (global duplicate check)
- * Rule 3: Code 43 (global duplicate check)
- * Rule 4: Code 433 (global duplicate check)
- * Rule 5: Digit 3 duplicate under the same Code 433 parent
- * Rule 6: Single Alpha duplicate under the same Digit 3 parent
- * Rule 7: Digit 6 duplicate under the same Single Alpha parent, EXCEPT if column L (sumber anggaran RM vs PNP/PNBP) is different.
+ * Rule 1: Program (global duplicate check)
+ * Rule 2: Kegiatan (global duplicate check)
+ * Rule 3: KRO (global duplicate check)
+ * Rule 4: RO (global duplicate check)
+ * Rule 5: Komponen duplicate under the same RO parent
+ * Rule 6: Subkomponen duplicate under the same Komponen parent
+ * Rule 7: Akun duplicate under the same Subkomponen parent, EXCEPT if column L (sumber anggaran RM vs PNP/PNBP vs PLN/PHLN) is different.
  *
  * @param {Buffer} buffer - File buffer of RINCIAN KERTAS KERJA SATKER
  * @returns {Promise<{ valid: boolean, violations: Array }>}
@@ -88,12 +88,13 @@ async function validateInput(buffer) {
     let tagging = '';
     if (colLRaw.includes('RM')) tagging = 'RM';
     else if (colLRaw.includes('PNP') || colLRaw.includes('PNBP')) tagging = 'PNBP';
+    else if (colLRaw.includes('PLN') || colLRaw.includes('PHLN')) tagging = 'PLN';
     else {
       // Fallback check columns 10-15 if shifted
       for (let c = 10; c <= 15; c++) {
         const t = getCellText(row.getCell(c)).trim().toUpperCase();
-        if (t === 'RM' || t === 'PNBP' || t === 'PNP') {
-          tagging = t === 'PNP' ? 'PNBP' : t;
+        if (t === 'RM' || t === 'PNBP' || t === 'PNP' || t === 'PLN' || t === 'PHLN') {
+          tagging = t === 'PNP' ? 'PNBP' : (t === 'PHLN' ? 'PLN' : t);
           break;
         }
       }
@@ -189,12 +190,12 @@ async function validateInput(buffer) {
   }
 
   // Check Rules 1 - 4
-  checkGlobalDuplicates(code322Map, 1, 'Duplikat Code 322', 'Format 322 (contoh: 026.04.DN)');
-  checkGlobalDuplicates(digit4Map, 2, 'Duplikat Digit 4', 'Format 4 Digit (contoh: 2175)');
-  checkGlobalDuplicates(code43Map, 3, 'Duplikat Code 43', 'Format 43 (contoh: 2175.BDC)');
-  checkGlobalDuplicates(code433Map, 4, 'Duplikat Code 433', 'Format 433 (contoh: 2175.BDC.001)');
+  checkGlobalDuplicates(code322Map, 1, 'Duplikat Program', 'Format Program (contoh: 026.04.DN)');
+  checkGlobalDuplicates(digit4Map, 2, 'Duplikat Kegiatan', 'Format Kegiatan (contoh: 2175)');
+  checkGlobalDuplicates(code43Map, 3, 'Duplikat KRO', 'Format KRO (contoh: 2175.BDC)');
+  checkGlobalDuplicates(code433Map, 4, 'Duplikat RO', 'Format RO (contoh: 2175.BDC.001)');
 
-  // Rule 5: Digit 3 under same Code 433
+  // Rule 5: Komponen under same RO
   const r5Dups = [];
   for (const [parent433, pMap] of digit3Map.entries()) {
     for (const [code, items] of pMap.entries()) {
@@ -203,7 +204,7 @@ async function validateInput(buffer) {
           code,
           rows: items.map((i) => i.row),
           count: items.length,
-          context: `Di bawah Code 433: ${parent433}`,
+          context: `Di bawah RO: ${parent433}`,
         });
       }
     }
@@ -211,13 +212,13 @@ async function validateInput(buffer) {
   if (r5Dups.length > 0) {
     violations.push({
       ruleId: 5,
-      ruleTitle: 'Duplikat Digit 3 di bawah Code 433 yang Sama',
-      patternDesc: 'Format 3 Digit (contoh: 051) di bawah parent 433',
+      ruleTitle: 'Duplikat Komponen di bawah RO yang Sama',
+      patternDesc: 'Format Komponen (contoh: 051) di bawah parent RO',
       details: r5Dups,
     });
   }
 
-  // Rule 6: Single Alpha under same Digit 3
+  // Rule 6: Subkomponen under same Komponen
   const r6Dups = [];
   for (const [parentKey, pMap] of singleAlphaMap.entries()) {
     for (const [code, items] of pMap.entries()) {
@@ -226,7 +227,7 @@ async function validateInput(buffer) {
           code,
           rows: items.map((i) => i.row),
           count: items.length,
-          context: `Di bawah Parent: ${parentKey}`,
+          context: `Di bawah Komponen: ${parentKey}`,
         });
       }
     }
@@ -234,13 +235,13 @@ async function validateInput(buffer) {
   if (r6Dups.length > 0) {
     violations.push({
       ruleId: 6,
-      ruleTitle: 'Duplikat Single Alpha di bawah Digit 3 yang Sama',
-      patternDesc: 'Single Alpha (contoh: A, B) di bawah parent Digit 3',
+      ruleTitle: 'Duplikat Subkomponen di bawah Komponen yang Sama',
+      patternDesc: 'Subkomponen (contoh: A, B, ZA, AC) di bawah parent Komponen',
       details: r6Dups,
     });
   }
 
-  // Rule 7: Digit 6 under same Single Alpha (check column L tagging)
+  // Rule 7: Akun under same Subkomponen (check column L tagging)
   const r7Dups = [];
   for (const [parentKey, pMap] of digit6Map.entries()) {
     for (const [code, items] of pMap.entries()) {
@@ -266,7 +267,7 @@ async function validateInput(buffer) {
             rows: items.map((i) => i.row),
             count: items.length,
             taggings: items.map((i) => `Baris ${i.row}: ${i.tagging || 'Tidak ada tagging'}`).join(', '),
-            context: `Di bawah Parent: ${parentKey}`,
+            context: `Di bawah Subkomponen: ${parentKey}`,
           });
         }
       }
@@ -275,8 +276,8 @@ async function validateInput(buffer) {
   if (r7Dups.length > 0) {
     violations.push({
       ruleId: 7,
-      ruleTitle: 'Duplikat Digit 6 di bawah Single Alpha (Sumber Anggaran Sama/Kosong)',
-      patternDesc: 'Format 6 Digit (contoh: 521211) dengan kode sumber anggaran (kolom L) yang sama',
+      ruleTitle: 'Duplikat Akun di bawah Subkomponen (Sumber Anggaran Sama/Kosong)',
+      patternDesc: 'Format Akun 6 Digit (contoh: 521211) dengan kode sumber anggaran (kolom L) yang sama',
       details: r7Dups,
     });
   }

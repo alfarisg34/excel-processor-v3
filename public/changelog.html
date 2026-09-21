@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Release Notes & Log Versi — Excel Processor V3</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    :root {
+      --bg-dark: #070b14;
+      --bg-card: rgba(15, 23, 42, 0.72);
+      --bg-card-hover: rgba(30, 41, 59, 0.7);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(56, 189, 248, 0.25);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --accent-cyan: #38bdf8;
+      --accent-teal: #2dd4bf;
+      --accent-emerald: #34d399;
+      --accent-indigo: #818cf8;
+      --accent-amber: #fbbf24;
+      --accent-rose: #fb7185;
+      --accent-purple: #c084fc;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(14, 165, 233, 0.15), transparent 70%),
+        radial-gradient(circle at 10% 30%, rgba(99, 102, 241, 0.05), transparent 40%),
+        radial-gradient(circle at 90% 70%, rgba(20, 184, 166, 0.05), transparent 50%);
+      background-attachment: fixed;
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+      width: 100%;
+      flex: 1;
+    }
+
+    /* Top Nav Bar / Back Link */
+    .top-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 40px;
+    }
+
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .btn-back:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateX(-2px);
+    }
+
+    /* Hero Header */
+    .hero-header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .pill-category {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(45, 212, 191, 0.08);
+      border: 1px solid rgba(45, 212, 191, 0.25);
+      color: var(--accent-teal);
+      padding: 6px 16px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+      box-shadow: 0 0 20px rgba(45, 212, 191, 0.1);
+    }
+
+    .hero-title {
+      font-size: 42px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #ffffff;
+      margin-bottom: 14px;
+      line-height: 1.15;
+    }
+
+    .hero-subtitle {
+      font-size: 15px;
+      color: var(--text-muted);
+      max-width: 620px;
+      margin: 0 auto 28px;
+      font-weight: 400;
+    }
+
+    /* View Switcher Tabs */
+    .tabs-wrapper {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 48px;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .tab-btn:hover {
+      background: rgba(30, 41, 59, 0.6);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .tab-btn.active {
+      background: rgba(14, 165, 233, 0.12);
+      border-color: rgba(56, 189, 248, 0.4);
+      color: #38bdf8;
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.15);
+    }
+
+    /* Tab Content View */
+    .tab-view {
+      display: none;
+    }
+
+    .tab-view.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* SemVer Info Banner */
+    .semver-banner {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.85) 100%);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: 14px;
+      padding: 20px 24px;
+      margin-bottom: 40px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+
+    .semver-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .semver-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 3px 10px;
+      border-radius: 6px;
+      width: fit-content;
+    }
+
+    .semver-badge.major {
+      background: rgba(192, 132, 252, 0.15);
+      color: #c084fc;
+      border: 1px solid rgba(192, 132, 252, 0.3);
+    }
+
+    .semver-badge.minor {
+      background: rgba(52, 211, 153, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(52, 211, 153, 0.3);
+    }
+
+    .semver-badge.patch {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .semver-desc {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* ================================================= */
+    /* TIMELINE SECTION (MATCHING PDF DESIGN)           */
+    /* ================================================= */
+    .timeline {
+      position: relative;
+      margin-left: 50px;
+      padding-bottom: 20px;
+    }
+
+    /* Vertical line connecting nodes */
+    .timeline::before {
+      content: '';
+      position: absolute;
+      top: 24px;
+      bottom: 24px;
+      left: -32px;
+      width: 2px;
+      background: linear-gradient(to bottom, rgba(56, 189, 248, 0.4), rgba(51, 65, 85, 0.3) 80%, transparent);
+    }
+
+    .timeline-release {
+      position: relative;
+      margin-bottom: 44px;
+    }
+
+    /* Node Pill Circle on the line */
+    .timeline-node {
+      position: absolute;
+      left: -52px;
+      top: 4px;
+      width: 42px;
+      height: 26px;
+      background: #090e1a;
+      border: 1.5px solid rgba(56, 189, 248, 0.5);
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10.5px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      color: #38bdf8;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+      z-index: 2;
+    }
+
+    /* Release Header */
+    .release-header {
+      margin-bottom: 12px;
+    }
+
+    .release-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+
+    .version-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+    }
+
+    .release-dot {
+      color: var(--text-dim);
+      font-size: 10px;
+    }
+
+    .release-date {
+      font-size: 13px;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tag-semver {
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 5px;
+      letter-spacing: 0.5px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .tag-semver.patch {
+      background: rgba(56, 189, 248, 0.12);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .tag-semver.minor {
+      background: rgba(52, 211, 153, 0.12);
+      color: #34d399;
+      border: 1px solid rgba(52, 211, 153, 0.3);
+    }
+
+    .tag-semver.major {
+      background: rgba(192, 132, 252, 0.12);
+      color: #c084fc;
+      border: 1px solid rgba(192, 132, 252, 0.3);
+    }
+
+    .release-headline {
+      font-size: 15px;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin-top: 4px;
+    }
+
+    /* Changes Box Card */
+    .changes-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .change-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 18px 22px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      transition: background 0.15s ease;
+    }
+
+    .change-item:last-child {
+      border-bottom: none;
+    }
+
+    .change-item:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Change Tag Badges (Matching PDF) */
+    .badge-category {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.4px;
+      flex-shrink: 0;
+      min-width: 82px;
+      justify-content: center;
+    }
+
+    .badge-category.feat {
+      background: rgba(16, 185, 129, 0.12);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-category.fix {
+      background: rgba(244, 63, 94, 0.12);
+      color: #fb7185;
+      border: 1px solid rgba(244, 63, 94, 0.3);
+    }
+
+    .badge-category.ui {
+      background: rgba(59, 130, 246, 0.12);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .badge-category.ux {
+      background: rgba(20, 184, 166, 0.12);
+      color: #2dd4bf;
+      border: 1px solid rgba(20, 184, 166, 0.3);
+    }
+
+    .badge-category.improve {
+      background: rgba(245, 158, 11, 0.12);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .badge-category.security {
+      background: rgba(168, 85, 247, 0.12);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.3);
+    }
+
+    .badge-category.docs {
+      background: rgba(148, 163, 184, 0.12);
+      color: #cbd5e1;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .change-content {
+      flex: 1;
+      font-size: 13.5px;
+      color: #cbd5e1;
+      line-height: 1.55;
+    }
+
+    .change-title {
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    /* Expand Button */
+    .expand-section {
+      text-align: center;
+      margin: 36px 0 60px;
+    }
+
+    .btn-expand {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      padding: 10px 24px;
+      border-radius: 9999px;
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-expand:hover {
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.25);
+      background: rgba(30, 41, 59, 0.8);
+    }
+
+    /* ================================================= */
+    /* GIT COMMIT HISTORY VIEW                           */
+    /* ================================================= */
+    .git-search-box {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .git-search-input {
+      flex: 1;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 10px 16px;
+      color: #fff;
+      font-size: 13px;
+      font-family: inherit;
+    }
+
+    .git-search-input:focus {
+      outline: none;
+      border-color: var(--accent-cyan);
+    }
+
+    .git-commits-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .git-commits-table th {
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text-muted);
+      font-size: 11.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .git-commits-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      font-size: 13px;
+      vertical-align: middle;
+    }
+
+    .git-commits-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .commit-hash {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent-cyan);
+      background: rgba(56, 189, 248, 0.1);
+      padding: 2px 8px;
+      border-radius: 4px;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .commit-msg {
+      color: #e2e8f0;
+      font-weight: 500;
+    }
+
+    .commit-author {
+      color: var(--text-muted);
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .commit-date {
+      color: var(--text-dim);
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      white-space: nowrap;
+    }
+
+    /* ================================================= */
+    /* BOTTOM CTA SECTION (MATCHING PDF PAGE 2)          */
+    /* ================================================= */
+    .cta-banner {
+      background: radial-gradient(circle at 50% 0%, rgba(14, 165, 233, 0.15), rgba(15, 23, 42, 0.9) 70%);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 18px;
+      padding: 44px 32px;
+      text-align: center;
+      margin-top: 50px;
+      box-shadow: 0 10px 30px -10px rgba(14, 165, 233, 0.15);
+    }
+
+    .cta-title {
+      font-size: 26px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+
+    .cta-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      max-width: 540px;
+      margin: 0 auto 24px;
+    }
+
+    .cta-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .btn-cta-primary {
+      background: #0ea5e9;
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 13.5px;
+      padding: 10px 22px;
+      border-radius: 8px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+      box-shadow: 0 4px 14px rgba(14, 165, 233, 0.3);
+    }
+
+    .btn-cta-primary:hover {
+      background: #0284c7;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(14, 165, 233, 0.45);
+    }
+
+    .btn-cta-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      color: #e2e8f0;
+      font-weight: 600;
+      font-size: 13.5px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--border-subtle);
+      transition: all 0.2s;
+    }
+
+    .btn-cta-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
+    /* ================================================= */
+    /* FOOTER                                            */
+    /* ================================================= */
+    footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding: 24px 40px;
+      color: var(--text-dim);
+      font-size: 13px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      background: rgba(8, 12, 20, 0.6);
+    }
+
+    .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .footer-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .footer-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-link:hover {
+      color: var(--accent-cyan);
+    }
+
+    .version-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(14, 165, 233, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #38bdf8;
+      padding: 3px 14px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      text-decoration: none;
+      transition: all 0.25s ease;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.1);
+    }
+
+    .version-pill:hover {
+      background: rgba(14, 165, 233, 0.22);
+      border-color: #38bdf8;
+      color: #7dd3fc;
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.35);
+      transform: translateY(-1px);
+    }
+
+    @media (max-width: 768px) {
+      .hero-title { font-size: 32px; }
+      .timeline { margin-left: 36px; }
+      .timeline-node { left: -44px; width: 34px; font-size: 9px; }
+      .timeline::before { left: -26px; }
+      .change-item { flex-direction: column; gap: 10px; }
+      footer { flex-direction: column; text-align: center; justify-content: center; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <!-- Top Navigation -->
+    <div class="top-nav">
+      <a href="/" class="btn-back">
+        <i class="fa-solid fa-arrow-left"></i> Kembali ke Processor
+      </a>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size: 12px; color: var(--text-dim);">Versi Saat Ini:</span>
+        <span class="version-pill" style="pointer-events: none;">v3.2.0</span>
+      </div>
+    </div>
+
+    <!-- Hero Header -->
+    <div class="hero-header">
+      <div class="pill-category">
+        <i class="fa-solid fa-bolt-lightning"></i> Catatan Pembaruan Sistem
+      </div>
+      <h1 class="hero-title">Release Notes &amp; Log Versi</h1>
+      <p class="hero-subtitle">
+        Dokumentasi resmi seluruh pembaruan fitur, peningkatan antarmuka, dan perbaikan pada sistem Excel Processor Satker Kemnaker.
+      </p>
+    </div>
+
+    <!-- Tabs Switcher -->
+    <div class="tabs-wrapper">
+      <button class="tab-btn active" id="tabReleases" onclick="switchView('releases')">
+        <i class="fa-solid fa-book-bookmark"></i> Rilis Versi Resmi
+      </button>
+      <button class="tab-btn" id="tabCommits" onclick="switchView('commits')">
+        <i class="fa-solid fa-code-commit"></i> Riwayat Commit Git (Live History)
+      </button>
+      <button class="tab-btn" id="tabSemver" onclick="switchView('semver')">
+        <i class="fa-solid fa-circle-question"></i> Aturan Versi (X.Y.Z)
+      </button>
+    </div>
+
+    <!-- VIEW 1: RELEASE NOTES (MATCHING PDF) -->
+    <div class="tab-view active" id="viewReleases">
+      <div class="timeline" id="timelineContainer">
+        <!-- Rendered via JS -->
+      </div>
+
+      <div class="expand-section">
+        <button class="btn-expand" id="btnToggleAll" onclick="toggleAllVersions()">
+          <i class="fa-solid fa-chevron-down"></i> TAMPILKAN SEMUA VERSI SEBELUMNYA
+        </button>
+      </div>
+    </div>
+
+    <!-- VIEW 2: RAW GIT COMMITS HISTORY -->
+    <div class="tab-view" id="viewCommits">
+      <div class="git-search-box">
+        <input type="text" id="commitSearch" class="git-search-input" placeholder="🔍 Cari pesan commit, hash, atau author..." oninput="filterCommits()">
+      </div>
+      <div style="overflow-x: auto;">
+        <table class="git-commits-table">
+          <thead>
+            <tr>
+              <th style="width: 100px;">Hash</th>
+              <th style="width: 80px;">Tipe</th>
+              <th>Pesan Commit</th>
+              <th style="width: 150px;">Author</th>
+              <th style="width: 120px;">Tanggal</th>
+            </tr>
+          </thead>
+          <tbody id="gitCommitsTbody">
+            <tr>
+              <td colspan="5" style="text-align:center; padding:30px; color:var(--text-muted);">
+                <i class="fa-solid fa-spinner fa-spin"></i> Memuat riwayat commit dari repository...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- VIEW 3: SEMVER RULES (X.Y.Z) -->
+    <div class="tab-view" id="viewSemver">
+      <div class="semver-banner" style="display: flex; flex-direction: column; gap: 20px;">
+        <div style="border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 16px;">
+          <h2 style="font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 8px;">
+            <i class="fa-solid fa-code-fork" style="color: var(--accent-cyan);"></i> Aturan Semantic Versioning (SemVer 2.0.0)
+          </h2>
+          <p style="font-size: 13.5px; color: var(--text-muted);">
+            Sistem penomoran versi <code>X.Y.Z</code> (Major.Minor.Patch) digunakan untuk menjamin kejelasan dampak perubahan terhadap pengguna dan sistem lain:
+          </p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+          <div class="semver-item">
+            <span class="semver-badge major">MAJOR (X)</span>
+            <div style="font-weight: 700; color: #fff; font-size: 14px; margin-top: 4px;">Perubahan Fundamental / Breaking Changes</div>
+            <p class="semver-desc">
+              Dinaikkan saat terjadi perombakan struktur atau format data yang <strong>tidak kompatibel ke belakang</strong>. File format lama tidak dapat diproses lagi tanpa penyesuaian.
+              <br><em style="color:#94a3b8; font-size:11.5px;">Contoh: Migrasi arsitektur dari V2 ke V3, perombakan besar engine formula.</em>
+            </p>
+          </div>
+
+          <div class="semver-item">
+            <span class="semver-badge minor">MINOR (Y)</span>
+            <div style="font-weight: 700; color: #fff; font-size: 14px; margin-top: 4px;">Penambahan Fitur Baru (Backward-Compatible)</div>
+            <p class="semver-desc">
+              Dinaikkan saat menambahkan fitur atau fungsionalitas baru yang <strong>tetap kompatibel</strong> dengan data lama.
+              <br><em style="color:#94a3b8; font-size:11.5px;">Contoh: Modul Rekap Hirarki (Alur 3), dukungan sumber dana PLN/PHLN, penambahan 3 kolom summary baru (Kolom 55-57), dropdown multi-select akun.</em>
+            </p>
+          </div>
+
+          <div class="semver-item">
+            <span class="semver-badge patch">PATCH (Z)</span>
+            <div style="font-weight: 700; color: #fff; font-size: 14px; margin-top: 4px;">Perbaikan Bug &amp; Penyesuaian Minor</div>
+            <p class="semver-desc">
+              Dinaikkan saat memperbaiki kesalahan bug, regex, atau penyesuaian label tanpa memodifikasi kontrak fungsional.
+              <br><em style="color:#94a3b8; font-size:11.5px;">Contoh: Akomodasi subkomponen multi-karakter (AC, ZA, ZB), koreksi marker blokir RK vs Blokir Kode A, harmonisasi narasi label.</em>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA Section (Matching PDF Page 2) -->
+    <div class="cta-banner">
+      <h2 class="cta-title">Siap Mengolah Rincian Kertas Kerja?</h2>
+      <p class="cta-desc">
+        Akses dashboard terpadu untuk validasi otomatis, konversi format RAB 20-kolom, dan analisis rekap hirarki satker.
+      </p>
+      <div class="cta-buttons">
+        <a href="/" class="btn-cta-primary">
+          Buka Dashboard <i class="fa-solid fa-arrow-right"></i>
+        </a>
+        <a href="https://kemnaker.go.id" target="_blank" class="btn-cta-secondary">
+          <i class="fa-solid fa-circle-question"></i> Pusat Bantuan
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer (Matching Screenshot) -->
+  <footer>
+    <div class="footer-left">
+      <span>All rights reserved. &copy; 2026 Kementerian Ketenagakerjaan RI</span>
+    </div>
+    <div class="footer-right">
+      <span>Need help? <a href="https://kemnaker.go.id" target="_blank" class="footer-link">Support Hub Center</a></span>
+      <a href="/changelog" class="version-pill" title="Versi Sistem Aktif">
+        v3.2.0
+      </a>
+    </div>
+  </footer>
+
+  <script>
+    let allReleases = [];
+    let allGitCommits = [];
+    let showAllVersions = false;
+
+    // Switch active view
+    function switchView(viewName) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-view').forEach(view => view.classList.remove('active'));
+
+      if (viewName === 'releases') {
+        document.getElementById('tabReleases').classList.add('active');
+        document.getElementById('viewReleases').classList.add('active');
+      } else if (viewName === 'commits') {
+        document.getElementById('tabCommits').classList.add('active');
+        document.getElementById('viewCommits').classList.add('active');
+        if (allGitCommits.length === 0) fetchChangelogData();
+      } else if (viewName === 'semver') {
+        document.getElementById('tabSemver').classList.add('active');
+        document.getElementById('viewSemver').classList.add('active');
+      }
+    }
+
+    // Toggle showing older versions
+    function toggleAllVersions() {
+      showAllVersions = !showAllVersions;
+      renderReleases();
+      const btn = document.getElementById('btnToggleAll');
+      if (showAllVersions) {
+        btn.innerHTML = '<i class="fa-solid fa-chevron-up"></i> SEMBUNYIKAN VERSI SEBELUMNYA';
+      } else {
+        btn.innerHTML = '<i class="fa-solid fa-chevron-down"></i> TAMPILKAN SEMUA VERSI SEBELUMNYA';
+      }
+    }
+
+    // Badge category mapper
+    function getCategoryBadge(type) {
+      const t = (type || '').toUpperCase();
+      let icon = 'fa-sparkles';
+      let cls = 'feat';
+
+      switch (t) {
+        case 'FEAT':
+          icon = 'fa-wand-magic-sparkles';
+          cls = 'feat';
+          break;
+        case 'FIX':
+          icon = 'fa-wrench';
+          cls = 'fix';
+          break;
+        case 'UI':
+          icon = 'fa-palette';
+          cls = 'ui';
+          break;
+        case 'UX':
+          icon = 'fa-arrow-pointer';
+          cls = 'ux';
+          break;
+        case 'IMPROVE':
+          icon = 'fa-gauge-high';
+          cls = 'improve';
+          break;
+        case 'SECURITY':
+          icon = 'fa-shield-halved';
+          cls = 'security';
+          break;
+        case 'DOCS':
+          icon = 'fa-book';
+          cls = 'docs';
+          break;
+        default:
+          icon = 'fa-circle-check';
+          cls = 'feat';
+      }
+
+      return `<span class="badge-category ${cls}"><i class="fa-solid ${icon}"></i> ${t}</span>`;
+    }
+
+    // Render timeline
+    function renderReleases() {
+      const container = document.getElementById('timelineContainer');
+      const itemsToRender = showAllVersions ? allReleases : allReleases.slice(0, 3);
+
+      container.innerHTML = itemsToRender.map(rel => {
+        const semverCls = rel.type.toLowerCase();
+        const changesHtml = rel.changes.map(ch => `
+          <div class="change-item">
+            ${getCategoryBadge(ch.type)}
+            <div class="change-content">
+              <span class="change-title">${ch.title}:</span> ${ch.desc}
+            </div>
+          </div>
+        `).join('');
+
+        return `
+          <div class="timeline-release">
+            <div class="timeline-node">v${rel.version}</div>
+            <div class="release-header">
+              <div class="release-meta">
+                <span class="version-title">Version ${rel.version}</span>
+                <span class="release-dot">•</span>
+                <span class="release-date"><i class="fa-regular fa-clock"></i> ${rel.date}</span>
+                <span class="tag-semver ${semverCls}">${rel.type}</span>
+              </div>
+              <div class="release-headline">${rel.title}</div>
+            </div>
+            <div class="changes-box">
+              ${changesHtml}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Render Git commits table
+    function renderGitCommits(commits) {
+      const tbody = document.getElementById('gitCommitsTbody');
+      if (!commits || commits.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-muted);">Tidak ada commit yang ditemukan</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = commits.map(c => `
+        <tr>
+          <td><span class="commit-hash" title="${c.fullHash}">${c.shortHash}</span></td>
+          <td>${getCategoryBadge(c.category)}</td>
+          <td class="commit-msg">${escapeHtml(c.message)}</td>
+          <td class="commit-author"><i class="fa-regular fa-user" style="color:var(--text-dim);"></i> ${escapeHtml(c.author)}</td>
+          <td class="commit-date">${c.date}</td>
+        </tr>
+      `).join('');
+    }
+
+    // Filter commits
+    function filterCommits() {
+      const query = (document.getElementById('commitSearch').value || '').toLowerCase();
+      const filtered = allGitCommits.filter(c => 
+        c.message.toLowerCase().includes(query) ||
+        c.shortHash.toLowerCase().includes(query) ||
+        c.author.toLowerCase().includes(query)
+      );
+      renderGitCommits(filtered);
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Fetch changelog data
+    async function fetchChangelogData() {
+      try {
+        const res = await fetch('/api/changelog');
+        const data = await res.json();
+        allReleases = data.releases || [];
+        allGitCommits = data.gitCommits || [];
+
+        renderReleases();
+        renderGitCommits(allGitCommits);
+      } catch (err) {
+        console.error('Failed to load changelog data:', err);
+      }
+    }
+
+    // Initial load
+    fetchChangelogData();
+  </script>
+</body>
+
+</html>

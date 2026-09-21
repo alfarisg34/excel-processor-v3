@@ -16,407 +16,572 @@
 </head>
 
 <body>
-  <div class="container">
-    <div class="header">
-      <h1><img src="favicon.svg" alt="Logo" class="header-logo"> Excel File Processor V3</h1>
-      <p>Unified Excel restructurer & formatter for Kemnaker (RAB Format Output)</p>
-    </div>
+  <!-- Mobile Sidebar Backdrop Overlay -->
+  <!-- Mobile Sidebar Backdrop Overlay -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeMobileSidebar()"></div>
 
-    <!-- Top Navigation Bar Tabs -->
-    <div class="navbar">
-      <button class="nav-tab active" id="tabFlow1" onclick="switchTab('flow1')">
-        <i class="fa-solid fa-bolt" style="color: #38bdf8;"></i> Alur 1: Processing
-      </button>
-      <button class="nav-tab" id="tabFlow2" onclick="switchTab('flow2')">
-        <i class="fa-solid fa-chart-pie" style="color: #22c55e;"></i> Alur 2: With Realisasi
-      </button>
-      <button class="nav-tab" id="tabRecap" onclick="switchTab('recap')">
-        <i class="fa-solid fa-sitemap" style="color: #f59e0b;"></i> Rekap Hirarki Satker
-      </button>
-    </div>
-
-    <!-- FLOW 1: Semula Menjadi Processing (Tanpa Realisasi) -->
-    <div class="view-section active" id="viewFlow1">
-      <div class="card">
-        <div class="card-title">
-          <i class="fa-solid fa-bolt" style="color: #38bdf8;"></i>
-          <span>Alur 1: Processing Standard (Semula Menjadi)</span>
-        </div>
-        <div class="card-subtitle">
-          Upload file RINCIAN KERTAS KERJA SATKER untuk menghasilkan file Excel format RAB baru
-        </div>
-
-        <div class="upload-zone" id="dropZone1">
-          <div class="upload-icon"><i class="fa-solid fa-file-excel"></i></div>
-          <div class="upload-text">Upload RINCIAN KERTAS KERJA SATKER</div>
-          <div class="upload-hint">Klik atau drag & drop file (.xlsx, .xls)</div>
-          <input type="file" id="fileInput1" accept=".xlsx,.xls" style="display: none;">
-          <div class="file-status" id="fileStatus1"></div>
-        </div>
-
-        <!-- Validation Panel Flow 1 -->
-        <div class="validation-card" id="valCard1">
-          <div class="validation-header" id="valHeader1"></div>
-          <div class="validation-rules-list" id="valList1"></div>
-          <div class="ack-container" id="ackBox1" style="display: none;">
-            <input type="checkbox" id="chkAck1">
-            <label for="chkAck1">Saya sudah mengetahui aturan yang terlanggar di atas dan ingin tetap melanjutkan
-              proses.</label>
+  <div class="app-layout">
+    <!-- LEFT SIDEBAR (Collapsible) -->
+    <aside class="sidebar" id="appSidebar">
+      <!-- Sidebar Brand & Toggle Button -->
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-left">
+          <img src="favicon.svg" alt="Logo" class="sidebar-logo">
+          <div class="sidebar-brand-text">
+            <div class="sidebar-brand-title">Excel Processor</div>
+            <div class="sidebar-brand-badge">V3 Unified • Kemnaker</div>
           </div>
         </div>
+        <button class="btn-sidebar-toggle" id="btnToggleSidebar" onclick="handleSidebarToggle()"
+          title="Perkecil / Perluas Sidebar">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+      </div>
 
-        <button class="btn" id="btnProcess1" disabled>
-          <i class="fa-solid fa-gears"></i> Proses & Download Output
+      <!-- Navigation Links -->
+      <nav class="sidebar-nav">
+        <div class="sidebar-group-title">MENU UTAMA</div>
+
+        <button class="sidebar-nav-item active" id="tabProcess" onclick="switchTab('process')"
+          data-tooltip="Pemrosesan Excel (RAB)" title="Pemrosesan Excel (RAB)">
+          <div class="sidebar-nav-icon" style="color: #38bdf8;">
+            <i class="fa-solid fa-bolt"></i>
+          </div>
+          <div class="sidebar-nav-content">
+            <span class="sidebar-nav-title">Pemrosesan Excel</span>
+            <span class="sidebar-nav-desc">Format RAB 20-Kolom</span>
+          </div>
         </button>
 
-        <div class="status-box" id="status1"></div>
-        <div class="level-val-panel" id="levelValPanel1"></div>
-      </div>
-    </div>
+        <button class="sidebar-nav-item" id="tabRecap" onclick="switchTab('recap')" data-tooltip="Rekap Hirarki Satker"
+          title="Rekap Hirarki Satker">
+          <div class="sidebar-nav-icon" style="color: #f59e0b;">
+            <i class="fa-solid fa-sitemap"></i>
+          </div>
+          <div class="sidebar-nav-content">
+            <span class="sidebar-nav-title">Rekap Hirarki Satker</span>
+            <span class="sidebar-nav-desc">Analisis &amp; Breakdown Akun</span>
+          </div>
+        </button>
+      </nav>
+    </aside>
 
-    <!-- FLOW 2: Semula Menjadi dengan Realisasi (Laporan FA + RINCIAN KERTAS KERJA) -->
-    <div class="view-section" id="viewFlow2">
-      <div class="card">
-        <div class="card-title">
-          <i class="fa-solid fa-chart-pie" style="color: #22c55e;"></i>
-          <span>Alur 2: Processing Dengan Realisasi (Laporan FA)</span>
-        </div>
-        <div class="card-subtitle">
-          Upload Laporan FA Detail (16 Segmen) + RINCIAN KERTAS KERJA SATKER untuk mengisi Sisa Anggaran (AV)
-        </div>
-
-        <!-- FA File Upload -->
-        <div class="upload-zone" id="dropZoneFA" style="margin-bottom: 15px;">
-          <div class="upload-icon" style="color: #22c55e;"><i class="fa-solid fa-file-invoice-dollar"></i></div>
-          <div class="upload-text">1. Upload Laporan FA Detail (16 Segmen)</div>
-          <div class="upload-hint">File .xlsx / .xls berisi data realisasi/sisa anggaran</div>
-          <input type="file" id="fileInputFA" accept=".xlsx,.xls" style="display: none;">
-          <div class="file-status" id="fileStatusFA"></div>
-        </div>
-
-        <!-- RKK File Upload for Flow 2 -->
-        <div class="upload-zone" id="dropZone2">
-          <div class="upload-icon"><i class="fa-solid fa-file-excel"></i></div>
-          <div class="upload-text">2. Upload RINCIAN KERTAS KERJA SATKER</div>
-          <div class="upload-hint">File .xlsx / .xls rencana kertas kerja</div>
-          <input type="file" id="fileInput2" accept=".xlsx,.xls" style="display: none;">
-          <div class="file-status" id="fileStatus2"></div>
-        </div>
-
-        <!-- Validation Panel Flow 2 -->
-        <div class="validation-card" id="valCard2">
-          <div class="validation-header" id="valHeader2"></div>
-          <div class="validation-rules-list" id="valList2"></div>
-          <div class="ack-container" id="ackBox2" style="display: none;">
-            <input type="checkbox" id="chkAck2">
-            <label for="chkAck2">Saya sudah mengetahui aturan yang terlanggar di atas dan ingin tetap melanjutkan
-              proses.</label>
+    <!-- RIGHT MAIN CONTENT AREA -->
+    <div class="app-main">
+      <!-- Top Bar Header -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <!-- Mobile Drawer Toggle (Only shown on screens <= 900px) -->
+          <button class="btn-sidebar-toggle mobile-only-toggle" id="btnToggleSidebarMobile" onclick="toggleSidebar()"
+            title="Buka Menu Sidebar">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <div class="topbar-breadcrumb">
+            <span class="breadcrumb-app"><i class="fa-solid fa-layer-group"></i> Kemnaker</span>
+            <span class="breadcrumb-sep">/</span>
+            <span class="breadcrumb-curr" id="breadcrumbTitle">Pemrosesan Excel (RAB)</span>
           </div>
         </div>
+      </header>
 
-        <button class="btn btn-success" id="btnProcess2" disabled>
-          <i class="fa-solid fa-cloud-arrow-down"></i> Proses & Download Output (Dengan Realisasi)
-        </button>
+      <!-- Content Container -->
+      <main class="content-container">
 
-        <div class="status-box" id="status2"></div>
-        <div class="level-val-panel" id="levelValPanel2"></div>
-        <div class="fa-matching-panel" id="faMatchingPanel2"></div>
-      </div>
-    </div>
-
-    <!-- FLOW 3: REKAP HIRARKI SATKER (New Page / Tab) -->
-    <div class="view-section" id="viewRecap">
-      <div class="card">
-        <div class="card-title">
-          <i class="fa-solid fa-folder-tree" style="color: #f59e0b;"></i>
-          <span>Rekap Hirarki &amp; Pattern Digit 6 Satker</span>
-        </div>
-        <div class="card-subtitle">
-          Upload file RINCIAN KERTAS KERJA SATKER untuk menampilkan rekap hirarki kode, breakdown Digit 6, sumber dana
-          (RM/PNP), dan anggaran di-blokir (⭐)
-        </div>
-
-        <div class="upload-zone" id="dropZoneRecap">
-          <div class="upload-icon" style="color: #f59e0b;"><i class="fa-solid fa-sitemap"></i></div>
-          <div class="upload-text">Upload RINCIAN KERTAS KERJA SATKER</div>
-          <div class="upload-hint">Klik atau drag & drop file (.xlsx, .xls)</div>
-          <input type="file" id="fileInputRecap" accept=".xlsx,.xls" style="display: none;">
-          <div class="file-status" id="fileStatusRecap"></div>
-        </div>
-
-        <button class="btn" id="btnProcessRecap"
-          style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);"
-          disabled>
-          <i class="fa-solid fa-chart-bar"></i> Analisis &amp; Tampilkan Rekap Hirarki
-        </button>
-
-        <div class="status-box" id="statusRecap"></div>
-      </div>
-
-      <!-- Result Panel for Rekap Hirarki -->
-      <div id="recapResultPanel" style="display: none;">
-        <!-- Hierarchy Level Filter Card -->
-        <div class="filter-card">
-          <div class="filter-grid">
-            <div class="form-group">
-              <label class="form-label" for="selectLevelFilter">
-                <i class="fa-solid fa-layer-group" style="color:#38bdf8;"></i> Filter Tingkat Hirarki:
-              </label>
-              <select class="form-select" id="selectLevelFilter">
-                <option value="0">Seluruh Satker (Total All Level)</option>
-                <option value="1" selected>Level Highest: Code 322 (Program)</option>
-                <option value="2">Level 2: Digit 4 (Kegiatan)</option>
-                <option value="3">Level 3: Code 43 (KRO)</option>
-                <option value="4">Level 4: Code 433 (RO)</option>
-                <option value="5">Level 5: Digit 3 (Komponen)</option>
-                <option value="6">Level 6: Single Alpha (Subkomponen)</option>
-              </select>
+        <!-- PEMROSESAN EXCEL RAB (Dengan atau Tanpa Realisasi) -->
+        <div class="view-section active" id="viewProcess">
+          <div class="card">
+            <div class="card-title">
+              <i class="fa-solid fa-bolt" style="color: #38bdf8;"></i>
+              <span>Pemrosesan Rincian Kertas Kerja (Format RAB)</span>
+            </div>
+            <div class="card-subtitle">
+              Upload file RINCIAN KERTAS KERJA SATKER untuk menghasilkan file Excel format RAB baru, dengan opsi
+              integrasi Laporan FA Detail
             </div>
 
-            <div class="form-group">
-              <label class="form-label" for="selectNodeParent">
-                <i class="fa-solid fa-diagram-project" style="color:#22c55e;"></i> Pilih Parent Node / Kode Spesifik:
-              </label>
-              <select class="form-select" id="selectNodeParent">
-                <!-- Dynamically populated -->
-              </select>
+            <!-- 1. Upload RINCIAN KERTAS KERJA SATKER (Wajib) -->
+            <div class="upload-zone" id="dropZoneRKK">
+              <div class="upload-icon"><i class="fa-solid fa-file-excel"></i></div>
+              <div class="upload-text">Upload RINCIAN KERTAS KERJA SATKER</div>
+              <div class="upload-hint">Klik atau drag & drop file (.xlsx, .xls)</div>
+              <input type="file" id="fileInputRKK" accept=".xlsx,.xls" style="display: none;">
+              <div class="file-status" id="fileStatusRKK"></div>
             </div>
-          </div>
-        </div>
 
-        <!-- Summary KPI Cards -->
-        <div class="recap-kpi-grid">
-          <div class="kpi-card">
-            <div class="kpi-title"><i class="fa-solid fa-wallet" style="color:#38bdf8;"></i> Total Pagu Anggaran</div>
-            <div class="kpi-value" id="kpiTotalPagu">Rp 0</div>
-            <div class="kpi-sub" id="kpiPathBreadcrumb">Satker</div>
-          </div>
-
-          <div class="kpi-card">
-            <div class="kpi-title"><i class="fa-solid fa-building-columns" style="color:#60a5fa;"></i> Sumber Dana (RM /
-              PNP)</div>
-            <div style="display:flex; flex-direction:column; gap:6px; margin: 6px 0 2px 0;">
-              <div
-                style="display:flex; align-items:center; gap:8px; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:15px; color:#60a5fa;">
-                <span class="tag-badge rm">RM</span> <span id="kpiRM">Rp 0</span>
+            <!-- Tombol Checklist: Dengan Realisasi (FA Detail) -->
+            <div class="toggle-fa-box" id="toggleFaBox" onclick="toggleFaCheckbox()">
+              <div class="toggle-fa-left">
+                <input type="checkbox" id="chkWithFA" onclick="event.stopPropagation()">
+                <div>
+                  <label for="chkWithFA" class="toggle-fa-label">
+                    <i class="fa-solid fa-file-invoice-dollar" style="color: #22c55e;"></i>
+                    Dengan Realisasi (FA Detail)
+                  </label>
+                  <div class="toggle-fa-sub">
+                    Centang jika Anda ingin mengintegrasikan Laporan FA Detail (16 Segmen) untuk mengisi kolom Sisa
+                    Anggaran (AV).
+                  </div>
+                </div>
               </div>
-              <div
-                style="display:flex; align-items:center; gap:8px; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:15px; color:#4ade80;">
-                <span class="tag-badge pnbp">PNP</span> <span id="kpiPNBP">Rp 0</span>
+              <span class="toggle-fa-badge" id="badgeFaStatus">Nonaktif</span>
+            </div>
+
+            <!-- 2. Upload Laporan FA Detail (Hanya muncul jika chkWithFA dicentang) -->
+            <div id="containerFAUpload" style="display: none; margin-bottom: 15px;">
+              <div class="upload-zone" id="dropZoneFA" style="border-color: rgba(34, 197, 94, 0.35);">
+                <div class="upload-icon" style="color: #22c55e;"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                <div class="upload-text">Upload Laporan FA Detail (16 Segmen)</div>
+                <div class="upload-hint">File .xlsx / .xls berisi data realisasi/sisa anggaran</div>
+                <input type="file" id="fileInputFA" accept=".xlsx,.xls" style="display: none;">
+                <div class="file-status" id="fileStatusFA"></div>
               </div>
             </div>
-          </div>
 
-          <div class="kpi-card star-card">
-            <div class="kpi-title">
-              <i class="fa-solid fa-star" style="color:#fbbf24;"></i> Total Diblokir <span class="rule-badge"
-                style="background:rgba(245,158,11,0.2); color:#fbbf24; border-color:rgba(245,158,11,0.4); font-size:10px; padding:1px 6px;">⭐
-                Blokir</span>
+            <!-- Validation Panel RKK -->
+            <div class="validation-card" id="valCard">
+              <div class="validation-header" id="valHeader"></div>
+              <div class="validation-rules-list" id="valList"></div>
+              <div class="ack-container" id="ackBox" style="display: none;">
+                <input type="checkbox" id="chkAck">
+                <label for="chkAck">Saya sudah mengetahui aturan yang terlanggar di atas dan ingin tetap melanjutkan
+                  proses.</label>
+              </div>
             </div>
-            <div class="kpi-value" id="kpiTotalBlocked" style="color:#fbbf24;">Rp 0</div>
-            <div class="kpi-sub" id="kpiBlockedDetail"
-              style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-              <!-- Dynamically populated with RM & PNP color badges -->
-            </div>
-          </div>
 
-          <div class="kpi-card">
-            <div class="kpi-title"><i class="fa-solid fa-list-ol" style="color:#a855f7;"></i> Total Pattern Digit 6
-              (Akun)</div>
-            <div class="kpi-value" id="kpiCountD6" style="color:#c084fc;">0 Akun</div>
-            <div class="kpi-sub" id="kpiPctBlocked">0% Anggaran Diblokir</div>
+            <button class="btn" id="btnProcess" disabled>
+              <i class="fa-solid fa-gears"></i> Proses &amp; Download Output RAB
+            </button>
+
+            <div class="status-box" id="statusProcess"></div>
+            <div class="level-val-panel" id="levelValPanel"></div>
+            <div class="fa-matching-panel" id="faMatchingPanel"></div>
           </div>
         </div>
 
-        <!-- Digit 6 Table Card -->
-        <div class="d6-table-card">
-          <div class="d6-table-header" style="flex-wrap:wrap; gap:12px;">
-            <div class="d6-table-title" id="d6TableTitle">
-              <i class="fa-solid fa-table-list" style="color:#f59e0b;"></i>
-              Daftar Pattern Digit 6 (Akun) di bawah Target Kode
+        <!-- FLOW 3: REKAP HIRARKI SATKER (New Page / Tab) -->
+        <div class="view-section" id="viewRecap">
+          <div class="card">
+            <div class="card-title">
+              <i class="fa-solid fa-folder-tree" style="color: #f59e0b;"></i>
+              <span>Rekap Hirarki &amp; Pattern Digit 6 Satker</span>
             </div>
-            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-              <input type="text" id="searchD6" placeholder="🔍 Cari Uraian..." class="form-select"
-                style="padding:6px 12px; font-size:13px; width:170px;">
+            <div class="card-subtitle">
+              Upload file RINCIAN KERTAS KERJA SATKER untuk menampilkan rekap hirarki kode, breakdown Akun, sumber dana
+              (RM/PNP/PLN), dan anggaran di-blokir (⭐)
+            </div>
 
-              <!-- Custom Multi-Select Dropdown for Kode Akun -->
-              <div class="custom-multiselect" id="multiSelectD6CodeContainer">
-                <button type="button" class="multiselect-btn" id="btnMultiSelectD6Code" title="Pilih Kode Akun (Bisa Banyak)">
-                  <span class="btn-text" id="labelMultiSelectD6Code">🔢 Semua Kode</span>
-                  <i class="fa-solid fa-chevron-down" style="font-size:11px; color:#94a3b8;"></i>
-                </button>
-                <div class="multiselect-dropdown" id="dropdownMultiSelectD6Code">
-                  <div class="multiselect-header">
-                    <input type="text" id="searchMultiSelectD6Code" placeholder="🔍 Cari kode / uraian..." class="multiselect-search">
-                    <div class="multiselect-actions">
-                      <button type="button" class="multiselect-action-btn" id="btnSelectAllD6Codes">
-                        <i class="fa-solid fa-check-double"></i> Pilih Semua
-                      </button>
-                      <button type="button" class="multiselect-action-btn btn-clear" id="btnClearD6Codes">
-                        <i class="fa-solid fa-rotate-left"></i> Bersihkan
-                      </button>
+            <div class="upload-zone" id="dropZoneRecap">
+              <div class="upload-icon" style="color: #f59e0b;"><i class="fa-solid fa-sitemap"></i></div>
+              <div class="upload-text">Upload RINCIAN KERTAS KERJA SATKER</div>
+              <div class="upload-hint">Klik atau drag & drop file (.xlsx, .xls)</div>
+              <input type="file" id="fileInputRecap" accept=".xlsx,.xls" style="display: none;">
+              <div class="file-status" id="fileStatusRecap"></div>
+            </div>
+
+            <button class="btn" id="btnProcessRecap"
+              style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);"
+              disabled>
+              <i class="fa-solid fa-chart-bar"></i> Analisis &amp; Tampilkan Rekap Hirarki
+            </button>
+
+            <div class="status-box" id="statusRecap"></div>
+          </div>
+
+          <!-- Result Panel for Rekap Hirarki -->
+          <div id="recapResultPanel" style="display: none;">
+            <!-- Hierarchy Level Filter Card -->
+            <div class="filter-card">
+              <div class="filter-grid">
+                <div class="form-group">
+                  <label class="form-label" for="selectLevelFilter">
+                    <i class="fa-solid fa-layer-group" style="color:#38bdf8;"></i> Filter Tingkat Hirarki:
+                  </label>
+                  <select class="form-select" id="selectLevelFilter">
+                    <option value="0" selected>Seluruh Satker (Total All Level)</option>
+                    <option value="1">Level 1: Program</option>
+                    <option value="2">Level 2: Kegiatan</option>
+                    <option value="3">Level 3: KRO</option>
+                    <option value="4">Level 4: RO</option>
+                    <option value="5">Level 5: Komponen</option>
+                    <option value="6">Level 6: Subkomponen</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="btnSearchableParentNode">
+                    <i class="fa-solid fa-diagram-project" style="color:#22c55e;"></i> Pilih Parent Node / Kode
+                    Spesifik:
+                  </label>
+                  <!-- Hidden select for compatibility with existing logic -->
+                  <select class="form-select" id="selectNodeParent" style="display: none;">
+                    <option value="ROOT" selected>Seluruh Satker (Total All Level)</option>
+                  </select>
+
+                  <!-- Custom Searchable Select Dropdown -->
+                  <div class="searchable-select-container" id="searchableParentNodeContainer">
+                    <button type="button" class="searchable-select-btn" id="btnSearchableParentNode"
+                      title="Pilih Parent Node / Kode Spesifik (Bisa Dicari)">
+                      <span class="searchable-select-text" id="labelSearchableParentNode">Seluruh Satker (Total All
+                        Level)</span>
+                      <i class="fa-solid fa-chevron-down searchable-select-arrow"></i>
+                    </button>
+                    <div class="searchable-select-dropdown" id="dropdownSearchableParentNode">
+                      <div class="searchable-select-search-wrap">
+                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                        <input type="text" id="searchParentNodeInput" class="searchable-select-input"
+                          placeholder="🔍 Cari kode atau nama node..." autocomplete="off">
+                        <button type="button" class="btn-clear-search" id="btnClearSearchParentNode"
+                          title="Hapus Pencarian" style="display:none;">
+                          <i class="fa-solid fa-xmark"></i>
+                        </button>
+                      </div>
+                      <div class="searchable-select-list" id="listSearchableParentNode">
+                        <!-- Populated dynamically -->
+                      </div>
                     </div>
                   </div>
-                  <div class="multiselect-list" id="listMultiSelectD6Code">
-                    <!-- Populated dynamically -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Summary KPI Cards -->
+            <div class="recap-kpi-grid">
+              <div class="kpi-card">
+                <div class="kpi-title"><i class="fa-solid fa-wallet" style="color:#38bdf8;"></i> Total Pagu Anggaran
+                </div>
+                <div class="kpi-value" id="kpiTotalPagu">Rp 0</div>
+                <div class="kpi-sub" id="kpiPathBreadcrumb">Satker</div>
+              </div>
+
+              <div class="kpi-card">
+                <div class="kpi-title"><i class="fa-solid fa-building-columns" style="color:#60a5fa;"></i> Sumber Dana
+                  (RM /
+                  PNP / PLN)</div>
+                <div style="display:flex; flex-direction:column; gap:6px; margin: 6px 0 2px 0;">
+                  <div
+                    style="display:flex; align-items:center; gap:8px; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:14px; color:#60a5fa;">
+                    <span class="tag-badge rm">RM</span> <span id="kpiRM">Rp 0</span>
+                  </div>
+                  <div
+                    style="display:flex; align-items:center; gap:8px; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:14px; color:#4ade80;">
+                    <span class="tag-badge pnbp">PNP</span> <span id="kpiPNBP">Rp 0</span>
+                  </div>
+                  <div
+                    style="display:flex; align-items:center; gap:8px; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:14px; color:#c084fc;">
+                    <span class="tag-badge pln">PLN</span> <span id="kpiPLN">Rp 0</span>
                   </div>
                 </div>
               </div>
 
-              <select id="filterD6Tagging" class="form-select"
-                style="padding:6px 12px; font-size:13px; width:140px; background-color:#0f172a; color:#cbd5e1; border-color:rgba(148,163,184,0.3);">
-                <option value="ALL">🏷️ Semua Tagging</option>
-                <option value="RM">RM (Rupiah Murni)</option>
-                <option value="PNP">PNP / PNBP</option>
-              </select>
+              <div class="kpi-card star-card">
+                <div class="kpi-title">
+                  <i class="fa-solid fa-star" style="color:#fbbf24;"></i> Total Diblokir <span class="rule-badge"
+                    style="background:rgba(245,158,11,0.2); color:#fbbf24; border-color:rgba(245,158,11,0.4); font-size:10px; padding:1px 6px;">⭐
+                    Blokir</span>
+                </div>
+                <div class="kpi-value" id="kpiTotalBlocked" style="color:#fbbf24;">Rp 0</div>
+                <div class="kpi-sub" id="kpiBlockedDetail"
+                  style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                  <!-- Dynamically populated with RM & PNP color badges -->
+                </div>
+              </div>
 
-              <select id="filterD6Blocked" class="form-select"
-                style="padding:6px 12px; font-size:13px; width:165px; background-color:#0f172a; color:#cbd5e1; border-color:rgba(148,163,184,0.3);">
-                <option value="ALL">⭐ Semua Status Blokir</option>
-                <option value="BLOCKED">⭐ Diblokir Only</option>
-                <option value="NORMAL">Normal (Tidak Diblokir)</option>
-              </select>
+              <div class="kpi-card">
+                <div class="kpi-title"><i class="fa-solid fa-list-ol" style="color:#a855f7;"></i> Total Pattern Digit 6
+                  (Akun)</div>
+                <div class="kpi-value" id="kpiCountD6" style="color:#c084fc;">0 Akun</div>
+                <div class="kpi-sub" id="kpiPctBlocked">0% Anggaran Diblokir</div>
+              </div>
+            </div>
 
-              <select id="filterD6BlockCode" class="form-select"
-                style="padding:6px 12px; font-size:13px; width:160px; background-color:#0f172a; color:#cbd5e1; border-color:rgba(148,163,184,0.3);">
-                <option value="ALL">🔒 Semua Kode Blokir</option>
-              </select>
+            <!-- Digit 6 Table Card -->
+            <div class="d6-table-card">
+              <div class="d6-table-header" style="flex-wrap:wrap; gap:12px;">
+                <div class="d6-table-title" id="d6TableTitle">
+                  <i class="fa-solid fa-table-list" style="color:#f59e0b;"></i>
+                  Daftar Akun di bawah Target Kode
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                  <input type="text" id="searchD6" placeholder="🔍 Cari Uraian..." class="form-select"
+                    style="padding:6px 12px; font-size:13px; width:170px;">
 
-              <button class="btn btn-sm" onclick="downloadRecapExcel()" style="padding:6px 12px; font-size:12px; background:linear-gradient(135deg, #16a34a 0%, #15803d 100%); color:#fff; border:none; border-radius:8px; display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:600;" title="Export Data Terfilter ke Excel (.xlsx)">
-                <i class="fa-solid fa-file-excel"></i> Excel
-              </button>
-              <button class="btn btn-sm" onclick="downloadRecapPdf()" style="padding:6px 12px; font-size:12px; background:linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color:#fff; border:none; border-radius:8px; display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:600;" title="Export Data Terfilter ke PDF (.pdf)">
-                <i class="fa-solid fa-file-pdf"></i> PDF
-              </button>
+                  <!-- Custom Multi-Select Dropdown for Kode Akun -->
+                  <div class="custom-multiselect" id="multiSelectD6CodeContainer">
+                    <button type="button" class="multiselect-btn" id="btnMultiSelectD6Code"
+                      title="Pilih Kode Akun (Bisa Banyak)">
+                      <span class="btn-text" id="labelMultiSelectD6Code">🔢 Semua Akun</span>
+                      <i class="fa-solid fa-chevron-down" style="font-size:11px; color:#94a3b8;"></i>
+                    </button>
+                    <div class="multiselect-dropdown" id="dropdownMultiSelectD6Code">
+                      <div class="multiselect-header">
+                        <input type="text" id="searchMultiSelectD6Code" placeholder="🔍 Cari kode / uraian..."
+                          class="multiselect-search">
+                        <div class="multiselect-actions">
+                          <button type="button" class="multiselect-action-btn" id="btnSelectAllD6Codes">
+                            <i class="fa-solid fa-check-double"></i> Pilih Semua
+                          </button>
+                          <button type="button" class="multiselect-action-btn btn-clear" id="btnClearD6Codes">
+                            <i class="fa-solid fa-rotate-left"></i> Bersihkan
+                          </button>
+                        </div>
+                      </div>
+                      <div class="multiselect-list" id="listMultiSelectD6Code">
+                        <!-- Populated dynamically -->
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Custom Multi-Select Dropdown for Tag Sumber Dana -->
+                  <div class="custom-multiselect" id="multiSelectD6TagContainer">
+                    <button type="button" class="multiselect-btn" id="btnMultiSelectD6Tag"
+                      title="Pilih Tag Sumber Dana (Bisa Banyak)" style="width: 160px;">
+                      <span class="btn-text" id="labelMultiSelectD6Tag">🏷️ Semua Tagging</span>
+                      <i class="fa-solid fa-chevron-down" style="font-size:11px; color:#94a3b8;"></i>
+                    </button>
+                    <div class="multiselect-dropdown dropdown-sm" id="dropdownMultiSelectD6Tag">
+                      <div class="multiselect-header" style="margin-bottom:6px; padding-bottom:6px;">
+                        <div class="multiselect-actions">
+                          <button type="button" class="multiselect-action-btn" id="btnSelectAllD6Tags">
+                            <i class="fa-solid fa-check-double"></i> Pilih Semua
+                          </button>
+                          <button type="button" class="multiselect-action-btn btn-clear" id="btnClearD6Tags">
+                            <i class="fa-solid fa-rotate-left"></i> Bersihkan
+                          </button>
+                        </div>
+                      </div>
+                      <div class="multiselect-list" id="listMultiSelectD6Tag">
+                        <label class="multiselect-item" data-tag="RM">
+                          <input type="checkbox" value="RM" checked onchange="handleD6TagCheckboxChange(this)">
+                          <span class="tag-badge rm" style="font-size:10.5px; padding:1px 6px;">RM</span>
+                          <span class="multiselect-item-name" style="font-size:12.5px;">RM (Rupiah Murni)</span>
+                        </label>
+                        <label class="multiselect-item" data-tag="PNP">
+                          <input type="checkbox" value="PNP" checked onchange="handleD6TagCheckboxChange(this)">
+                          <span class="tag-badge pnbp" style="font-size:10.5px; padding:1px 6px;">PNP</span>
+                          <span class="multiselect-item-name" style="font-size:12.5px;">PNP / PNBP</span>
+                        </label>
+                        <label class="multiselect-item" data-tag="PLN">
+                          <input type="checkbox" value="PLN" checked onchange="handleD6TagCheckboxChange(this)">
+                          <span class="tag-badge pln" style="font-size:10.5px; padding:1px 6px;">PLN</span>
+                          <span class="multiselect-item-name" style="font-size:12.5px;">PLN / PHLN</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Custom Multi-Select Dropdown for Status Blokir -->
+                  <div class="custom-multiselect" id="multiSelectD6BlockedContainer">
+                    <button type="button" class="multiselect-btn" id="btnMultiSelectD6Blocked"
+                      title="Pilih Status Blokir (Bisa Banyak)" style="width: 175px;">
+                      <span class="btn-text" id="labelMultiSelectD6Blocked">⭐ Semua Status Blokir</span>
+                      <i class="fa-solid fa-chevron-down" style="font-size:11px; color:#94a3b8;"></i>
+                    </button>
+                    <div class="multiselect-dropdown dropdown-sm" id="dropdownMultiSelectD6Blocked"
+                      style="min-width: 220px; max-width: 260px;">
+                      <div class="multiselect-header" style="margin-bottom:6px; padding-bottom:6px;">
+                        <div class="multiselect-actions">
+                          <button type="button" class="multiselect-action-btn" id="btnSelectAllD6Blocked">
+                            <i class="fa-solid fa-check-double"></i> Pilih Semua
+                          </button>
+                          <button type="button" class="multiselect-action-btn btn-clear" id="btnClearD6Blocked">
+                            <i class="fa-solid fa-rotate-left"></i> Bersihkan
+                          </button>
+                        </div>
+                      </div>
+                      <div class="multiselect-list" id="listMultiSelectD6Blocked">
+                        <label class="multiselect-item" data-status="BLOCKED">
+                          <input type="checkbox" value="BLOCKED" checked onchange="handleD6BlockedCheckboxChange(this)">
+                          <span style="color:#fbbf24; font-size:12px;">⭐</span>
+                          <span class="multiselect-item-name" style="font-size:12.5px;">Diblokir</span>
+                        </label>
+                        <label class="multiselect-item" data-status="NORMAL">
+                          <input type="checkbox" value="NORMAL" checked onchange="handleD6BlockedCheckboxChange(this)">
+                          <span style="color:#22c55e; font-size:12px;">✔️</span>
+                          <span class="multiselect-item-name" style="font-size:12.5px;">Normal</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Custom Multi-Select Dropdown for Kode Blokir -->
+                  <div class="custom-multiselect" id="multiSelectD6BlockCodeContainer">
+                    <button type="button" class="multiselect-btn" id="btnMultiSelectD6BlockCode"
+                      title="Pilih Kode Blokir (Bisa Banyak)" style="width: 175px;">
+                      <span class="btn-text" id="labelMultiSelectD6BlockCode">🔒 Semua Kode Blokir</span>
+                      <i class="fa-solid fa-chevron-down" style="font-size:11px; color:#94a3b8;"></i>
+                    </button>
+                    <div class="multiselect-dropdown dropdown-sm" id="dropdownMultiSelectD6BlockCode"
+                      style="min-width: 250px; max-width: 320px;">
+                      <div class="multiselect-header" style="margin-bottom:6px; padding-bottom:6px;">
+                        <div class="multiselect-actions">
+                          <button type="button" class="multiselect-action-btn" id="btnSelectAllD6BlockCodes">
+                            <i class="fa-solid fa-check-double"></i> Pilih Semua
+                          </button>
+                          <button type="button" class="multiselect-action-btn btn-clear" id="btnClearD6BlockCodes">
+                            <i class="fa-solid fa-rotate-left"></i> Bersihkan
+                          </button>
+                        </div>
+                      </div>
+                      <div class="multiselect-list" id="listMultiSelectD6BlockCode">
+                        <!-- Populated dynamically based on active node -->
+                      </div>
+                    </div>
+                  </div>
+
+                  <button class="btn btn-sm" onclick="downloadRecapExcel()"
+                    style="padding:6px 12px; font-size:12px; background:linear-gradient(135deg, #16a34a 0%, #15803d 100%); color:#fff; border:none; border-radius:8px; display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:600;"
+                    title="Export Data Terfilter ke Excel (.xlsx)">
+                    <i class="fa-solid fa-file-excel"></i> Excel
+                  </button>
+                  <button class="btn btn-sm" onclick="downloadRecapPdf()"
+                    style="padding:6px 12px; font-size:12px; background:linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color:#fff; border:none; border-radius:8px; display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:600;"
+                    title="Export Data Terfilter ke PDF (.pdf)">
+                    <i class="fa-solid fa-file-pdf"></i> PDF
+                  </button>
+                </div>
+              </div>
+
+              <div class="level-table-wrapper">
+                <table class="level-summary-table" id="tableRecapD6">
+                  <thead>
+                    <tr>
+                      <th style="width:110px;">Kode Akun</th>
+                      <th>Uraian Akun</th>
+                      <th style="width:80px;">Tagging</th>
+                      <th style="width:105px;">Kode Blokir</th>
+                      <th>Total Pagu (Rp)</th>
+                      <th>Pagu Sumber Dana (Rp)</th>
+                      <th>Diblokir ⭐ (Rp)</th>
+                      <th style="width:95px;">% Diblokir</th>
+                      <th style="width:80px; text-align:center;">Detail</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbodyRecapD6">
+                    <!-- Dynamically rendered -->
+                  </tbody>
+                  <tfoot id="tfootRecapD6">
+                    <!-- Dynamically rendered summary row -->
+                  </tfoot>
+                </table>
+              </div>
             </div>
           </div>
-
-          <div class="level-table-wrapper">
-            <table class="level-summary-table" id="tableRecapD6">
-              <thead>
-                <tr>
-                  <th style="width:110px;">Kode Akun</th>
-                  <th>Uraian Akun</th>
-                  <th style="width:80px;">Tagging</th>
-                  <th style="width:105px;">Kode Blokir</th>
-                  <th>Total Pagu (Rp)</th>
-                  <th>Pagu Sumber Dana (Rp)</th>
-                  <th>Diblokir ⭐ (Rp)</th>
-                  <th style="width:95px;">% Diblokir</th>
-                  <th style="width:80px; text-align:center;">Detail</th>
-                </tr>
-              </thead>
-              <tbody id="tbodyRecapD6">
-                <!-- Dynamically rendered -->
-              </tbody>
-              <tfoot id="tfootRecapD6">
-                <!-- Dynamically rendered summary row -->
-              </tfoot>
-            </table>
-          </div>
         </div>
-      </div>
-    </div>
 
+      </main>
+
+      <footer>
+        <div class="footer-left">
+          <i class="fa-regular fa-copyright"></i> 2026 Kemnaker — Excel Processor V3 Unified | Alfari Sidnan Ghilmana
+          (NIP. 20000403 202505 1 004)
+        </div>
+        <div class="footer-right">
+          <span>Need help? <a href="https://kemnaker.go.id" target="_blank" class="footer-link">Support Hub
+              Center</a></span>
+          <a href="/changelog" class="version-pill" id="footerVersionBadge"
+            title="Buka Catatan Pembaruan &amp; Log Versi">
+            <i class="fa-solid fa-code-branch" style="font-size: 11px;"></i> v3.2.0
+          </a>
+        </div>
+      </footer>
+    </div>
   </div>
 
-  <footer>
-    <p><i class="fa-regular fa-copyright"></i> 2026 Kemnaker — Excel Processor V3 Unified | Alfari Sidnan Ghilmana (NIP.
-      20000403 202505 1 004)</p>
-  </footer>
-
   <script>
-    // Elements Flow 1
-    const dropZone1 = document.getElementById('dropZone1');
-    const fileInput1 = document.getElementById('fileInput1');
-    const fileStatus1 = document.getElementById('fileStatus1');
-    const valCard1 = document.getElementById('valCard1');
-    const valHeader1 = document.getElementById('valHeader1');
-    const valList1 = document.getElementById('valList1');
-    const ackBox1 = document.getElementById('ackBox1');
-    const chkAck1 = document.getElementById('chkAck1');
-    const btnProcess1 = document.getElementById('btnProcess1');
-    const status1 = document.getElementById('status1');
-    const levelValPanel1 = document.getElementById('levelValPanel1');
+    // Elements Unified Processing Flow
+    const dropZoneRKK = document.getElementById('dropZoneRKK');
+    const fileInputRKK = document.getElementById('fileInputRKK');
+    const fileStatusRKK = document.getElementById('fileStatusRKK');
 
-    let file1 = null;
-    let isValidated1 = false;
-    let hasViolations1 = false;
+    const toggleFaBox = document.getElementById('toggleFaBox');
+    const chkWithFA = document.getElementById('chkWithFA');
+    const badgeFaStatus = document.getElementById('badgeFaStatus');
+    const containerFAUpload = document.getElementById('containerFAUpload');
 
-    // Elements Flow 2
     const dropZoneFA = document.getElementById('dropZoneFA');
     const fileInputFA = document.getElementById('fileInputFA');
     const fileStatusFA = document.getElementById('fileStatusFA');
 
-    const dropZone2 = document.getElementById('dropZone2');
-    const fileInput2 = document.getElementById('fileInput2');
-    const fileStatus2 = document.getElementById('fileStatus2');
+    const valCard = document.getElementById('valCard');
+    const valHeader = document.getElementById('valHeader');
+    const valList = document.getElementById('valList');
+    const ackBox = document.getElementById('ackBox');
+    const chkAck = document.getElementById('chkAck');
 
-    const valCard2 = document.getElementById('valCard2');
-    const valHeader2 = document.getElementById('valHeader2');
-    const valList2 = document.getElementById('valList2');
-    const ackBox2 = document.getElementById('ackBox2');
-    const chkAck2 = document.getElementById('chkAck2');
+    const btnProcess = document.getElementById('btnProcess');
+    const statusProcess = document.getElementById('statusProcess');
+    const levelValPanel = document.getElementById('levelValPanel');
+    const faMatchingPanel = document.getElementById('faMatchingPanel');
 
-    const btnProcess2 = document.getElementById('btnProcess2');
-    const status2 = document.getElementById('status2');
-    const levelValPanel2 = document.getElementById('levelValPanel2');
-
+    let fileRKK = null;
     let fileFA = null;
-    let file2 = null;
-    let isValidated2 = false;
-    let hasViolations2 = false;
+    let isValidated = false;
+    let hasViolations = false;
+
+    // Toggle FA Checkbox helper
+    function toggleFaCheckbox() {
+      if (!chkWithFA) return;
+      chkWithFA.checked = !chkWithFA.checked;
+      handleFaCheckboxChange();
+    }
+
+    function handleFaCheckboxChange() {
+      const isWithFA = chkWithFA.checked;
+      if (isWithFA) {
+        toggleFaBox.classList.add('active');
+        badgeFaStatus.textContent = 'Aktif';
+        containerFAUpload.style.display = 'block';
+        btnProcess.classList.add('btn-success');
+        btnProcess.innerHTML = '<i class="fa-solid fa-cloud-arrow-down"></i> Proses & Download Output (Dengan Realisasi)';
+      } else {
+        toggleFaBox.classList.remove('active');
+        badgeFaStatus.textContent = 'Nonaktif';
+        containerFAUpload.style.display = 'none';
+        btnProcess.classList.remove('btn-success');
+        btnProcess.innerHTML = '<i class="fa-solid fa-gears"></i> Proses & Download Output RAB';
+      }
+      updateButtonState();
+    }
+
+    if (chkWithFA) {
+      chkWithFA.addEventListener('change', handleFaCheckboxChange);
+    }
 
     // Setup Drag & Drop Handlers
-    setupDropZone(dropZone1, fileInput1, async (f) => {
-      file1 = f;
-      fileStatus1.textContent = '✅ Selected: ' + f.name;
-      levelValPanel1.classList.remove('show');
-      await handleValidation(file1, valCard1, valHeader1, valList1, ackBox1, chkAck1, (valid, hasViol) => {
-        isValidated1 = valid;
-        hasViolations1 = hasViol;
-        updateButtonState1();
+    setupDropZone(dropZoneRKK, fileInputRKK, async (f) => {
+      fileRKK = f;
+      fileStatusRKK.textContent = '✅ Selected RKK: ' + f.name;
+      levelValPanel.classList.remove('show');
+      faMatchingPanel.classList.remove('show');
+      await handleValidation(fileRKK, valCard, valHeader, valList, ackBox, chkAck, (valid, hasViol) => {
+        isValidated = valid;
+        hasViolations = hasViol;
+        updateButtonState();
       });
     });
 
     setupDropZone(dropZoneFA, fileInputFA, (f) => {
       fileFA = f;
       fileStatusFA.textContent = '✅ Selected FA: ' + f.name;
-      updateButtonState2();
+      updateButtonState();
     });
 
-    setupDropZone(dropZone2, fileInput2, async (f) => {
-      file2 = f;
-      fileStatus2.textContent = '✅ Selected RKK: ' + f.name;
-      levelValPanel2.classList.remove('show');
-      await handleValidation(file2, valCard2, valHeader2, valList2, ackBox2, chkAck2, (valid, hasViol) => {
-        isValidated2 = valid;
-        hasViolations2 = hasViol;
-        updateButtonState2();
-      });
-    });
+    chkAck.addEventListener('change', updateButtonState);
 
-    chkAck1.addEventListener('change', updateButtonState1);
-    chkAck2.addEventListener('change', updateButtonState2);
-
-    function updateButtonState1() {
-      if (!file1 || !isValidated1) {
-        btnProcess1.disabled = true;
-      } else if (hasViolations1) {
-        btnProcess1.disabled = !chkAck1.checked;
-      } else {
-        btnProcess1.disabled = false;
+    function updateButtonState() {
+      if (!fileRKK || !isValidated) {
+        btnProcess.disabled = true;
+        return;
       }
-    }
-
-    function updateButtonState2() {
-      if (!fileFA || !file2 || !isValidated2) {
-        btnProcess2.disabled = true;
-      } else if (hasViolations2) {
-        btnProcess2.disabled = !chkAck2.checked;
-      } else {
-        btnProcess2.disabled = false;
+      if (hasViolations && !chkAck.checked) {
+        btnProcess.disabled = true;
+        return;
       }
+      if (chkWithFA.checked && !fileFA) {
+        btnProcess.disabled = true;
+        return;
+      }
+      btnProcess.disabled = false;
     }
 
     function setupDropZone(zone, input, onFileSelect) {
@@ -559,67 +724,28 @@
       }
     }
 
-    // Process Flow 1
-    btnProcess1.addEventListener('click', async () => {
-      if (!file1) return;
-      btnProcess1.disabled = true;
-      showStatus(status1, '⏳ Memproses file Excel RKK...', 'info');
-      levelValPanel1.classList.remove('show');
+    // Process Unified Flow
+    btnProcess.addEventListener('click', async () => {
+      if (!fileRKK) return;
+      if (chkWithFA.checked && !fileFA) return;
+
+      btnProcess.disabled = true;
+      const isWithFA = chkWithFA.checked && fileFA;
+      showStatus(statusProcess, isWithFA ? '⏳ Memproses Laporan FA + RKK...' : '⏳ Memproses file Excel RKK...', 'info');
+      levelValPanel.classList.remove('show');
+      faMatchingPanel.classList.remove('show');
+      faMatchingPanel.innerHTML = '';
 
       const formData = new FormData();
-      formData.append('file', file1);
-
-      try {
-        const response = await fetch('/api/process', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!response.ok) {
-          const err = await response.json();
-          throw new Error(err.detail || err.error || 'Server error');
-        }
-
-        // Extract validation report header if available
-        const valHeaderRaw = response.headers.get('X-Validation-Summary');
-        let validationReport = null;
-        if (valHeaderRaw) {
-          try {
-            validationReport = JSON.parse(decodeURIComponent(valHeaderRaw));
-          } catch (e) {
-            console.warn('Failed to parse validation header', e);
-          }
-        }
-
-        const blob = await response.blob();
-        downloadBlob(blob, `output_${new Date().toISOString().slice(0, 19).replace(/[:]/g, '-')}.xlsx`);
-        showStatus(status1, '✅ Berhasil memproses dan mengunduh file!', 'success');
-
-        if (validationReport) {
-          renderLevelValidationReport(levelValPanel1, validationReport, 'val_items_1');
-        }
-      } catch (err) {
-        showStatus(status1, '❌ Error: ' + err.message, 'error');
-      } finally {
-        updateButtonState1();
+      formData.append('file', fileRKK);
+      if (isWithFA) {
+        formData.append('fa_file', fileFA);
       }
-    });
 
-    // Process Flow 2
-    btnProcess2.addEventListener('click', async () => {
-      if (!fileFA || !file2) return;
-      btnProcess2.disabled = true;
-      showStatus(status2, '⏳ Memproses Laporan FA + RKK...', 'info');
-      levelValPanel2.classList.remove('show');
-      faMatchingPanel2.classList.remove('show');
-      faMatchingPanel2.innerHTML = '';
-
-      const formData = new FormData();
-      formData.append('file', file2);
-      formData.append('fa_file', fileFA);
+      const endpoint = isWithFA ? '/api/process-with-fa' : '/api/process';
 
       try {
-        const response = await fetch('/api/process-with-fa', {
+        const response = await fetch(endpoint, {
           method: 'POST',
           body: formData,
         });
@@ -652,20 +778,25 @@
         }
 
         const blob = await response.blob();
-        downloadBlob(blob, `output_${new Date().toISOString().slice(0, 19).replace(/[:]/g, '-')}_Dengan_Realisasi.xlsx`);
-        showStatus(status2, '✅ Berhasil memproses dan mengunduh file dengan Realisasi!', 'success');
+        const timestamp = new Date().toISOString().slice(0, 19).replace(/[:]/g, '-');
+        const filename = isWithFA
+          ? `output_${timestamp}_Dengan_Realisasi.xlsx`
+          : `output_${timestamp}.xlsx`;
+        downloadBlob(blob, filename);
+
+        showStatus(statusProcess, isWithFA ? '✅ Berhasil memproses dan mengunduh file dengan Realisasi!' : '✅ Berhasil memproses dan mengunduh file RAB!', 'success');
 
         if (validationReport) {
-          renderLevelValidationReport(levelValPanel2, validationReport, 'val_items_2');
+          renderLevelValidationReport(levelValPanel, validationReport, 'val_items_unified');
         }
 
         if (faReport) {
-          renderFaMatchingReport(faMatchingPanel2, faReport);
+          renderFaMatchingReport(faMatchingPanel, faReport);
         }
       } catch (err) {
-        showStatus(status2, '❌ Error: ' + err.message, 'error');
+        showStatus(statusProcess, '❌ Error: ' + err.message, 'error');
       } finally {
-        updateButtonState2();
+        updateButtonState();
       }
     });
 
@@ -720,7 +851,9 @@
         const taggingVal = (it.tagging || '-').trim();
         let tagBadgeClass = 'muted';
         if (taggingVal.includes('RM')) tagBadgeClass = 'rm';
-        else if (taggingVal.includes('PNBP')) tagBadgeClass = 'pnbp';
+        else if (taggingVal.includes('PNBP') || taggingVal.includes('PNP')) tagBadgeClass = 'pnbp';
+        else if (taggingVal.includes('PLN') || taggingVal.includes('PHLN')) tagBadgeClass = 'pln';
+        else if (taggingVal === 'RK') tagBadgeClass = 'rk';
         else if (taggingVal.includes('*')) tagBadgeClass = 'blokir';
 
         tableRowsHtml += `
@@ -1014,21 +1147,72 @@
       });
     }
 
+    // Sidebar Collapse & Mobile Handlers
+    function toggleSidebarCollapse() {
+      const sidebar = document.getElementById('appSidebar');
+      if (!sidebar) return;
+      const isCollapsed = sidebar.classList.toggle('collapsed');
+      localStorage.setItem('sidebar_collapsed', isCollapsed ? 'true' : 'false');
+
+      const btn = document.getElementById('btnToggleSidebar');
+      if (btn) {
+        btn.setAttribute('title', isCollapsed ? 'Perluas Sidebar' : 'Perkecil Sidebar');
+      }
+    }
+
+    function handleSidebarToggle() {
+      if (window.innerWidth <= 900) {
+        const sidebar = document.getElementById('appSidebar');
+        const backdrop = document.getElementById('sidebarBackdrop');
+        if (!sidebar) return;
+        const isOpen = sidebar.classList.toggle('open');
+        if (backdrop) backdrop.classList.toggle('show', isOpen);
+      } else {
+        toggleSidebarCollapse();
+      }
+    }
+
+    function closeMobileSidebar() {
+      const sidebar = document.getElementById('appSidebar');
+      const backdrop = document.getElementById('sidebarBackdrop');
+      if (sidebar) sidebar.classList.remove('open');
+      if (backdrop) backdrop.classList.remove('show');
+    }
+
+    // Restore sidebar collapse state on load
+    (function initSidebarState() {
+      try {
+        if (window.innerWidth > 900 && localStorage.getItem('sidebar_collapsed') === 'true') {
+          const sidebar = document.getElementById('appSidebar');
+          if (sidebar) sidebar.classList.add('collapsed');
+          const btn = document.getElementById('btnToggleSidebar');
+          if (btn) btn.setAttribute('title', 'Perluas Sidebar');
+        }
+      } catch (e) { }
+    })();
+
     // Tab Navigation Switcher
     function switchTab(tabName) {
-      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.sidebar-nav-item').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
 
-      if (tabName === 'flow1') {
-        document.getElementById('tabFlow1').classList.add('active');
-        document.getElementById('viewFlow1').classList.add('active');
-      } else if (tabName === 'flow2') {
-        document.getElementById('tabFlow2').classList.add('active');
-        document.getElementById('viewFlow2').classList.add('active');
+      const breadcrumb = document.getElementById('breadcrumbTitle');
+
+      if (tabName === 'process' || tabName === 'flow1' || tabName === 'flow2') {
+        const tab = document.getElementById('tabProcess');
+        if (tab) tab.classList.add('active');
+        const view = document.getElementById('viewProcess');
+        if (view) view.classList.add('active');
+        if (breadcrumb) breadcrumb.textContent = 'Pemrosesan Excel (RAB)';
       } else if (tabName === 'recap') {
-        document.getElementById('tabRecap').classList.add('active');
-        document.getElementById('viewRecap').classList.add('active');
+        const tab = document.getElementById('tabRecap');
+        if (tab) tab.classList.add('active');
+        const view = document.getElementById('viewRecap');
+        if (view) view.classList.add('active');
+        if (breadcrumb) breadcrumb.textContent = 'Rekap Hirarki Satker';
       }
+
+      closeMobileSidebar();
     }
 
     // Elements for Recap Flow (Alur 3)
@@ -1042,10 +1226,16 @@
     const selectLevelFilter = document.getElementById('selectLevelFilter');
     const selectNodeParent = document.getElementById('selectNodeParent');
     const searchD6 = document.getElementById('searchD6');
-    const filterD6Tagging = document.getElementById('filterD6Tagging');
-    const filterD6Blocked = document.getElementById('filterD6Blocked');
-    const filterD6BlockCode = document.getElementById('filterD6BlockCode');
     const tbodyRecapD6 = document.getElementById('tbodyRecapD6');
+
+    // Searchable Select Elements for Parent Node
+    const btnSearchableParentNode = document.getElementById('btnSearchableParentNode');
+    const dropdownSearchableParentNode = document.getElementById('dropdownSearchableParentNode');
+    const labelSearchableParentNode = document.getElementById('labelSearchableParentNode');
+    const searchParentNodeInput = document.getElementById('searchParentNodeInput');
+    const btnClearSearchParentNode = document.getElementById('btnClearSearchParentNode');
+    const listSearchableParentNode = document.getElementById('listSearchableParentNode');
+    let currentNodeOptions = [];
 
     // Multi-Select Elements for Kode Akun
     const btnMultiSelectD6Code = document.getElementById('btnMultiSelectD6Code');
@@ -1056,10 +1246,38 @@
     const btnSelectAllD6Codes = document.getElementById('btnSelectAllD6Codes');
     const btnClearD6Codes = document.getElementById('btnClearD6Codes');
 
+    // Multi-Select Elements for Tag Sumber Dana
+    const btnMultiSelectD6Tag = document.getElementById('btnMultiSelectD6Tag');
+    const dropdownMultiSelectD6Tag = document.getElementById('dropdownMultiSelectD6Tag');
+    const labelMultiSelectD6Tag = document.getElementById('labelMultiSelectD6Tag');
+    const listMultiSelectD6Tag = document.getElementById('listMultiSelectD6Tag');
+    const btnSelectAllD6Tags = document.getElementById('btnSelectAllD6Tags');
+    const btnClearD6Tags = document.getElementById('btnClearD6Tags');
+
+    // Multi-Select Elements for Status Blokir
+    const btnMultiSelectD6Blocked = document.getElementById('btnMultiSelectD6Blocked');
+    const dropdownMultiSelectD6Blocked = document.getElementById('dropdownMultiSelectD6Blocked');
+    const labelMultiSelectD6Blocked = document.getElementById('labelMultiSelectD6Blocked');
+    const listMultiSelectD6Blocked = document.getElementById('listMultiSelectD6Blocked');
+    const btnSelectAllD6Blocked = document.getElementById('btnSelectAllD6Blocked');
+    const btnClearD6Blocked = document.getElementById('btnClearD6Blocked');
+
+    // Multi-Select Elements for Kode Blokir
+    const btnMultiSelectD6BlockCode = document.getElementById('btnMultiSelectD6BlockCode');
+    const dropdownMultiSelectD6BlockCode = document.getElementById('dropdownMultiSelectD6BlockCode');
+    const labelMultiSelectD6BlockCode = document.getElementById('labelMultiSelectD6BlockCode');
+    const listMultiSelectD6BlockCode = document.getElementById('listMultiSelectD6BlockCode');
+    const btnSelectAllD6BlockCodes = document.getElementById('btnSelectAllD6BlockCodes');
+    const btnClearD6BlockCodes = document.getElementById('btnClearD6BlockCodes');
+
     let fileRecap = null;
     let currentRecapData = null;
     let selectedD6Codes = new Set();
     let currentAvailableD6Codes = [];
+    let selectedD6Tags = new Set(['RM', 'PNP', 'PLN']);
+    let selectedD6Blocked = new Set(['BLOCKED', 'NORMAL']);
+    let selectedD6BlockCodes = new Set();
+    let currentAvailableBlockCodes = [];
 
     setupDropZone(dropZoneRecap, fileInputRecap, (f) => {
       fileRecap = f;
@@ -1088,11 +1306,18 @@
         }
 
         currentRecapData = await response.json();
-        selectedD6Codes.clear();
+        selectedD6Tags = new Set(['RM', 'PNP', 'PLN']);
+        syncD6TagCheckboxes();
+        updateD6TagButtonLabel();
+
+        selectedD6Blocked = new Set(['BLOCKED', 'NORMAL']);
+        syncD6BlockedCheckboxes();
+        updateD6BlockedButtonLabel();
         showStatus(statusRecap, '✅ Berhasil menganalisis rekap hirarki!', 'success');
 
         recapResultPanel.style.display = 'block';
-        updateParentNodeDropdown(selectLevelFilter.value);
+        selectLevelFilter.value = '0';
+        updateParentNodeDropdown('0');
         renderRecapForSelectedNode(true);
       } catch (err) {
         showStatus(statusRecap, '❌ Error: ' + err.message, 'error');
@@ -1115,35 +1340,142 @@
       renderRecapForSelectedNode(false);
     });
 
-    // Multi-Select Event Listeners
+    // Searchable Select Event Listeners for Parent Node
+    if (btnSearchableParentNode && dropdownSearchableParentNode) {
+      btnSearchableParentNode.addEventListener('click', toggleSearchableParentNodeDropdown);
+      dropdownSearchableParentNode.addEventListener('click', (e) => e.stopPropagation());
+    }
+
+    if (searchParentNodeInput) {
+      searchParentNodeInput.addEventListener('input', (e) => {
+        const q = e.target.value.trim();
+        if (btnClearSearchParentNode) {
+          btnClearSearchParentNode.style.display = q ? 'flex' : 'none';
+        }
+        renderSearchableParentNodeList();
+      });
+
+      searchParentNodeInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeSearchableParentNodeDropdown();
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          const firstItem = listSearchableParentNode?.querySelector('.searchable-select-item');
+          if (firstItem) {
+            const key = firstItem.getAttribute('data-key');
+            if (key !== null) {
+              selectSearchableParentNode(key);
+            }
+          }
+        }
+      });
+    }
+
+    if (btnClearSearchParentNode) {
+      btnClearSearchParentNode.addEventListener('click', () => {
+        if (searchParentNodeInput) {
+          searchParentNodeInput.value = '';
+          btnClearSearchParentNode.style.display = 'none';
+          searchParentNodeInput.focus();
+          renderSearchableParentNodeList();
+        }
+      });
+    }
+
+    function closeAllDropdowns() {
+      closeSearchableParentNodeDropdown();
+      if (dropdownMultiSelectD6Code) dropdownMultiSelectD6Code.classList.remove('show');
+      if (btnMultiSelectD6Code) btnMultiSelectD6Code.classList.remove('open');
+      if (dropdownMultiSelectD6Tag) dropdownMultiSelectD6Tag.classList.remove('show');
+      if (btnMultiSelectD6Tag) btnMultiSelectD6Tag.classList.remove('open');
+      if (dropdownMultiSelectD6Blocked) dropdownMultiSelectD6Blocked.classList.remove('show');
+      if (btnMultiSelectD6Blocked) btnMultiSelectD6Blocked.classList.remove('open');
+      if (dropdownMultiSelectD6BlockCode) dropdownMultiSelectD6BlockCode.classList.remove('show');
+      if (btnMultiSelectD6BlockCode) btnMultiSelectD6BlockCode.classList.remove('open');
+    }
+
+    // Multi-Select Event Listeners for Kode Akun
     if (btnMultiSelectD6Code && dropdownMultiSelectD6Code) {
       btnMultiSelectD6Code.addEventListener('click', (e) => {
         e.stopPropagation();
-        const isOpen = dropdownMultiSelectD6Code.classList.toggle('show');
-        btnMultiSelectD6Code.classList.toggle('open', isOpen);
-        if (isOpen && searchMultiSelectD6Code) {
-          searchMultiSelectD6Code.value = '';
-          filterD6CodeListItems('');
-          searchMultiSelectD6Code.focus();
+        const willOpen = !dropdownMultiSelectD6Code.classList.contains('show');
+        closeAllDropdowns();
+        if (willOpen) {
+          dropdownMultiSelectD6Code.classList.add('show');
+          btnMultiSelectD6Code.classList.add('open');
+          if (searchMultiSelectD6Code) {
+            searchMultiSelectD6Code.value = '';
+            filterD6CodeListItems('');
+            searchMultiSelectD6Code.focus();
+          }
         }
       });
 
       dropdownMultiSelectD6Code.addEventListener('click', (e) => {
         e.stopPropagation();
       });
+    }
 
-      document.addEventListener('click', () => {
-        dropdownMultiSelectD6Code.classList.remove('show');
-        btnMultiSelectD6Code.classList.remove('open');
-      });
-
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-          dropdownMultiSelectD6Code.classList.remove('show');
-          btnMultiSelectD6Code.classList.remove('open');
+    // Multi-Select Event Listeners for Tag Sumber Dana
+    if (btnMultiSelectD6Tag && dropdownMultiSelectD6Tag) {
+      btnMultiSelectD6Tag.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const willOpen = !dropdownMultiSelectD6Tag.classList.contains('show');
+        closeAllDropdowns();
+        if (willOpen) {
+          dropdownMultiSelectD6Tag.classList.add('show');
+          btnMultiSelectD6Tag.classList.add('open');
         }
       });
+
+      dropdownMultiSelectD6Tag.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
     }
+
+    // Multi-Select Event Listeners for Status Blokir
+    if (btnMultiSelectD6Blocked && dropdownMultiSelectD6Blocked) {
+      btnMultiSelectD6Blocked.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const willOpen = !dropdownMultiSelectD6Blocked.classList.contains('show');
+        closeAllDropdowns();
+        if (willOpen) {
+          dropdownMultiSelectD6Blocked.classList.add('show');
+          btnMultiSelectD6Blocked.classList.add('open');
+        }
+      });
+
+      dropdownMultiSelectD6Blocked.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+    }
+
+    // Multi-Select Event Listeners for Kode Blokir
+    if (btnMultiSelectD6BlockCode && dropdownMultiSelectD6BlockCode) {
+      btnMultiSelectD6BlockCode.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const willOpen = !dropdownMultiSelectD6BlockCode.classList.contains('show');
+        closeAllDropdowns();
+        if (willOpen) {
+          dropdownMultiSelectD6BlockCode.classList.add('show');
+          btnMultiSelectD6BlockCode.classList.add('open');
+        }
+      });
+
+      dropdownMultiSelectD6BlockCode.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+    }
+
+    document.addEventListener('click', () => {
+      closeAllDropdowns();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeAllDropdowns();
+      }
+    });
 
     if (searchMultiSelectD6Code) {
       searchMultiSelectD6Code.addEventListener('input', (e) => {
@@ -1169,7 +1501,7 @@
       });
     }
 
-    window.handleD6CodeCheckboxChange = function(cb) {
+    window.handleD6CodeCheckboxChange = function (cb) {
       if (cb.checked) {
         selectedD6Codes.add(cb.value);
       } else {
@@ -1178,6 +1510,63 @@
       updateD6CodeButtonLabel();
       renderRecapForSelectedNode(false);
     };
+
+    // Tag Sumber Dana Multi-Select Actions
+    if (btnSelectAllD6Tags) {
+      btnSelectAllD6Tags.addEventListener('click', () => {
+        ['RM', 'PNP', 'PLN'].forEach(t => selectedD6Tags.add(t));
+        syncD6TagCheckboxes();
+        updateD6TagButtonLabel();
+        renderRecapForSelectedNode(false);
+      });
+    }
+
+    if (btnClearD6Tags) {
+      btnClearD6Tags.addEventListener('click', () => {
+        selectedD6Tags.clear();
+        syncD6TagCheckboxes();
+        updateD6TagButtonLabel();
+        renderRecapForSelectedNode(false);
+      });
+    }
+
+    window.handleD6TagCheckboxChange = function (cb) {
+      if (cb.checked) {
+        selectedD6Tags.add(cb.value);
+      } else {
+        selectedD6Tags.delete(cb.value);
+      }
+      updateD6TagButtonLabel();
+      renderRecapForSelectedNode(false);
+    };
+
+    function syncD6TagCheckboxes() {
+      if (!listMultiSelectD6Tag) return;
+      const inputs = listMultiSelectD6Tag.querySelectorAll('input[type="checkbox"]');
+      inputs.forEach(input => {
+        input.checked = selectedD6Tags.has(input.value);
+      });
+    }
+
+    function updateD6TagButtonLabel() {
+      if (!labelMultiSelectD6Tag) return;
+      const count = selectedD6Tags.size;
+      if (count === 3) {
+        labelMultiSelectD6Tag.innerHTML = `🏷️ Semua Tagging`;
+        btnMultiSelectD6Tag.title = 'Semua Tag Sumber Dana Terpilih (RM, PNP, PLN)';
+      } else if (count === 0) {
+        labelMultiSelectD6Tag.innerHTML = `🏷️ 0 Tag Dipilih`;
+        btnMultiSelectD6Tag.title = 'Tidak ada tag sumber dana yang dipilih';
+      } else if (count === 1) {
+        const singleTag = Array.from(selectedD6Tags)[0];
+        labelMultiSelectD6Tag.innerHTML = `🏷️ ${singleTag}`;
+        btnMultiSelectD6Tag.title = `Tag Sumber Dana: ${singleTag}`;
+      } else {
+        const tagsStr = Array.from(selectedD6Tags).join(', ');
+        labelMultiSelectD6Tag.innerHTML = `🏷️ ${tagsStr}`;
+        btnMultiSelectD6Tag.title = `Tag Sumber Dana: ${tagsStr}`;
+      }
+    }
 
     function filterD6CodeListItems(query) {
       if (!listMultiSelectD6Code) return;
@@ -1199,8 +1588,11 @@
       const total = currentAvailableD6Codes.length;
       const count = selectedD6Codes.size;
 
-      if (count === 0 || count === total) {
-        labelMultiSelectD6Code.innerHTML = `🔢 Semua Kode`;
+      if (count === 0) {
+        labelMultiSelectD6Code.innerHTML = `🔢 0 Akun Dipilih`;
+        btnMultiSelectD6Code.title = 'Tidak ada kode akun yang dipilih';
+      } else if (count === total) {
+        labelMultiSelectD6Code.innerHTML = `🔢 Semua Akun`;
         btnMultiSelectD6Code.title = 'Semua Kode Akun Dipilih';
       } else if (count === 1) {
         const singleCode = Array.from(selectedD6Codes)[0];
@@ -1233,8 +1625,8 @@
       let html = '';
       currentAvailableD6Codes.forEach(item => {
         const isChecked = selectedD6Codes.has(item.code);
-        const matchesSearch = !query || 
-          item.code.toLowerCase().includes(query) || 
+        const matchesSearch = !query ||
+          item.code.toLowerCase().includes(query) ||
           (item.name || '').toLowerCase().includes(query);
 
         html += `
@@ -1251,7 +1643,7 @@
 
     function updateD6CodeFilterDropdown(nodeSummary) {
       if (!listMultiSelectD6Code) return;
-      
+
       const codeMap = new Map();
       (nodeSummary.digit6List || []).forEach(d6 => {
         if (!codeMap.has(d6.code)) {
@@ -1268,116 +1660,404 @@
         }
       });
 
-      currentAvailableD6Codes = Array.from(codeMap.values()).sort((a, b) => 
+      currentAvailableD6Codes = Array.from(codeMap.values()).sort((a, b) =>
         a.code.localeCompare(b.code, undefined, { numeric: true })
       );
 
-      // Keep previously selected codes if they still exist in the new node
-      selectedD6Codes = new Set([...selectedD6Codes].filter(c => codeMap.has(c)));
+      // By default awal, seluruh akun tercentang semua
+      selectedD6Codes = new Set(currentAvailableD6Codes.map(c => c.code));
 
       renderD6CodeDropdownList();
       updateD6CodeButtonLabel();
     }
 
-    filterD6Tagging.addEventListener('change', () => {
-      renderRecapForSelectedNode(false);
-    });
-
-    filterD6Blocked.addEventListener('change', () => {
-      renderRecapForSelectedNode(false);
-    });
-
-    if (filterD6BlockCode) {
-      filterD6BlockCode.addEventListener('change', () => {
+    // Status Blokir Multi-Select Actions
+    if (btnSelectAllD6Blocked) {
+      btnSelectAllD6Blocked.addEventListener('click', () => {
+        selectedD6Blocked = new Set(['BLOCKED', 'NORMAL']);
+        syncD6BlockedCheckboxes();
+        updateD6BlockedButtonLabel();
         renderRecapForSelectedNode(false);
       });
+    }
+
+    if (btnClearD6Blocked) {
+      btnClearD6Blocked.addEventListener('click', () => {
+        selectedD6Blocked.clear();
+        syncD6BlockedCheckboxes();
+        updateD6BlockedButtonLabel();
+        renderRecapForSelectedNode(false);
+      });
+    }
+
+    window.handleD6BlockedCheckboxChange = function (cb) {
+      if (cb.checked) {
+        selectedD6Blocked.add(cb.value);
+      } else {
+        selectedD6Blocked.delete(cb.value);
+      }
+      updateD6BlockedButtonLabel();
+      renderRecapForSelectedNode(false);
+    };
+
+    function syncD6BlockedCheckboxes() {
+      if (!listMultiSelectD6Blocked) return;
+      const inputs = listMultiSelectD6Blocked.querySelectorAll('input[type="checkbox"]');
+      inputs.forEach(input => {
+        input.checked = selectedD6Blocked.has(input.value);
+      });
+    }
+
+    function updateD6BlockedButtonLabel() {
+      if (!labelMultiSelectD6Blocked) return;
+      const count = selectedD6Blocked.size;
+      if (count === 2) {
+        labelMultiSelectD6Blocked.innerHTML = `⭐ Semua Status Blokir`;
+        btnMultiSelectD6Blocked.title = 'Semua Status Blokir (Diblokir & Normal)';
+      } else if (count === 0) {
+        labelMultiSelectD6Blocked.innerHTML = `⭐ 0 Status Dipilih`;
+        btnMultiSelectD6Blocked.title = 'Tidak ada status blokir yang dipilih';
+      } else if (selectedD6Blocked.has('BLOCKED')) {
+        labelMultiSelectD6Blocked.innerHTML = `⭐ Diblokir`;
+        btnMultiSelectD6Blocked.title = 'Hanya menampilkan data yang diblokir';
+      } else {
+        labelMultiSelectD6Blocked.innerHTML = `✔️ Normal`;
+        btnMultiSelectD6Blocked.title = 'Hanya menampilkan data normal (tidak diblokir)';
+      }
+    }
+
+    // Kode Blokir Multi-Select Actions
+    if (btnSelectAllD6BlockCodes) {
+      btnSelectAllD6BlockCodes.addEventListener('click', () => {
+        currentAvailableBlockCodes.forEach(c => selectedD6BlockCodes.add(c.code));
+        syncD6BlockCodeCheckboxes();
+        updateD6BlockCodeButtonLabel();
+        renderRecapForSelectedNode(false);
+      });
+    }
+
+    if (btnClearD6BlockCodes) {
+      btnClearD6BlockCodes.addEventListener('click', () => {
+        selectedD6BlockCodes.clear();
+        syncD6BlockCodeCheckboxes();
+        updateD6BlockCodeButtonLabel();
+        renderRecapForSelectedNode(false);
+      });
+    }
+
+    window.handleD6BlockCodeCheckboxChange = function (cb) {
+      if (cb.checked) {
+        selectedD6BlockCodes.add(cb.value);
+      } else {
+        selectedD6BlockCodes.delete(cb.value);
+      }
+      updateD6BlockCodeButtonLabel();
+      renderRecapForSelectedNode(false);
+    };
+
+    function syncD6BlockCodeCheckboxes() {
+      if (!listMultiSelectD6BlockCode) return;
+      const inputs = listMultiSelectD6BlockCode.querySelectorAll('input[type="checkbox"]');
+      inputs.forEach(input => {
+        input.checked = selectedD6BlockCodes.has(input.value);
+      });
+    }
+
+    function updateD6BlockCodeButtonLabel() {
+      if (!labelMultiSelectD6BlockCode) return;
+      const total = currentAvailableBlockCodes.length;
+      const count = selectedD6BlockCodes.size;
+
+      if (total === 0) {
+        labelMultiSelectD6BlockCode.innerHTML = `🔒 Semua Kode Blokir`;
+        btnMultiSelectD6BlockCode.title = 'Tidak ada kode blokir di level ini';
+      } else if (count === total) {
+        labelMultiSelectD6BlockCode.innerHTML = `🔒 Semua Kode Blokir`;
+        btnMultiSelectD6BlockCode.title = 'Semua Kode Blokir Terpilih';
+      } else if (count === 0) {
+        labelMultiSelectD6BlockCode.innerHTML = `🔒 0 Kode Dipilih`;
+        btnMultiSelectD6BlockCode.title = 'Tidak ada kode blokir yang dipilih';
+      } else if (count === 1) {
+        const singleCode = Array.from(selectedD6BlockCodes)[0];
+        labelMultiSelectD6BlockCode.innerHTML = `🔒 Kode ${singleCode}`;
+        btnMultiSelectD6BlockCode.title = `Kode Blokir: Kode ${singleCode}`;
+      } else if (count <= 2) {
+        const codesStr = Array.from(selectedD6BlockCodes).map(c => `Kode ${c}`).join(', ');
+        labelMultiSelectD6BlockCode.innerHTML = `🔒 ${codesStr}`;
+        btnMultiSelectD6BlockCode.title = `Kode Blokir: ${codesStr}`;
+      } else {
+        labelMultiSelectD6BlockCode.innerHTML = `🔒 ${count} Kode Blokir`;
+        btnMultiSelectD6BlockCode.title = `${count} Kode Blokir Terpilih: ${Array.from(selectedD6BlockCodes).join(', ')}`;
+      }
+    }
+
+    function renderD6BlockCodeDropdownList() {
+      if (!listMultiSelectD6BlockCode) return;
+
+      if (currentAvailableBlockCodes.length === 0) {
+        listMultiSelectD6BlockCode.innerHTML = `
+          <div style="padding: 10px; text-align: center; color: #94a3b8; font-size: 11px;">
+            Tidak ada kode blokir
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      currentAvailableBlockCodes.forEach(item => {
+        const isChecked = selectedD6BlockCodes.has(item.code);
+        const valText = item.val > 0 ? ` (${formatRp(item.val)})` : '';
+        html += `
+          <label class="multiselect-item" data-code="${escapeHtml(item.code)}">
+            <input type="checkbox" value="${escapeHtml(item.code)}" ${isChecked ? 'checked' : ''} onchange="handleD6BlockCodeCheckboxChange(this)">
+            <span class="rule-badge" style="background:rgba(168,85,247,0.2); color:#c084fc; border-color:rgba(168,85,247,0.4); font-size:10.5px; font-weight:700; padding:1px 5px;">Kode ${escapeHtml(item.code)}</span>
+            <span class="multiselect-item-name" style="font-size:12px; color:#cbd5e1;">${valText}</span>
+          </label>
+        `;
+      });
+
+      listMultiSelectD6BlockCode.innerHTML = html;
+    }
+
+    window.setD6BlockFilter = function (code) {
+      selectedD6BlockCodes = new Set([code]);
+      syncD6BlockCodeCheckboxes();
+      updateD6BlockCodeButtonLabel();
+      renderRecapForSelectedNode(false);
+    };
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function toggleSearchableParentNodeDropdown(e) {
+      if (e) e.stopPropagation();
+      const willOpen = !dropdownSearchableParentNode.classList.contains('show');
+      closeAllDropdowns();
+      if (willOpen) {
+        dropdownSearchableParentNode.classList.add('show');
+        btnSearchableParentNode.classList.add('open');
+
+        renderSearchableParentNodeList();
+        setTimeout(() => {
+          if (searchParentNodeInput) {
+            searchParentNodeInput.focus();
+            searchParentNodeInput.select();
+          }
+        }, 50);
+      }
+    }
+
+    function closeSearchableParentNodeDropdown() {
+      if (dropdownSearchableParentNode) dropdownSearchableParentNode.classList.remove('show');
+      if (btnSearchableParentNode) btnSearchableParentNode.classList.remove('open');
+    }
+
+    function selectSearchableParentNode(key) {
+      selectNodeParent.value = key;
+      updateSearchableParentNodeSelected(key);
+      closeSearchableParentNodeDropdown();
+      renderRecapForSelectedNode(true);
+    }
+
+    function updateSearchableParentNodeSelected(key) {
+      const found = currentNodeOptions.find(o => o.key === key);
+      if (found && labelSearchableParentNode) {
+        labelSearchableParentNode.textContent = found.displayText;
+        if (btnSearchableParentNode) btnSearchableParentNode.title = found.fullTitle;
+      } else if (labelSearchableParentNode) {
+        const text = selectNodeParent.options[selectNodeParent.selectedIndex]?.textContent || 'Seluruh Satker (Total All Level)';
+        labelSearchableParentNode.textContent = text;
+      }
+    }
+
+    function renderSearchableParentNodeList() {
+      if (!listSearchableParentNode) return;
+      const query = (searchParentNodeInput ? searchParentNodeInput.value : '').toLowerCase().trim();
+      const currentKey = selectNodeParent.value || 'ROOT';
+
+      const filtered = currentNodeOptions.filter(item => {
+        if (!query) return true;
+        const codeMatch = item.code && item.code.toLowerCase().includes(query);
+        const nameMatch = item.name && item.name.toLowerCase().includes(query);
+        const displayMatch = item.displayText && item.displayText.toLowerCase().includes(query);
+        return codeMatch || nameMatch || displayMatch;
+      });
+
+      if (filtered.length === 0) {
+        listSearchableParentNode.innerHTML = `
+          <div class="searchable-select-empty">
+            <i class="fa-solid fa-magnifying-glass" style="font-size:16px; margin-bottom:6px; display:block; opacity:0.5;"></i>
+            Tidak ditemukan node yang cocok dengan "<strong>${escapeHtml(query)}</strong>"
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      filtered.forEach(item => {
+        const isSelected = item.key === currentKey;
+        const isRoot = item.key === 'ROOT';
+        const hasCode = !isRoot && item.code && item.code !== '-';
+
+        html += `
+          <div class="searchable-select-item ${isSelected ? 'selected' : ''}" data-key="${escapeHtml(item.key)}" onclick="selectSearchableParentNode('${escapeHtml(item.key)}')">
+            <div class="item-left">
+              ${hasCode ? `<span class="item-code-badge">${escapeHtml(item.code)}</span>` : ''}
+              ${isRoot ? `<span class="item-code-badge" style="background:rgba(34,197,94,0.15); color:#4ade80; border-color:rgba(34,197,94,0.3);">TOTAL</span>` : ''}
+              <span class="item-text" title="${escapeHtml(item.fullTitle)}">${escapeHtml(item.name || item.displayText)}</span>
+            </div>
+            ${item.val > 0 ? `<span class="item-val">${formatRp(item.val)}</span>` : ''}
+            ${isSelected ? '<i class="fa-solid fa-check item-check"></i>' : ''}
+          </div>
+        `;
+      });
+
+      listSearchableParentNode.innerHTML = html;
     }
 
     function updateParentNodeDropdown(levelVal) {
       const lvl = parseInt(levelVal, 10);
       selectNodeParent.innerHTML = '';
+      currentNodeOptions = [];
 
       if (lvl === 0) {
         const opt = document.createElement('option');
         opt.value = 'ROOT';
         opt.textContent = 'Seluruh Satker (Total All Level)';
         selectNodeParent.appendChild(opt);
-        return;
+
+        const totalVal = currentRecapData ? (currentRecapData.grandTotal?.val || 0) : 0;
+        currentNodeOptions.push({
+          key: 'ROOT',
+          code: 'ALL',
+          name: 'Seluruh Satker (Total All Level)',
+          val: totalVal,
+          displayText: 'Seluruh Satker (Total All Level)',
+          fullTitle: 'Seluruh Satker (Total All Level)'
+        });
+      } else {
+        const nodes = (currentRecapData && currentRecapData.nodesByLevel) ? (currentRecapData.nodesByLevel[lvl] || []) : [];
+        if (nodes.length === 0) {
+          const opt = document.createElement('option');
+          opt.value = '';
+          opt.textContent = '-- Tidak Ada Kode di Level Ini --';
+          selectNodeParent.appendChild(opt);
+
+          currentNodeOptions.push({
+            key: '',
+            code: '-',
+            name: '-- Tidak Ada Kode di Level Ini --',
+            val: 0,
+            displayText: '-- Tidak Ada Kode di Level Ini --',
+            fullTitle: '-- Tidak Ada Kode di Level Ini --'
+          });
+        } else {
+          nodes.forEach((n) => {
+            const opt = document.createElement('option');
+            opt.value = n.key;
+            const fullName = (n.name || n.fullPath || '').trim();
+            const truncatedName = fullName.length > 55 ? fullName.substring(0, 52) + '...' : fullName;
+            const labelText = `[${n.code}] ${truncatedName} (${formatRp(n.totalVal)})`;
+            const fullTitle = `[${n.code}] ${fullName} (${formatRp(n.totalVal)})`;
+            opt.textContent = labelText;
+            opt.title = fullTitle;
+            selectNodeParent.appendChild(opt);
+
+            currentNodeOptions.push({
+              key: n.key,
+              code: n.code,
+              name: fullName,
+              truncatedName: truncatedName,
+              val: n.totalVal,
+              displayText: labelText,
+              fullTitle: fullTitle
+            });
+          });
+        }
       }
 
-      const nodes = currentRecapData.nodesByLevel[lvl] || [];
-      if (nodes.length === 0) {
-        const opt = document.createElement('option');
-        opt.value = '';
-        opt.textContent = '-- Tidak Ada Kode di Level Ini --';
-        selectNodeParent.appendChild(opt);
-        return;
+      if (searchParentNodeInput) {
+        searchParentNodeInput.value = '';
+        if (btnClearSearchParentNode) btnClearSearchParentNode.style.display = 'none';
       }
 
-      nodes.forEach((n) => {
-        const opt = document.createElement('option');
-        opt.value = n.key;
-        const fullName = (n.name || n.fullPath || '').trim();
-        const truncatedName = fullName.length > 55 ? fullName.substring(0, 52) + '...' : fullName;
-        const labelText = `[${n.code}] ${truncatedName} (${formatRp(n.totalVal)})`;
-        const fullTitle = `[${n.code}] ${fullName} (${formatRp(n.totalVal)})`;
-        opt.textContent = labelText;
-        opt.title = fullTitle;
-        selectNodeParent.appendChild(opt);
-      });
+      const defaultKey = currentNodeOptions[0] ? currentNodeOptions[0].key : 'ROOT';
+      selectNodeParent.value = defaultKey;
+      updateSearchableParentNodeSelected(defaultKey);
+      renderSearchableParentNodeList();
     }
 
     function updateBlockCodeFilterDropdown(nodeSummary) {
-      if (!filterD6BlockCode) return;
-      const currentVal = filterD6BlockCode.value || 'ALL';
-      filterD6BlockCode.innerHTML = '<option value="ALL">🔒 Semua Kode Blokir</option>';
+      if (!listMultiSelectD6BlockCode) return;
 
       const codeMap = new Map();
       (nodeSummary.blockedByCodeList || []).forEach(b => {
-        if (b.code) codeMap.set(b.code, b.val);
+        if (b.code && b.code !== 'RK' && b.code !== '*') codeMap.set(b.code, b.val);
       });
       (nodeSummary.digit6List || []).forEach(d => {
-        if (d.blockCode && !codeMap.has(d.blockCode)) {
+        if (d.blockCode && d.blockCode !== 'RK' && d.blockCode !== '*' && !codeMap.has(d.blockCode)) {
           codeMap.set(d.blockCode, 0);
         }
       });
 
       const sortedCodes = Array.from(codeMap.keys()).sort();
-      sortedCodes.forEach(code => {
-        const opt = document.createElement('option');
-        opt.value = code;
-        const val = codeMap.get(code) || 0;
-        opt.textContent = val > 0 ? `Kode ${code} (${formatRp(val)})` : `Kode ${code}`;
-        filterD6BlockCode.appendChild(opt);
-      });
+      currentAvailableBlockCodes = sortedCodes.map(code => ({
+        code,
+        val: codeMap.get(code) || 0
+      }));
 
-      if (Array.from(filterD6BlockCode.options).some(o => o.value === currentVal)) {
-        filterD6BlockCode.value = currentVal;
-      } else {
-        filterD6BlockCode.value = 'ALL';
-      }
+      // By default awal, seluruh kode blokir tercentang semua!
+      selectedD6BlockCodes = new Set(sortedCodes);
+
+      renderD6BlockCodeDropdownList();
+      updateD6BlockCodeButtonLabel();
     }
 
-    function isTagMatch(tag, filterVal) {
-      if (filterVal === 'ALL') return true;
+    function isTagMatch(tag) {
+      if (!selectedD6Tags || selectedD6Tags.size === 0) return false;
+      if (selectedD6Tags.size === 3) return true;
       if (!tag) return false;
-      if (filterVal === 'RM') return tag === 'RM' || tag.includes('RM');
-      if (filterVal === 'PNP' || filterVal === 'PNBP') {
-        return tag === 'PNP' || tag === 'PNBP' || tag.includes('PNP') || tag.includes('PNBP');
-      }
-      return tag === filterVal;
+
+      const isRM = tag === 'RM' || tag.includes('RM');
+      const isPNP = tag === 'PNP' || tag === 'PNBP' || tag.includes('PNP') || tag.includes('PNBP');
+      const isPLN = tag === 'PLN' || tag === 'PHLN' || tag.includes('PLN') || tag.includes('PHLN');
+
+      if (isRM && selectedD6Tags.has('RM')) return true;
+      if (isPNP && selectedD6Tags.has('PNP')) return true;
+      if (isPLN && selectedD6Tags.has('PLN')) return true;
+
+      return false;
     }
 
-    function isDetailMatching(d6, det, query, tagFilter, blockedFilter, blockCodeFilter) {
-      if (!isTagMatch(det.tagging, tagFilter)) return false;
+    function isBlockedMatch(isBlocked) {
+      if (!selectedD6Blocked || selectedD6Blocked.size === 0) return false;
+      if (selectedD6Blocked.size === 2) return true;
+      if (selectedD6Blocked.has('BLOCKED') && isBlocked) return true;
+      if (selectedD6Blocked.has('NORMAL') && !isBlocked) return true;
+      return false;
+    }
 
-      if (blockedFilter === 'BLOCKED' && !det.isBlocked) return false;
-      if (blockedFilter === 'NORMAL' && det.isBlocked) return false;
+    function isBlockCodeMatch(d6, det) {
+      if (currentAvailableBlockCodes.length === 0) return true;
+      if (selectedD6BlockCodes.size === 0) return false;
+      if (selectedD6BlockCodes.size === currentAvailableBlockCodes.length) return true;
 
-      if (blockCodeFilter && blockCodeFilter !== 'ALL') {
-        const codeToMatch = d6.blockCode || det.blockCode || 'Tanpa Kode';
-        if (codeToMatch !== blockCodeFilter) return false;
-      }
+      const codeToMatch = d6.blockCode || det.blockCode;
+      if (!codeToMatch) return false;
+      return selectedD6BlockCodes.has(codeToMatch);
+    }
+
+    function isDetailMatching(d6, det, query) {
+      if (!isTagMatch(det.tagging)) return false;
+      if (!isBlockedMatch(det.isBlocked)) return false;
+      if (!isBlockCodeMatch(d6, det)) return false;
 
       if (query) {
         const q = query.toLowerCase();
@@ -1406,13 +2086,18 @@
       document.getElementById('kpiTotalPagu').textContent = formatRp(nodeSummary.totalVal);
       document.getElementById('kpiPathBreadcrumb').textContent = nodeSummary.fullPath || 'Satker';
 
-      document.getElementById('kpiRM').textContent = formatRp(nodeSummary.totalRM);
-      document.getElementById('kpiPNBP').textContent = formatRp(nodeSummary.totalPNBP);
+      document.getElementById('kpiRM').textContent = formatRp(nodeSummary.totalRM || 0);
+      document.getElementById('kpiPNBP').textContent = formatRp(nodeSummary.totalPNBP || 0);
+      if (document.getElementById('kpiPLN')) {
+        document.getElementById('kpiPLN').textContent = formatRp(nodeSummary.totalPLN || 0);
+      }
 
-      document.getElementById('kpiTotalBlocked').textContent = formatRp(nodeSummary.totalBlocked);
+      document.getElementById('kpiTotalBlocked').textContent = formatRp(nodeSummary.totalBlocked || 0);
 
-      const blockCodeBadgesHtml = (nodeSummary.blockedByCodeList || []).map(b => `
-        <span style="background:rgba(251,191,36,0.15); color:#fbbf24; border:1px solid rgba(251,191,36,0.3); border-radius:4px; padding:1px 6px; font-weight:600; font-size:10px;">
+      const blockCodeBadgesHtml = (nodeSummary.blockedByCodeList || [])
+        .filter(b => b.code !== 'RK' && b.code !== '*')
+        .map(b => `
+        <span style="background:rgba(251,191,36,0.15); color:#fbbf24; border:1px solid rgba(251,191,36,0.3); border-radius:4px; padding:1px 6px; font-weight:600; font-size:10px; cursor:pointer;" onclick="setD6BlockFilter('${b.code}')" title="Klik untuk filter Kode ${b.code}">
           Kode ${b.code}: ${formatRp(b.val)}
         </span>
       `).join('');
@@ -1420,12 +2105,17 @@
       document.getElementById('kpiBlockedDetail').innerHTML = `
         <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; width:100%; margin-bottom:4px;">
           <span style="display:inline-flex; align-items:center; gap:4px; color:#60a5fa; font-weight:600; font-size:11px;">
-            <span class="tag-badge rm" style="font-size:9px; padding:1px 4px;">RM</span> ${formatRp(nodeSummary.blockedRM)}
+            <span class="tag-badge rm" style="font-size:9px; padding:1px 4px;">RM (*)</span> ${formatRp(nodeSummary.blockedRM || 0)}
           </span>
           <span style="color:#475569;">|</span>
           <span style="display:inline-flex; align-items:center; gap:4px; color:#4ade80; font-weight:600; font-size:11px;">
-            <span class="tag-badge pnbp" style="font-size:9px; padding:1px 4px;">PNP</span> ${formatRp(nodeSummary.blockedPNBP)}
+            <span class="tag-badge pnbp" style="font-size:9px; padding:1px 4px;">PNP (*)</span> ${formatRp(nodeSummary.blockedPNBP || 0)}
           </span>
+          ${(nodeSummary.blockedPLN && nodeSummary.blockedPLN > 0) ? `
+          <span style="color:#475569;">|</span>
+          <span style="display:inline-flex; align-items:center; gap:4px; color:#c084fc; font-weight:600; font-size:11px;">
+            <span class="tag-badge pln" style="font-size:9px; padding:1px 4px;">PLN (RK)</span> ${formatRp(nodeSummary.blockedPLN)}
+          </span>` : ''}
         </div>
         ${blockCodeBadgesHtml ? `<div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap; width:100%; margin-top:2px;">${blockCodeBadgesHtml}</div>` : ''}
       `;
@@ -1438,26 +2128,23 @@
       // Update Table Title
       document.getElementById('d6TableTitle').innerHTML = `
         <i class="fa-solid fa-table-list" style="color:#f59e0b;"></i>
-        Daftar Pattern Digit 6 (Akun) di bawah Level ${nodeSummary.levelName || 'Highest'}: <code>${nodeSummary.code}</code>
+        Daftar Akun di bawah Level ${nodeSummary.levelName || 'Highest'}: <code>${nodeSummary.code}</code>
       `;
 
       // Filter Digit 6 Table by search query, code selection, tagging, blocked status, and block code
       const query = (searchD6.value || '').toLowerCase().trim();
-      const tagFilter = filterD6Tagging.value || 'ALL';
-      const blockedFilter = filterD6Blocked.value || 'ALL';
-      const blockCodeFilter = filterD6BlockCode ? filterD6BlockCode.value || 'ALL' : 'ALL';
-
-      const isDetMatch = (d6, det) => isDetailMatching(d6, det, query, tagFilter, blockedFilter, blockCodeFilter);
+      const isDetMatch = (d6, det) => isDetailMatching(d6, det, query);
 
       // Filter parent Digit 6 list: keep accounts that have matching detail items under active filters
       let d6Items = (nodeSummary.digit6List || []).filter(d6 => {
         // Multi-select Code filter
-        if (selectedD6Codes.size > 0 && selectedD6Codes.size < currentAvailableD6Codes.length) {
+        if (selectedD6Codes.size === 0) return false;
+        if (selectedD6Codes.size < currentAvailableD6Codes.length) {
           if (!selectedD6Codes.has(d6.code)) return false;
         }
 
         // Tagging check at account level
-        if (!isTagMatch(d6.tagging, tagFilter)) return false;
+        if (!isTagMatch(d6.tagging)) return false;
 
         // Account must have at least one detail row that matches all filter criteria
         return (d6.details || []).some(det => isDetMatch(d6, det));
@@ -1491,15 +2178,18 @@
       let grandTotalVal = 0;
       let grandTotalRM = 0;
       let grandTotalPNBP = 0;
+      let grandTotalPLN = 0;
       let grandTotalBlocked = 0;
 
       let html = '';
       d6Items.forEach((d6, idx) => {
         const tagBadge = d6.tagging === 'RM'
           ? '<span class="tag-badge rm">RM</span>'
-          : '<span class="tag-badge pnbp">PNP</span>';
+          : (d6.tagging === 'PLN' || d6.tagging === 'PHLN'
+            ? '<span class="tag-badge pln">PLN</span>'
+            : '<span class="tag-badge pnbp">PNP</span>');
 
-        const blockCodeBadge = d6.blockCode
+        const blockCodeBadge = (d6.blockCode && d6.blockCode !== 'RK' && d6.blockCode !== '*')
           ? `<span class="rule-badge" style="background:rgba(168,85,247,0.2); color:#c084fc; border-color:rgba(168,85,247,0.4); font-size:11px; font-weight:600;">Kode ${d6.blockCode}</span>`
           : '<span style="color:#64748b; font-size:12px;">-</span>';
 
@@ -1509,12 +2199,14 @@
         // Calculate values for filtered items under this account
         const d6FilteredVal = filteredDetails.reduce((sum, det) => sum + (det.val || 0), 0);
         const d6FilteredRM = filteredDetails.filter(det => det.tagging === 'RM').reduce((sum, det) => sum + (det.val || 0), 0);
-        const d6FilteredPNBP = filteredDetails.filter(det => det.tagging !== 'RM').reduce((sum, det) => sum + (det.val || 0), 0);
+        const d6FilteredPNBP = filteredDetails.filter(det => det.tagging === 'PNBP' || det.tagging === 'PNP').reduce((sum, det) => sum + (det.val || 0), 0);
+        const d6FilteredPLN = filteredDetails.filter(det => det.tagging === 'PLN' || det.tagging === 'PHLN').reduce((sum, det) => sum + (det.val || 0), 0);
         const d6FilteredBlocked = filteredDetails.filter(det => det.isBlocked).reduce((sum, det) => sum + (det.val || 0), 0);
 
         grandTotalVal += d6FilteredVal;
         grandTotalRM += d6FilteredRM;
         grandTotalPNBP += d6FilteredPNBP;
+        grandTotalPLN += d6FilteredPLN;
         grandTotalBlocked += d6FilteredBlocked;
 
         const d6PctBlocked = d6FilteredVal > 0 ? ((d6FilteredBlocked / d6FilteredVal) * 100).toFixed(1) : '0.0';
@@ -1528,17 +2220,26 @@
           : '<span style="color:#64748b;">0.0%</span>';
 
         const detailRowsHtml = filteredDetails.length > 0
-          ? filteredDetails.map(det => `
+          ? filteredDetails.map(det => {
+            const detTagClass = det.tagging === 'RM' ? 'rm' : (det.tagging === 'PLN' || det.tagging === 'PHLN' ? 'pln' : 'pnbp');
+            const isPLNBlocked = det.isBlocked && (det.tagging === 'PLN' || det.blockMarker === 'RK');
+            const markerText = isPLNBlocked ? 'RK' : '*';
+            const bCodeBadge = (det.blockCode && det.blockCode !== 'RK' && det.blockCode !== '*')
+              ? `<span class="rule-badge" style="background:rgba(168,85,247,0.2); color:#c084fc; border-color:rgba(168,85,247,0.4); font-size:10px; font-weight:600; margin-left:4px;">Kode ${det.blockCode}</span>`
+              : '';
+            const blockStatusHtml = det.isBlocked
+              ? `<span class="star-badge" style="${isPLNBlocked ? 'color:#fbbf24;' : ''}">⭐ DIBLOKIR [${markerText}] (${formatRp(det.val)})</span> ${bCodeBadge}`
+              : '<span style="color:#4ade80;">Normal</span>';
+            return `
               <tr>
                 <td><span class="row-num-badge">Baris ${det.rowNum}</span></td>
                 <td><strong>${det.uraian}</strong></td>
-                <td><span class="tag-badge ${det.tagging === 'RM' ? 'rm' : 'pnbp'}">${det.tagging}</span></td>
+                <td><span class="tag-badge ${detTagClass}">${det.tagging}</span></td>
                 <td>${formatRp(det.val)}</td>
-                <td>
-                  ${det.isBlocked ? `<span class="star-badge">⭐ DIBLOKIR (${formatRp(det.val)}) ${det.blockCode ? `<span style="color:#c084fc; font-weight:600;">[Kode ${det.blockCode}]</span>` : ''}</span>` : '<span style="color:#4ade80;">Normal</span>'}
-                </td>
+                <td>${blockStatusHtml}</td>
               </tr>
-            `).join('')
+            `;
+          }).join('')
           : `
               <tr>
                 <td colspan="5" style="text-align:center; padding: 15px; color:#94a3b8;">
@@ -1570,9 +2271,14 @@
           ? `${filteredDetails.length} / ${d6.details.length} Line`
           : `${d6.details.length} Line`;
 
-        const activePaguStr = d6.tagging === 'RM'
-          ? `<span style="color:#60a5fa; font-weight:700; font-family:'JetBrains Mono',monospace;">${formatRp(d6FilteredRM || d6FilteredVal)}</span>`
-          : `<span style="color:#4ade80; font-weight:700; font-family:'JetBrains Mono',monospace;">${formatRp(d6FilteredPNBP || d6FilteredVal)}</span>`;
+        let activePaguStr = '';
+        if (d6.tagging === 'RM') {
+          activePaguStr = `<span style="color:#60a5fa; font-weight:700; font-family:'JetBrains Mono',monospace;">${formatRp(d6FilteredRM || d6FilteredVal)}</span>`;
+        } else if (d6.tagging === 'PLN' || d6.tagging === 'PHLN') {
+          activePaguStr = `<span style="color:#c084fc; font-weight:700; font-family:'JetBrains Mono',monospace;">${formatRp(d6FilteredPLN || d6FilteredVal)}</span>`;
+        } else {
+          activePaguStr = `<span style="color:#4ade80; font-weight:700; font-family:'JetBrains Mono',monospace;">${formatRp(d6FilteredPNBP || d6FilteredVal)}</span>`;
+        }
 
         html += `
           <tr>
@@ -1632,7 +2338,8 @@
               <div style="display:flex; flex-direction:column; gap:2px; line-height:1.3;">
                 ${grandTotalRM > 0 ? `<span style="color:#60a5fa;">RM: ${formatRp(grandTotalRM)}</span>` : ''}
                 ${grandTotalPNBP > 0 ? `<span style="color:#4ade80;">PNP: ${formatRp(grandTotalPNBP)}</span>` : ''}
-                ${grandTotalRM === 0 && grandTotalPNBP === 0 ? '<span style="color:#94a3b8;">Rp 0</span>' : ''}
+                ${grandTotalPLN > 0 ? `<span style="color:#c084fc;">PLN: ${formatRp(grandTotalPLN)}</span>` : ''}
+                ${grandTotalRM === 0 && grandTotalPNBP === 0 && grandTotalPLN === 0 ? '<span style="color:#94a3b8;">Rp 0</span>' : ''}
               </div>
             </td>
             <td style="font-family:'JetBrains Mono',monospace; font-size:13px;">
@@ -1662,26 +2369,23 @@
       const nodeSummary = currentRecapData.nodeSummaries[selectedKey] || currentRecapData.rootSummary;
 
       const query = (searchD6.value || '').toLowerCase().trim();
-      const tagFilter = filterD6Tagging.value || 'ALL';
-      const blockedFilter = filterD6Blocked.value || 'ALL';
-      const blockCodeFilter = filterD6BlockCode ? filterD6BlockCode.value || 'ALL' : 'ALL';
-
-      const isDetMatch = (d6, det) => isDetailMatching(d6, det, query, tagFilter, blockedFilter, blockCodeFilter);
+      const isDetMatch = (d6, det) => isDetailMatching(d6, det, query);
 
       let d6Items = (nodeSummary.digit6List || []).filter(d6 => {
         // Multi-select Code filter
-        if (selectedD6Codes.size > 0 && selectedD6Codes.size < currentAvailableD6Codes.length) {
+        if (selectedD6Codes.size === 0) return false;
+        if (selectedD6Codes.size < currentAvailableD6Codes.length) {
           if (!selectedD6Codes.has(d6.code)) return false;
         }
 
-        if (!isTagMatch(d6.tagging, tagFilter)) return false;
+        if (!isTagMatch(d6.tagging)) return false;
         return (d6.details || []).some(det => isDetMatch(d6, det));
       });
 
       d6Items.sort((a, b) => {
         const codeCmp = a.code.localeCompare(b.code, undefined, { numeric: true });
         if (codeCmp !== 0) return codeCmp;
-        const tagPriority = { 'RM': 1, 'PNP': 2, 'PNBP': 2 };
+        const tagPriority = { 'RM': 1, 'PNP': 2, 'PNBP': 2, 'PLN': 3, 'PHLN': 3 };
         const pA = tagPriority[a.tagging] || 9;
         const pB = tagPriority[b.tagging] || 9;
         return pA - pB;
@@ -1691,7 +2395,8 @@
         const filteredDetails = (d6.details || []).filter(det => isDetMatch(d6, det));
         const d6FilteredVal = filteredDetails.reduce((sum, det) => sum + (det.val || 0), 0);
         const d6FilteredRM = filteredDetails.filter(det => det.tagging === 'RM').reduce((sum, det) => sum + (det.val || 0), 0);
-        const d6FilteredPNBP = filteredDetails.filter(det => det.tagging !== 'RM').reduce((sum, det) => sum + (det.val || 0), 0);
+        const d6FilteredPNBP = filteredDetails.filter(det => det.tagging === 'PNBP' || det.tagging === 'PNP').reduce((sum, det) => sum + (det.val || 0), 0);
+        const d6FilteredPLN = filteredDetails.filter(det => det.tagging === 'PLN' || det.tagging === 'PHLN').reduce((sum, det) => sum + (det.val || 0), 0);
         const d6FilteredBlocked = filteredDetails.filter(det => det.isBlocked).reduce((sum, det) => sum + (det.val || 0), 0);
 
         return {
@@ -1702,6 +2407,7 @@
           val: d6FilteredVal,
           rm: d6FilteredRM,
           pnbp: d6FilteredPNBP,
+          pln: d6FilteredPLN,
           blocked: d6FilteredBlocked,
           pctBlocked: d6FilteredVal > 0 ? ((d6FilteredBlocked / d6FilteredVal) * 100).toFixed(1) : '0.0',
           details: filteredDetails
@@ -1711,17 +2417,34 @@
       const totalVal = exportItems.reduce((sum, it) => sum + it.val, 0);
       const totalRM = exportItems.reduce((sum, it) => sum + it.rm, 0);
       const totalPNBP = exportItems.reduce((sum, it) => sum + it.pnbp, 0);
+      const totalPLN = exportItems.reduce((sum, it) => sum + (it.pln || 0), 0);
       const totalBlocked = exportItems.reduce((sum, it) => sum + it.blocked, 0);
 
       const activeSelectedCodes = selectedD6Codes.size > 0 && selectedD6Codes.size < currentAvailableD6Codes.length
         ? Array.from(selectedD6Codes)
         : [];
 
+      const tagFilterStr = selectedD6Tags.size === 3
+        ? 'Semua Tagging'
+        : (selectedD6Tags.size === 0 ? 'Tidak Ada' : Array.from(selectedD6Tags).join(', '));
+
+      const blockedFilterStr = selectedD6Blocked.size === 2
+        ? 'Semua Status Blokir'
+        : (selectedD6Blocked.size === 0
+          ? 'Tidak Ada'
+          : (selectedD6Blocked.has('BLOCKED') ? 'Diblokir' : 'Normal'));
+
+      const blockCodeFilterStr = (currentAvailableBlockCodes.length === 0 || selectedD6BlockCodes.size === currentAvailableBlockCodes.length)
+        ? 'Semua Kode Blokir'
+        : (selectedD6BlockCodes.size === 0
+          ? 'Tidak Ada'
+          : Array.from(selectedD6BlockCodes).map(c => `Kode ${c}`).join(', '));
+
       return {
         nodeSummary,
-        filters: { query, selectedCodes: activeSelectedCodes, tagFilter, blockedFilter, blockCodeFilter },
+        filters: { query, selectedCodes: activeSelectedCodes, tagFilter: tagFilterStr, blockedFilter: blockedFilterStr, blockCodeFilter: blockCodeFilterStr },
         items: exportItems,
-        totals: { totalVal, totalRM, totalPNBP, totalBlocked }
+        totals: { totalVal, totalRM, totalPNBP, totalPLN, totalBlocked }
       };
     }
 
@@ -1746,8 +2469,8 @@
         rows.push(['Satker / Hirarki:', `[${nodeSummary.code}] ${nodeSummary.name || nodeSummary.fullPath}`]);
         rows.push(['Filter Kode Akun:', filters.selectedCodes && filters.selectedCodes.length > 0 ? filters.selectedCodes.join(', ') : 'Semua Kode Akun']);
         rows.push(['Filter Tagging:', filters.tagFilter === 'ALL' ? 'Semua Tagging' : filters.tagFilter]);
-        rows.push(['Filter Status Blokir:', filters.blockedFilter === 'ALL' ? 'Semua Status' : (filters.blockedFilter === 'BLOCKED' ? 'Diblokir Only' : 'Normal')]);
-        rows.push(['Filter Kode Blokir:', filters.blockCodeFilter === 'ALL' ? 'Semua Kode Blokir' : `Kode ${filters.blockCodeFilter}`]);
+        rows.push(['Filter Status Blokir:', filters.blockedFilter]);
+        rows.push(['Filter Kode Blokir:', filters.blockCodeFilter]);
         rows.push(['Filter Pencarian (Uraian):', filters.query || '-']);
 
         if (nodeSummary.blockedByCodeList && nodeSummary.blockedByCodeList.length > 0) {
@@ -1759,7 +2482,7 @@
         rows.push([]); // Blank separator row
 
         // Table Header Row
-        rows.push(['Kode Akun / Baris', 'Uraian Akun / Item Detail (-)', 'Sumber Dana', 'Kode Blokir', 'Total Pagu (Rp)', 'Pagu RM (Rp)', 'Pagu PNP (Rp)', 'Diblokir (Rp)', 'Status']);
+        rows.push(['Kode Akun / Baris', 'Uraian Akun / Item Detail (-)', 'Sumber Dana', 'Kode Blokir', 'Total Pagu (Rp)', 'Pagu RM (Rp)', 'Pagu PNP (Rp)', 'Pagu PLN (Rp)', 'Diblokir (Rp)', 'Status']);
 
         items.forEach(d6 => {
           // Parent Account Row
@@ -1771,22 +2494,27 @@
             d6.val,
             d6.rm,
             d6.pnbp,
+            d6.pln || 0,
             d6.blocked,
             d6.blocked > 0 ? `Diblokir (${d6.pctBlocked}%)` : 'Normal'
           ]);
 
           // Sub-detail rows under account
           d6.details.forEach(det => {
+            const isPLNBlocked = det.isBlocked && (det.tagging === 'PLN' || det.blockMarker === 'RK');
+            const markerText = isPLNBlocked ? 'RK' : '*';
+            const bCode = (det.blockCode && det.blockCode !== 'RK' && det.blockCode !== '*') ? det.blockCode : '';
             rows.push([
               `Baris ${det.rowNum}`,
               `   - ${det.uraian}`,
               det.tagging,
-              det.blockCode || '-',
+              bCode || '-',
               det.val,
               det.tagging === 'RM' ? det.val : 0,
-              det.tagging !== 'RM' ? det.val : 0,
+              (det.tagging === 'PNBP' || det.tagging === 'PNP') ? det.val : 0,
+              (det.tagging === 'PLN' || det.tagging === 'PHLN') ? det.val : 0,
               det.isBlocked ? det.val : 0,
-              det.isBlocked ? `⭐ DIBLOKIR ${det.blockCode ? `(Kode ${det.blockCode})` : ''}` : 'Normal'
+              det.isBlocked ? `⭐ DIBLOKIR [${markerText}] ${bCode ? `(Kode ${bCode})` : ''}` : 'Normal'
             ]);
           });
         });
@@ -1801,6 +2529,7 @@
           totals.totalVal,
           totals.totalRM,
           totals.totalPNBP,
+          totals.totalPLN || 0,
           totals.totalBlocked,
           totals.totalVal > 0 ? `${((totals.totalBlocked / totals.totalVal) * 100).toFixed(1)}% Diblokir` : '0%'
         ]);
@@ -1813,6 +2542,7 @@
           { wch: 55 },
           { wch: 14 },
           { wch: 14 },
+          { wch: 18 },
           { wch: 18 },
           { wch: 18 },
           { wch: 18 },

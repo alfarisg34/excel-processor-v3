@@ -276,7 +276,7 @@ async function mapToRab(inWorkbook) {
     row2[16] = 'SAT';
     row2[17] = 'HARGASAT';
     row2[18] = 'JUMLAH';
-    row2[19] = 'TAGGING RM/ PNBP';
+    row2[19] = 'TAGGING RM/ PNBP/ PLN';
 
     row2[20] = 'KODE';
     row2[21] = 'URAIAN';
@@ -287,7 +287,7 @@ async function mapToRab(inWorkbook) {
     row2[36] = 'SAT';
     row2[37] = 'HARGASAT';
     row2[38] = 'JUMLAH';
-    row2[39] = 'TAGGING RM/ PNBP';
+    row2[39] = 'TAGGING RM/ PNBP/ PLN';
 
     row2[40] = 'SELISIH';
     row2[41] = 'SISA ANGGARAN';
@@ -447,6 +447,8 @@ function populateSummaryColumns(worksheet) {
   const rowsRMMenjadi = [];
   const rowsPNPSemula = [];
   const rowsPNPMenjadi = [];
+  const rowsPLNSemula = [];
+  const rowsPLNMenjadi = [];
 
   worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
     if (rowNumber < 4) return;
@@ -471,6 +473,9 @@ function populateSummaryColumns(worksheet) {
 
     if (valT === 'PNP' || valT === 'PNBP') rowsPNPSemula.push(rowNumber);
     if (valAN === 'PNP' || valAN === 'PNBP') rowsPNPMenjadi.push(rowNumber);
+
+    if (valT === 'PLN' || valT === 'PHLN') rowsPLNSemula.push(rowNumber);
+    if (valAN === 'PLN' || valAN === 'PHLN') rowsPLNMenjadi.push(rowNumber);
   });
 
   triggerRows.forEach((Y) => {
@@ -539,6 +544,22 @@ function populateSummaryColumns(worksheet) {
     // 12. SELISIH PNBP (col 54 / BB)
     worksheet.getRow(Y).getCell(54).value = 'SELISIH PNBP';
     worksheet.getRow(Y + 1).getCell(54).value = { formula: `BA${Y + 1}-AZ${Y + 1}` };
+
+    // 13. PLN SEMULA (col 55 / BC)
+    worksheet.getRow(Y).getCell(55).value = 'PLN SEMULA';
+    const inRangePLNS = rowsPLNSemula.filter((r) => r > Y && r < nextY);
+    const formPLNS = inRangePLNS.length > 0 ? inRangePLNS.map((r) => `S${r}`).join('+') : '0';
+    worksheet.getRow(Y + 1).getCell(55).value = { formula: formPLNS };
+
+    // 14. PLN MENJADI (col 56 / BD)
+    worksheet.getRow(Y).getCell(56).value = 'PLN MENJADI';
+    const inRangePLNM = rowsPLNMenjadi.filter((r) => r > Y && r < nextY);
+    const formPLNM = inRangePLNM.length > 0 ? inRangePLNM.map((r) => `AM${r}`).join('+') : '0';
+    worksheet.getRow(Y + 1).getCell(56).value = { formula: formPLNM };
+
+    // 15. SELISIH PLN (col 57 / BE)
+    worksheet.getRow(Y).getCell(57).value = 'SELISIH PLN';
+    worksheet.getRow(Y + 1).getCell(57).value = { formula: `BD${Y + 1}-BC${Y + 1}` };
   });
 }
 

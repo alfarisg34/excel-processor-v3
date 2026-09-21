@@ -24,6 +24,28 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Excel Processor V3 API is running' });
 });
 
+const { releases, getGitCommits } = require('./src/utils/changelog');
+
+// Route for Changelog Page
+app.get('/changelog', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'changelog.html'));
+});
+
+// API endpoint for Changelog data & Git commits history
+app.get('/api/changelog', (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit, 10) || 100;
+    const gitCommits = getGitCommits(limit);
+    res.json({
+      currentVersion: '3.2.0',
+      releases,
+      gitCommits
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Gagal mengambil data changelog', detail: err.message });
+  }
+});
+
 const validateLevelDifferences = require('./src/utils/level-validator');
 
 // Helper to handle Excel processing response

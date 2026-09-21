@@ -188,20 +188,26 @@ async function faMatching(workbook, faBuffer) {
         rkkCtx.akun = '';
       } else if (PATTERNS.DIGIT_6.test(code)) {
         rkkCtx.akun = code;
+        rkkCtx.akunTagging = valT || valAN || '';
       } else if (code === '-') {
         totalDetailCount++;
 
-        // Rule: If Tagging RM/PNBP has '*', this is a blocked budget and will NOT exist in FA Detail
-        const isBlocked = valT.includes('*') || valAN.includes('*');
+        // Rule: If Tagging RM/PNBP has '*', or PLN has 'RK', this is a blocked budget and will NOT exist in FA Detail
+        const isBlockedStar = valT.includes('*') || valAN.includes('*');
+        const isBlockedRK = valT === 'RK' || valAN === 'RK' || valT.includes('RK') || valAN.includes('RK');
+        const isBlockedText = cleanUraian.toLowerCase().includes('blokir');
+        const isBlocked = isBlockedStar || isBlockedRK || isBlockedText;
+
         if (isBlocked) {
           row.getCell(colFA).value = 0;
+          const isRK = isBlockedRK || (rkkCtx.akunTagging === 'PLN' && !isBlockedStar);
           blockedItems.push({
             rowNumber: r,
             hierarchyPath: [rkkCtx.program, rkkCtx.kegiatan, rkkCtx.kro, rkkCtx.ro, rkkCtx.komponen, rkkCtx.subkomponen, rkkCtx.akun].filter(Boolean).join(' > '),
             uraian: cleanUraian,
             pagu: jumlahS,
-            tagging: valT || valAN || '*',
-            status: 'Anggaran Diblokir (Tagging *)'
+            tagging: valT || valAN || (isRK ? 'RK' : '*'),
+            status: isRK ? 'Anggaran Diblokir (Tagging RK)' : 'Anggaran Diblokir (Tagging *)'
           });
           continue;
         }

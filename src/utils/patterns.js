@@ -18,8 +18,9 @@ const PATTERNS = {
   // 3-digit number: e.g. 051
   DIGIT_3: /^\d{3}$/,
 
-  // Single alphabet: e.g. A, B, C
-  SINGLE_ALPHA: /^[A-Za-z]$/,
+  // Subkomponen: single or multi-letter alphabet, e.g. A, B, C, AC, ZA, ZB (1 to 3 letters)
+  SINGLE_ALPHA: /^[A-Za-z]{1,3}$/,
+  SUBKOMPONEN: /^[A-Za-z]{1,3}$/,
 
   // 6-digit number: e.g. 521211
   DIGIT_6: /^\d{6}$/,

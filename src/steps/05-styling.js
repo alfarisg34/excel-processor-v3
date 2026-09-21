@@ -152,8 +152,8 @@ async function styling(workbook) {
     }
     worksheet.getColumn(41).width = 14; // AO SELISIH
     worksheet.getColumn(42).width = 18; // AP SISA ANGGARAN REALISASI FA
-    for (let c = 43; c <= 54; c++) {
-      worksheet.getColumn(c).width = 14; // AQ..BB (12 Summary Columns)
+    for (let c = 43; c <= 57; c++) {
+      worksheet.getColumn(c).width = 14; // AQ..BE (15 Summary Columns)
     }
   });
 }

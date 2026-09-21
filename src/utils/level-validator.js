@@ -32,8 +32,10 @@ function getLevelNumericOrder(c) {
 function extractTagging(cells) {
   for (let c = 8; c <= 16; c++) {
     const t = (cells[c] || '').trim().toUpperCase();
-    if (t === 'RM' || t === 'PNP' || t === 'PNBP') {
-      return t === 'PNP' ? 'PNBP' : t;
+    if (t === 'RM' || t === 'PNP' || t === 'PNBP' || t === 'PLN' || t === 'PHLN') {
+      if (t === 'PNP') return 'PNBP';
+      if (t === 'PHLN') return 'PLN';
+      return t;
     }
   }
   return '';
@@ -154,7 +156,7 @@ async function validateLevelDifferences(inputWorkbookOrBuffer, outputWorkbook) {
     else if (lvl === 7) { outCtx.akun = code; outCtx.subGroup = ''; outCtx.tagging = rowTag || 'RM'; }
     else if (lvl === 8) { outCtx.subGroup = uraian; }
 
-    const tagging = rowTag || outCtx.tagging || 'RM';
+    const tagging = (rowTag === 'RM' || rowTag === 'PNBP' || rowTag === 'PNP' || rowTag === 'PLN') ? rowTag : (outCtx.tagging || 'RM');
 
     if (code === '-') {
       const vol1Str = getCellText(row.getCell(5));

@@ -42,13 +42,13 @@ It transforms raw RKK Satker input files into a **20-column side-by-side compari
 
 ### 4. 🔍 Pre-Upload Input Validation (7 Hierarchy Rules)
 - Automatically inspects raw RKK Satker uploads before processing to detect duplicate code violations:
-  - **Rule 1**: Code 322 (Program) duplicate check
-  - **Rule 2**: Digit 4 (Kegiatan) duplicate check
-  - **Rule 3**: Code 43 (KRO) duplicate check
-  - **Rule 4**: Code 433 (RO) duplicate check
-  - **Rule 5**: Digit 3 (Komponen) duplicate under the same Code 433 parent
-  - **Rule 6**: Single Alpha (Subkomponen) duplicate under the same Digit 3 parent
-  - **Rule 7**: Digit 6 (Akun) duplicate under the same Single Alpha parent (distinguishing RM vs PNBP)
+  - **Rule 1**: Program duplicate check
+  - **Rule 2**: Kegiatan duplicate check
+  - **Rule 3**: KRO duplicate check
+  - **Rule 4**: RO duplicate check
+  - **Rule 5**: Komponen duplicate under the same RO parent
+  - **Rule 6**: Subkomponen duplicate under the same Komponen parent
+  - **Rule 7**: Akun duplicate under the same Subkomponen parent (distinguishing RM vs PNBP vs PLN)
 
 ---
 
