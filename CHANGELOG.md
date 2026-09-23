@@ -7,6 +7,66 @@ dan proyek ini menganut standar [Semantic Versioning (SemVer 2.0.0)](https://sem
 
 ---
 
+## [3.4.0] - 2026-09-23
+
+### Added (FEAT)
+- **Pohon Struktur & Drilldown Hirarki Interaktif (Hierarchical Tree & Scope Drilldown Inspector)**:
+  - **Eksplorasi Menyeluruh 7 Tingkat Hirarki**: Visualisasi hierarki berjenjang komprehensif mulai dari Level 1 (Program) $\rightarrow$ Level 2 (Kegiatan) $\rightarrow$ Level 3 (KRO) $\rightarrow$ Level 4 (RO) $\rightarrow$ Level 5 (Komponen) $\rightarrow$ Level 6 (Subkomponen) $\rightarrow$ hingga Level 7 (Akun Digit 6).
+  - **Contextual Scope Inspection**:
+    - Saat berada di level atas (Seluruh Satker), sistem menyajikan berapa total Program (misal `2 Program`), apa saja dan anggarannya, berapa total Kegiatan (misal `5 Kegiatan`), apa saja dan anggarannya, hingga berapa total Akun (misal `58 Akun`) di seluruh satker.
+    - Saat pengguna masuk/fokus ke level Program, lingkup analisis otomatis mengunci ke program tersebut dan menyajikan rincian turunan di bawahnya: berapa total kegiatan di program tersebut, s/d berapa total akun dan nominal anggarannya masing-masing.
+    - Begitu pula saat masuk ke Kegiatan, KRO, RO, Komponen, dan Subkomponen.
+  - **Scope Multi-Tier Cards & Quick Modal**:
+    - Kartu metrik dinamis untuk setiap level di bawah lingkup aktif yang menampilkan jumlah entitas dan total nominal pagunya.
+    - Tombol `[👁️ Lihat Rincian]` pada setiap kartu level untuk memunculkan popover modal berisi daftar lengkap kode, nama/uraian, nominal pagu, sumber dana (RM/PNP/PLN), total blokir, dan rincian kode blokir disertai fitur pencarian instan dan totalitas (*grand total*).
+  - **Interactive Collapsible Tree Grid**:
+    - Tabel pohon dengan tombol ekspansi (`▶` / `▼`), indentasi visual berjenjang, penanda level berwarna, dan tombol `[🎯 Fokus ke Level Ini]`.
+    - Tombol pintasan level cepat: `[L1: Program]`, `[L2: Kegiatan]`, `[L3: KRO]`, `[L6: Subkomponen]`, `[Buka Semua]`, dan `[Tutup Semua]`.
+    - Kotak pencarian pohon instan dengan auto-expansion path ke entitas yang cocok.
+  - **Ekspor Excel Berjenjang (Native Outline Grouping)**:
+    - Menghasilkan buku kerja Excel berjenjang yang memanfaatkan fitur bawaan *Excel Row Outline Grouping* (`row.outlineLevel`) sehingga pengguna dapat langsung menekan tombol lipat `[+]` dan `[-]` di Microsoft Excel.
+  - **Ekspor PDF Rekap Struktur Eksekutif**:
+    - Laporan PDF landscape A4 siap cetak dengan ringkasan lingkup aktif dan tabel berjenjang berwarna.
+
+### Changed (UI/UX)
+- **Dual-View Switcher di Rekap Hirarki Satker**:
+  - Menyediakan tab switcher bersih di bagian atas hasil analisis:
+    - **Tab 1: 🌳 Struktur & Drilldown Hirarki** (Tampilan Baru Default)
+    - **Tab 2: 🔍 Analisis Detail Akun** (Filter Spesifik)
+  - Pengguna hanya perlu mengunggah file RKK satu kali untuk mengakses kedua mode analisis secara instan.
+- **Informasi Agregat Kode Blokir Murni (Kode A, Kode 2, dst.)**:
+  - Menampilkan ringkasan total blokir murni per kode blokir (misal `Kode A: Rp 15.824.165.000`, `Kode 2: Rp ...`) di samping breakdown per sumber dana pada kartu KPI dan banner lingkup aktif.
+- **Tata Letak Vertikal Kolom Sumber Dana & Rincian Blokir**:
+  - Mengubah tampilan item sumber dana (`RM`, `PNP`, `PLN`) dan rincian blokir pada tabel pohon struktur dan modal quick list menjadi tersusun rapi secara vertikal (*stacked column*) per baris dengan nilai monospaced sejajar, sehingga tabel tampak lebih lapang, tidak saling bertumpuk, dan mudah dibaca.
+
+### Fixed (BUGFIX)
+- **Indikator Panah Toggle Pohon Hirarki**:
+  - Memperbaiki ikon panah toggle pada tabel pohon berjenjang agar dinamis berubah menjadi panah ke bawah (`fa-chevron-down`) saat baris dalam kondisi terbuka (*expanded*), dan kembali menjadi panah ke kanan (`fa-chevron-right`) saat baris tertutup (*collapsed*).
+  - Menambahkan styling warna aksen aktif (`#38bdf8`) dan efek hover saat tombol toggle dalam status terbuka.
+- **Penyelarasan Badge Kolom Sub-Item (`.tree-subitem-badge`)**:
+  - Memperbaiki teks jumlah sub-item dan header `SUB-ITEM` yang sebelumnya terpotong atau terlipat ke baris bawah (`4` di atas dan `item` di bawah) akibat kompresi lebar kolom.
+  - Menambahkan styling pill badge khusus dengan `white-space: nowrap`, `min-width` proporsional, serta pemisahan angka tebal dan label unit (`[ 4 item ]`) dalam satu baris horizontal yang rapi.
+- **Interaktivitas Checkbox & Tombol Bersihkan Filter Kode Blokir**:
+  - Memperbaiki masalah di mana checkbox pilihan kode blokir (misal *Kode A*) tidak dapat di-uncheck dan tombol *Bersihkan* tidak merespons.
+  - Masalah disebabkan oleh pemanggilan fungsi `updateBlockCodeFilterDropdown()` yang mereset status centang secara otomatis setiap kali fungsi perenderan tabel dipanggil ulang. Kini fungsi tersebut dilindungi kondisi `rebuildCodeFilter` sehingga status centang/bersihkan tetap terjaga (*persisted*).
+
+---
+
+## [3.3.2] - 2026-09-23
+
+### Added (FEAT)
+- **Rincian Blokir Berdasarkan Sumber Dana dan Kode Blokir**:
+  - Menghitung dan menyajikan rincian dana yang diblokir berdasarkan kombinasi Sumber Dana $\times$ Kode Blokir (misalnya `[RM] Kode 2: Rp ...`, `[PNP] Kode A: Rp ...`, `[PLN] Kode A: Rp ...`) pada kartu KPI *Total Diblokir*.
+  - Menyediakan *interactive badge click*: pengguna dapat mengklik badge kombinasi sumber dana & kode blokir pada kartu KPI untuk langsung memfilter tabel akun Digit 6 ke kombinasi tersebut secara instan.
+  - Memperkaya dropdown filter *Kode Blokir* (`btnMultiSelectD6BlockCode`) pada tabel akun agar menampilkan sub-badge per-sumber dana di setiap item kode blokir.
+  - Memperbarui ekspor Excel dan PDF untuk mencantumkan rincian lengkap kombinasi Sumber Dana $\times$ Kode Blokir pada metadata filter dan ringkasan.
+
+### Improved (UI/UX)
+- **Sinkronisasi Dinamis dengan Dropdown Filter Hirarki**:
+  - Menyelaraskan kartu KPI *Total Diblokir* dan rincian Sumber Dana $\times$ Kode Blokir agar otomatis menyesuaikan secara dinamis (*real-time*) setiap kali pengguna mengganti dropdown *Filter Tingkat Hirarki* (Level 1: Program, Level 2: Kegiatan, dst.) maupun *Parent Node / Kode Spesifik*.
+
+---
+
 ## [3.3.1] - 2026-09-23
 
 ### Improved (UI/UX & STYLING)

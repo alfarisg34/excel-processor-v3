@@ -189,7 +189,131 @@
 
           <!-- Result Panel for Rekap Hirarki -->
           <div id="recapResultPanel" style="display: none;">
-            <!-- Hierarchy Level Filter Card -->
+            <!-- Dual-View Switcher Tabs -->
+            <div class="recap-view-switcher">
+              <button type="button" class="recap-view-tab-btn active" id="btnTabTreeRecap" onclick="switchRecapViewMode('tree')">
+                <i class="fa-solid fa-sitemap"></i> 🌳 Struktur &amp; Drilldown Hirarki
+              </button>
+              <button type="button" class="recap-view-tab-btn" id="btnTabAccountDetail" onclick="switchRecapViewMode('account')">
+                <i class="fa-solid fa-list-check"></i> 🔍 Analisis Detail Akun (Filter Spesifik)
+              </button>
+            </div>
+
+            <!-- VIEW MODE 1: Pohon Struktur & Drilldown Hirarki (Default) -->
+            <div id="viewModeTreeRecap">
+              <!-- Breadcrumb Navigation Bar -->
+              <div class="tree-breadcrumb-wrap" id="treeBreadcrumbWrap">
+                <div class="tree-breadcrumb-title">
+                  <i class="fa-solid fa-compass" style="color:#38bdf8;"></i> Lingkup Hirarki Aktif:
+                </div>
+                <div class="tree-breadcrumb-trail" id="treeBreadcrumbTrail">
+                  <!-- Populated dynamically -->
+                </div>
+                <button type="button" class="btn-tree-reset-scope" onclick="setTreeActiveScope('ROOT')" title="Kembali ke Seluruh Satker">
+                  <i class="fa-solid fa-house"></i> Seluruh Satker
+                </button>
+              </div>
+
+              <!-- Scope Financial Summary Banner -->
+              <div class="tree-scope-banner" id="treeScopeBanner">
+                <!-- Populated dynamically with active scope's Pagu, RM, PNP, PLN, Total Blokir, & Blokir badges -->
+              </div>
+
+              <!-- Scope Multi-Tier Cards (Level-level di bawah active scope) -->
+              <div class="tree-tiers-section">
+                <div class="tree-tiers-header">
+                  <div class="tree-tiers-title">
+                    <i class="fa-solid fa-layer-group" style="color:#22c55e;"></i>
+                    Rincian Jumlah &amp; Entitas Turunan di bawah Lingkup Ini:
+                  </div>
+                  <div class="tree-tiers-hint">
+                    Klik tombol <strong>[👁️ Lihat Rincian]</strong> untuk melihat daftar entitas apa saja dan nominal anggarannya
+                  </div>
+                </div>
+                <div class="tree-scope-grid" id="treeScopeCardsContainer">
+                  <!-- Cards populated dynamically (Program, Kegiatan, KRO, RO, Komponen, Subkomponen, Akun) -->
+                </div>
+              </div>
+
+              <!-- Tree Table Card -->
+              <div class="tree-table-card">
+                <div class="tree-table-toolbar">
+                  <div class="tree-toolbar-left">
+                    <div class="tree-table-heading">
+                      <i class="fa-solid fa-network-wired" style="color:#f59e0b;"></i>
+                      Pohon Struktur Anggaran Berjenjang (Program s/d Akun)
+                    </div>
+                    <div class="tree-table-subheading" id="treeTableSubheading">
+                      Menampilkan struktur berjenjang. Klik tanda ▶ untuk membuka rincian di bawahnya.
+                    </div>
+                  </div>
+                  <div class="tree-toolbar-right">
+                    <!-- Quick Expansion Buttons -->
+                    <div class="tree-btn-group">
+                      <button type="button" class="tree-action-btn" onclick="expandTreeToLevel(1)" title="Tampilkan Hanya Program">
+                        L1: Program
+                      </button>
+                      <button type="button" class="tree-action-btn" onclick="expandTreeToLevel(2)" title="Tampilkan Sampai Kegiatan">
+                        L2: Kegiatan
+                      </button>
+                      <button type="button" class="tree-action-btn" onclick="expandTreeToLevel(3)" title="Tampilkan Sampai KRO">
+                        L3: KRO
+                      </button>
+                      <button type="button" class="tree-action-btn" onclick="expandTreeToLevel(6)" title="Tampilkan Sampai Subkomponen">
+                        L6: Subkomp
+                      </button>
+                      <button type="button" class="tree-action-btn" onclick="expandTreeAll(true)" title="Buka Seluruh Struktur Sampai Akun">
+                        <i class="fa-solid fa-angles-down"></i> Buka Semua
+                      </button>
+                      <button type="button" class="tree-action-btn" onclick="expandTreeAll(false)" title="Tutup Seluruh Struktur">
+                        <i class="fa-solid fa-angles-up"></i> Tutup Semua
+                      </button>
+                    </div>
+
+                    <!-- Tree Search -->
+                    <div class="tree-search-wrap">
+                      <i class="fa-solid fa-magnifying-glass tree-search-icon"></i>
+                      <input type="text" id="searchTreeTableInput" class="tree-search-input" placeholder="🔍 Cari kode/uraian..." oninput="handleSearchTreeInput(this.value)">
+                    </div>
+
+                    <!-- Export Buttons -->
+                    <div class="tree-export-group">
+                      <button type="button" class="btn btn-sm btn-export-excel" onclick="downloadTreeExcel()" title="Download Excel Struktur Berjenjang">
+                        <i class="fa-solid fa-file-excel"></i> Excel (Berjenjang)
+                      </button>
+                      <button type="button" class="btn btn-sm btn-export-pdf" onclick="downloadTreePdf()" title="Download PDF Rekap Struktur">
+                        <i class="fa-solid fa-file-pdf"></i> PDF
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Tree Grid Table Wrapper -->
+                <div class="tree-table-wrapper">
+                  <table class="tree-grid-table" id="tableTreeRecap">
+                    <thead>
+                      <tr>
+                        <th style="min-width: 280px; width: 320px;">Tingkat &amp; Kode</th>
+                        <th>Uraian / Nomenklatur</th>
+                        <th style="min-width: 95px; width: 100px; text-align:center; white-space:nowrap;">Sub-Item</th>
+                        <th style="min-width: 140px; text-align:right;">Pagu Total (Rp)</th>
+                        <th style="min-width: 180px;">Sumber Dana</th>
+                        <th style="min-width: 140px; text-align:right;">Total Blokir (Rp)</th>
+                        <th style="min-width: 180px;">Rincian Blokir</th>
+                        <th style="width: 80px; text-align:center;">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tbodyTreeRecap">
+                      <!-- Tree rows dynamically rendered -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- VIEW MODE 2: Analisis Detail Akun (Existing) -->
+            <div id="viewModeAccountDetail" style="display: none;">
+              <!-- Hierarchy Level Filter Card -->
             <div class="filter-card">
               <div class="filter-grid">
                 <div class="form-group">
@@ -465,6 +589,52 @@
                 </table>
               </div>
             </div>
+            <!-- End VIEW MODE 2: Analisis Detail Akun -->
+          </div>
+
+          <!-- Quick List Modal: "Lihat Rincian / Apa Saja & Anggarannya" -->
+          <div class="tree-modal-backdrop" id="modalQuickListBackdrop" style="display: none;" onclick="closeQuickListModal(event)">
+            <div class="tree-modal-content" onclick="event.stopPropagation()">
+              <div class="tree-modal-header">
+                <div class="tree-modal-title" id="quickListModalTitle">
+                  <i class="fa-solid fa-list-ol" style="color:#38bdf8;"></i> Rincian Entitas
+                </div>
+                <button type="button" class="tree-modal-close" onclick="closeQuickListModal()">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+              <div class="tree-modal-search-wrap">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="quickListModalSearchInput" placeholder="Cari dalam daftar ini..." oninput="filterQuickListModal(this.value)">
+                <span class="quick-list-count-badge" id="quickListCountBadge">0 item</span>
+              </div>
+              <div class="tree-modal-body">
+                <div class="tree-modal-table-wrap">
+                  <table class="tree-quick-table" id="tableQuickList">
+                    <thead>
+                      <tr>
+                        <th style="width: 140px;">Kode</th>
+                        <th>Uraian</th>
+                        <th style="width: 140px; text-align:right;">Pagu Total (Rp)</th>
+                        <th style="width: 160px;">Sumber Dana</th>
+                        <th style="width: 140px; text-align:right;">Total Blokir (Rp)</th>
+                        <th style="width: 170px;">Rincian Blokir</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tbodyQuickList">
+                      <!-- Dynamically populated -->
+                    </tbody>
+                    <tfoot id="tfootQuickList">
+                      <!-- Grand total row -->
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+              <div class="tree-modal-footer">
+                <span id="quickListModalFooterInfo" style="font-size:12px; color:#94a3b8;"></span>
+                <button type="button" class="btn btn-sm" onclick="closeQuickListModal()" style="background:#334155; color:#fff; padding:6px 16px;">Tutup</button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -480,7 +650,7 @@
               Center</a></span>
           <a href="/changelog" class="version-pill" id="footerVersionBadge"
             title="Buka Catatan Pembaruan &amp; Log Versi">
-            <i class="fa-solid fa-code-branch" style="font-size: 11px;"></i> v3.3.1
+            <i class="fa-solid fa-code-branch" style="font-size: 11px;"></i> v3.4.0
           </a>
         </div>
       </footer>
@@ -1316,9 +1486,11 @@
         showStatus(statusRecap, '✅ Berhasil menganalisis rekap hirarki!', 'success');
 
         recapResultPanel.style.display = 'block';
+        initTreeRecapView(currentRecapData);
         selectLevelFilter.value = '0';
         updateParentNodeDropdown('0');
         renderRecapForSelectedNode(true);
+        switchRecapViewMode('tree');
       } catch (err) {
         showStatus(statusRecap, '❌ Error: ' + err.message, 'error');
       } finally {
@@ -1807,11 +1979,23 @@
       currentAvailableBlockCodes.forEach(item => {
         const isChecked = selectedD6BlockCodes.has(item.code);
         const valText = item.val > 0 ? ` (${formatRp(item.val)})` : '';
+        const sourcesHtml = (item.sources && item.sources.length > 0)
+          ? item.sources.map(s => {
+              const tagCls = s.tag === 'RM' ? 'rm' : (s.tag === 'PLN' ? 'pln' : 'pnbp');
+              return `<span class="tag-badge ${tagCls}" style="font-size:8px; padding:0 3px;">${s.tag}</span> <span style="font-size:10px; color:#cbd5e1; font-family:'JetBrains Mono',monospace;">${formatRp(s.val)}</span>`;
+            }).join(' <span style="color:#475569;">|</span> ')
+          : '';
+
         html += `
-          <label class="multiselect-item" data-code="${escapeHtml(item.code)}">
-            <input type="checkbox" value="${escapeHtml(item.code)}" ${isChecked ? 'checked' : ''} onchange="handleD6BlockCodeCheckboxChange(this)">
-            <span class="rule-badge" style="background:rgba(168,85,247,0.2); color:#c084fc; border-color:rgba(168,85,247,0.4); font-size:10.5px; font-weight:700; padding:1px 5px;">Kode ${escapeHtml(item.code)}</span>
-            <span class="multiselect-item-name" style="font-size:12px; color:#cbd5e1;">${valText}</span>
+          <label class="multiselect-item" data-code="${escapeHtml(item.code)}" style="align-items:flex-start; padding:6px 10px;">
+            <input type="checkbox" value="${escapeHtml(item.code)}" ${isChecked ? 'checked' : ''} onchange="handleD6BlockCodeCheckboxChange(this)" style="margin-top:3px;">
+            <div style="display:flex; flex-direction:column; gap:2px; flex:1;">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span class="rule-badge" style="background:rgba(168,85,247,0.2); color:#c084fc; border-color:rgba(168,85,247,0.4); font-size:10.5px; font-weight:700; padding:1px 5px;">Kode ${escapeHtml(item.code)}</span>
+                <span style="font-size:11.5px; font-weight:600; color:#f8fafc; font-family:'JetBrains Mono',monospace;">${valText}</span>
+              </div>
+              ${sourcesHtml ? `<div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin-top:2px;">${sourcesHtml}</div>` : ''}
+            </div>
           </label>
         `;
       });
@@ -1820,9 +2004,27 @@
     }
 
     window.setD6BlockFilter = function (code) {
-      selectedD6BlockCodes = new Set([code]);
+      if (code) {
+        selectedD6Blocked = new Set(['BLOCKED']);
+        selectedD6BlockCodes = new Set([code]);
+        syncD6BlockedCheckboxes();
+        syncD6BlockCodeCheckboxes();
+        updateD6BlockedButtonLabel();
+        updateD6BlockCodeButtonLabel();
+        renderRecapForSelectedNode(false);
+      }
+    };
+
+    window.setD6SourceBlockFilter = function (tag, code) {
+      if (tag) selectedD6Tags = new Set([tag]);
+      if (code) selectedD6BlockCodes = new Set([code]);
+      selectedD6Blocked = new Set(['BLOCKED']);
+      syncD6TagCheckboxes();
       syncD6BlockCodeCheckboxes();
+      syncD6BlockedCheckboxes();
+      updateD6TagButtonLabel();
       updateD6BlockCodeButtonLabel();
+      updateD6BlockedButtonLabel();
       renderRecapForSelectedNode(false);
     };
 
@@ -1998,8 +2200,16 @@
       if (!listMultiSelectD6BlockCode) return;
 
       const codeMap = new Map();
+      const codeSourcesMap = new Map();
+
       (nodeSummary.blockedByCodeList || []).forEach(b => {
         if (b.code && b.code !== 'RK' && b.code !== '*') codeMap.set(b.code, b.val);
+      });
+      (nodeSummary.blockedBySourceAndCodeList || []).forEach(b => {
+        if (b.code && b.code !== 'RK' && b.code !== '*') {
+          if (!codeSourcesMap.has(b.code)) codeSourcesMap.set(b.code, []);
+          codeSourcesMap.get(b.code).push({ tag: b.tag, val: b.val });
+        }
       });
       (nodeSummary.digit6List || []).forEach(d => {
         if (d.blockCode && d.blockCode !== 'RK' && d.blockCode !== '*' && !codeMap.has(d.blockCode)) {
@@ -2010,7 +2220,8 @@
       const sortedCodes = Array.from(codeMap.keys()).sort();
       currentAvailableBlockCodes = sortedCodes.map(code => ({
         code,
-        val: codeMap.get(code) || 0
+        val: codeMap.get(code) || 0,
+        sources: codeSourcesMap.get(code) || []
       }));
 
       // By default awal, seluruh kode blokir tercentang semua!
@@ -2075,7 +2286,9 @@
       const nodeSummary = currentRecapData.nodeSummaries[selectedKey] || currentRecapData.rootSummary;
 
       // Dynamic dropdown options for Block Code filter
-      updateBlockCodeFilterDropdown(nodeSummary);
+      if (rebuildCodeFilter) {
+        updateBlockCodeFilterDropdown(nodeSummary);
+      }
 
       // Dynamic dropdown options for D6 Code Multi-Select filter
       if (rebuildCodeFilter) {
@@ -2094,13 +2307,48 @@
 
       document.getElementById('kpiTotalBlocked').textContent = formatRp(nodeSummary.totalBlocked || 0);
 
-      const blockCodeBadgesHtml = (nodeSummary.blockedByCodeList || [])
-        .filter(b => b.code !== 'RK' && b.code !== '*')
-        .map(b => `
-        <span style="background:rgba(251,191,36,0.15); color:#fbbf24; border:1px solid rgba(251,191,36,0.3); border-radius:4px; padding:1px 6px; font-weight:600; font-size:10px; cursor:pointer;" onclick="setD6BlockFilter('${b.code}')" title="Klik untuk filter Kode ${b.code}">
-          Kode ${b.code}: ${formatRp(b.val)}
-        </span>
-      `).join('');
+      // Blocked by Code badges (Kode Blokir Murni: Kode A, Kode 2, dst.)
+      const blockCodeList = nodeSummary.blockedByCodeList || [];
+      const blockCodeBadgesHtml = blockCodeList
+        .filter(b => b.val > 0 && b.code !== 'RK' && b.code !== '*')
+        .map(b => {
+          const label = b.code === 'Tanpa Kode' ? 'Tanpa Kode' : `Kode ${escapeHtml(b.code)}`;
+          return `
+            <span class="blocked-code-badge" onclick="setD6BlockFilter('${escapeHtml(b.code)}')"
+                  title="Klik untuk filter ${label}">
+              <span>${label}:</span>
+              <span style="color:#f8fafc; font-family:'JetBrains Mono',monospace;">${formatRp(b.val)}</span>
+            </span>
+          `;
+        }).join('');
+
+      // Detailed combination badges: Sumber Dana + Kode Blokir (e.g. RM Kode A, PNP Kode A, PLN Kode A, etc.)
+      const comboList = nodeSummary.blockedBySourceAndCodeList || [];
+      const sourceCodeBadgesHtml = comboList
+        .filter(b => b.val > 0 && b.code !== 'RK' && b.code !== '*')
+        .map(b => {
+          let tagClass = 'pnbp';
+          let borderCol = 'rgba(74, 222, 128, 0.4)';
+          let bgCol = 'rgba(74, 222, 128, 0.1)';
+          let textTag = b.tag;
+          if (b.tag === 'RM') {
+            tagClass = 'rm';
+            borderCol = 'rgba(96, 165, 250, 0.4)';
+            bgCol = 'rgba(96, 165, 250, 0.1)';
+          } else if (b.tag === 'PLN') {
+            tagClass = 'pln';
+            borderCol = 'rgba(192, 132, 252, 0.4)';
+            bgCol = 'rgba(192, 132, 252, 0.1)';
+          }
+          return `
+            <span class="blocked-combo-badge" onclick="setD6SourceBlockFilter('${b.tag}', '${escapeHtml(b.code)}')"
+                  title="Klik untuk filter ${b.tag} Kode ${escapeHtml(b.code)}">
+              <span class="tag-badge ${tagClass}" style="font-size:9px; padding:1px 5px; font-weight:700;">${textTag}</span>
+              <span style="font-size:10.5px; font-weight:700; color:#fbbf24;">Kode ${escapeHtml(b.code)}:</span>
+              <span style="font-size:11px; font-weight:700; color:#f8fafc; font-family:'JetBrains Mono',monospace;">${formatRp(b.val)}</span>
+            </span>
+          `;
+        }).join('');
 
       document.getElementById('kpiBlockedDetail').innerHTML = `
         <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; width:100%; margin-bottom:4px;">
@@ -2117,7 +2365,14 @@
             <span class="tag-badge pln" style="font-size:9px; padding:1px 4px;">PLN (RK)</span> ${formatRp(nodeSummary.blockedPLN)}
           </span>` : ''}
         </div>
-        ${blockCodeBadgesHtml ? `<div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap; width:100%; margin-top:2px;">${blockCodeBadgesHtml}</div>` : ''}
+        ${blockCodeBadgesHtml ? `
+        <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap; width:100%; margin-top:4px; padding-top:4px; border-top:1px dashed rgba(251,191,36,0.25);">
+          ${blockCodeBadgesHtml}
+        </div>` : ''}
+        ${sourceCodeBadgesHtml ? `
+        <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap; width:100%; margin-top:4px; padding-top:4px; border-top:1px dashed rgba(251,191,36,0.15);">
+          ${sourceCodeBadgesHtml}
+        </div>` : (nodeSummary.totalBlocked === 0 ? '<div style="font-size:11px; color:#94a3b8; margin-top:2px;">Tidak ada anggaran diblokir</div>' : '')}
       `;
 
       document.getElementById('kpiCountD6').textContent = `${nodeSummary.digit6List.length} Akun`;
@@ -2473,7 +2728,10 @@
         rows.push(['Filter Kode Blokir:', filters.blockCodeFilter]);
         rows.push(['Filter Pencarian (Uraian):', filters.query || '-']);
 
-        if (nodeSummary.blockedByCodeList && nodeSummary.blockedByCodeList.length > 0) {
+        if (nodeSummary.blockedBySourceAndCodeList && nodeSummary.blockedBySourceAndCodeList.length > 0) {
+          const blockSummaryStr = nodeSummary.blockedBySourceAndCodeList.map(b => `${b.tag} Kode ${b.code}: Rp ${b.val.toLocaleString('id-ID')}`).join(' | ');
+          rows.push(['Rincian Blokir (Sumber Dana & Kode):', blockSummaryStr]);
+        } else if (nodeSummary.blockedByCodeList && nodeSummary.blockedByCodeList.length > 0) {
           const blockSummaryStr = nodeSummary.blockedByCodeList.map(b => `Kode ${b.code}: Rp ${b.val.toLocaleString('id-ID')}`).join(' | ');
           rows.push(['Rincian Dana Blokir per Kode:', blockSummaryStr]);
         }
@@ -2589,7 +2847,9 @@
         doc.setTextColor(71, 85, 105);
         doc.text(`Satker / Hirarki: [${nodeSummary.code}] ${nodeSummary.name || nodeSummary.fullPath}`, 14, 18);
 
-        const blockSummaryText = (nodeSummary.blockedByCodeList || []).map(b => `Kode ${b.code}: ${formatRp(b.val)}`).join(' | ');
+        const blockSummaryText = (nodeSummary.blockedBySourceAndCodeList && nodeSummary.blockedBySourceAndCodeList.length > 0)
+          ? nodeSummary.blockedBySourceAndCodeList.map(b => `${b.tag} Kode ${b.code}: ${formatRp(b.val)}`).join(' | ')
+          : (nodeSummary.blockedByCodeList || []).map(b => `Kode ${b.code}: ${formatRp(b.val)}`).join(' | ');
         const codeFilterStr = filters.selectedCodes && filters.selectedCodes.length > 0 ? filters.selectedCodes.join(', ') : 'Semua';
         doc.text(`Filter: Kode [${codeFilterStr}], Tagging [${filters.tagFilter}], Status Blokir [${filters.blockedFilter}], Kode Blokir [${filters.blockCodeFilter}], Cari Uraian [${filters.query || '-'}] | Export: ${new Date().toLocaleString('id-ID')}`, 14, 23);
         if (blockSummaryText) {
@@ -2658,6 +2918,861 @@
         alert('Gagal membuat file PDF: ' + err.message);
       }
     }
+
+    /* ==========================================================================
+       TREE RECAP & HIERARCHICAL DRILLDOWN INSPECTOR (v3.4.0)
+       ========================================================================== */
+
+    let currentRecapViewMode = 'tree';
+    let treeActiveScopeKey = 'ROOT';
+    let treeExpandedKeys = new Set();
+    let treePreorderList = [];
+    let treeSearchQuery = '';
+    let currentQuickListData = [];
+    let currentQuickListLevelName = '';
+
+    const LEVEL_METADATA = [
+      { level: 1, name: 'Program', icon: 'fa-cube', accent: '#6366f1' },
+      { level: 2, name: 'Kegiatan', icon: 'fa-cubes', accent: '#10b981' },
+      { level: 3, name: 'KRO', icon: 'fa-diagram-project', accent: '#06b6d4' },
+      { level: 4, name: 'RO', icon: 'fa-box', accent: '#f59e0b' },
+      { level: 5, name: 'Komponen', icon: 'fa-puzzle-piece', accent: '#a855f7' },
+      { level: 6, name: 'Subkomponen', icon: 'fa-tag', accent: '#14b8a6' },
+      { level: 7, name: 'Akun (Digit 6)', icon: 'fa-receipt', accent: '#f43f5e' }
+    ];
+
+    window.switchRecapViewMode = function (mode) {
+      currentRecapViewMode = mode;
+      const btnTree = document.getElementById('btnTabTreeRecap');
+      const btnAccount = document.getElementById('btnTabAccountDetail');
+      const viewTree = document.getElementById('viewModeTreeRecap');
+      const viewAccount = document.getElementById('viewModeAccountDetail');
+
+      if (mode === 'tree') {
+        if (btnTree) btnTree.classList.add('active');
+        if (btnAccount) btnAccount.classList.remove('active');
+        if (viewTree) viewTree.style.display = 'block';
+        if (viewAccount) viewAccount.style.display = 'none';
+        renderTreeRecap();
+      } else {
+        if (btnTree) btnTree.classList.remove('active');
+        if (btnAccount) btnAccount.classList.add('active');
+        if (viewTree) viewTree.style.display = 'none';
+        if (viewAccount) viewAccount.style.display = 'block';
+        renderRecapForSelectedNode(false);
+      }
+    };
+
+    function flattenHierarchyTree(node) {
+      if (!node) return [];
+      let list = [];
+      if (node.level > 0) {
+        list.push({
+          key: node.key,
+          code: node.code,
+          name: node.name || '-',
+          level: node.level,
+          levelName: node.levelName || `Level ${node.level}`,
+          parentKey: node.parentKey,
+          fullPath: node.fullPath || '',
+          totalVal: node.totalVal || 0,
+          totalRM: node.totalRM || 0,
+          totalPNBP: node.totalPNBP || 0,
+          totalPLN: node.totalPLN || 0,
+          totalBlocked: node.totalBlocked || 0,
+          blockedPct: node.blockedPct || '0.0',
+          blockedBySourceAndCodeList: node.blockedBySourceAndCodeList || [],
+          directChildrenCount: node.directChildrenCount || 0,
+          accountCount: node.accountCount || 0,
+          hasChildren: Boolean(node.children && node.children.length > 0),
+          tagging: node.tagging || '',
+          blockCode: node.blockCode || ''
+        });
+      }
+      if (node.children && node.children.length > 0) {
+        node.children.forEach(c => {
+          list = list.concat(flattenHierarchyTree(c));
+        });
+      }
+      return list;
+    }
+
+    function initTreeRecapView(data) {
+      if (!data) return;
+      treeActiveScopeKey = 'ROOT';
+      treeSearchQuery = '';
+      const searchInput = document.getElementById('searchTreeTableInput');
+      if (searchInput) searchInput.value = '';
+
+      treePreorderList = flattenHierarchyTree(data.hierarchyTree);
+      treeExpandedKeys = new Set(['ROOT']);
+
+      renderTreeRecap();
+    }
+
+    function getEntitiesUnderScopeByLevel(scopeKey) {
+      const byLvl = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [] };
+      if (!currentRecapData) return byLvl;
+      const scopeNode = currentRecapData.nodeSummaries[scopeKey] || currentRecapData.rootSummary;
+      if (!scopeNode) return byLvl;
+
+      function walk(k) {
+        const cKeys = currentRecapData.childrenMap ? (currentRecapData.childrenMap[k] || []) : [];
+        for (const ck of cKeys) {
+          const node = currentRecapData.nodeSummaries[ck];
+          if (node) {
+            byLvl[node.level].push(node);
+            walk(ck);
+          }
+        }
+      }
+      walk(scopeKey);
+
+      if (scopeNode.digit6List) {
+        byLvl[7] = scopeNode.digit6List;
+      }
+      return byLvl;
+    }
+
+    function renderTreeRecap() {
+      if (!currentRecapData) return;
+      const scopeNode = currentRecapData.nodeSummaries[treeActiveScopeKey] || currentRecapData.rootSummary;
+      if (!scopeNode) return;
+
+      renderTreeBreadcrumb(scopeNode);
+      renderTreeScopeBanner(scopeNode);
+      renderTreeScopeCards(treeActiveScopeKey);
+      renderTreeGridTable();
+    }
+
+    function renderTreeBreadcrumb(scopeNode) {
+      const container = document.getElementById('treeBreadcrumbTrail');
+      if (!container) return;
+
+      const chain = [];
+      let curr = scopeNode;
+      while (curr) {
+        chain.unshift(curr);
+        if (curr.key === 'ROOT' || !curr.parentKey) break;
+        curr = currentRecapData.nodeSummaries[curr.parentKey] || (curr.parentKey === 'ROOT' ? currentRecapData.rootSummary : null);
+      }
+
+      let html = '';
+      chain.forEach((item, idx) => {
+        const isLast = idx === chain.length - 1;
+        const displayName = item.key === 'ROOT' ? 'Seluruh Satker' : `[${item.code}] ${item.name || item.code}`;
+        const truncated = displayName.length > 40 ? displayName.substring(0, 38) + '...' : displayName;
+        const badgeLvl = item.key === 'ROOT' ? 'SATKER' : (item.levelName || `L${item.level}`);
+
+        html += `
+          <button type="button" class="tree-breadcrumb-crumb ${isLast ? 'active' : ''}" 
+                  onclick="setTreeActiveScope('${item.key}')" title="${escapeHtml(displayName)} (${formatRp(item.totalVal)})">
+            <span class="tree-lvl-badge tree-lvl-${item.level || 0}" style="font-size:9px; padding:1px 4px;">${badgeLvl}</span>
+            <span>${escapeHtml(truncated)}</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#38bdf8; font-weight:700;">(${formatRp(item.totalVal)})</span>
+          </button>
+        `;
+        if (!isLast) {
+          html += `<i class="fa-solid fa-chevron-right tree-breadcrumb-sep"></i>`;
+        }
+      });
+
+      container.innerHTML = html;
+    }
+
+    function renderTreeScopeBanner(scopeNode) {
+      const banner = document.getElementById('treeScopeBanner');
+      if (!banner) return;
+
+      const levelLabel = scopeNode.key === 'ROOT' ? 'SELURUH SATKER' : (scopeNode.levelName || `Level ${scopeNode.level}`);
+      const codeBadge = scopeNode.code ? `<span class="rule-badge" style="background:rgba(56,189,248,0.2); color:#38bdf8; font-weight:700; font-size:11px; padding:2px 6px;">${escapeHtml(scopeNode.code)}</span>` : '';
+
+      const scopeBlockCodeBadgesHtml = (scopeNode.blockedByCodeList || [])
+        .filter(b => b.val > 0 && b.code !== 'RK' && b.code !== '*')
+        .map(b => {
+          const label = b.code === 'Tanpa Kode' ? 'Tanpa Kode' : `Kode ${escapeHtml(b.code)}`;
+          return `
+            <span class="blocked-code-badge" style="cursor:default;" title="Total ${label}">
+              <span>${label}:</span>
+              <span style="color:#f8fafc; font-family:'JetBrains Mono',monospace;">${formatRp(b.val)}</span>
+            </span>
+          `;
+        }).join('');
+
+      const comboBadgesHtml = (scopeNode.blockedBySourceAndCodeList || [])
+        .filter(b => b.val > 0 && b.code !== 'RK' && b.code !== '*')
+        .map(b => {
+          let tagClass = b.tag === 'RM' ? 'rm' : (b.tag === 'PLN' ? 'pln' : 'pnbp');
+          return `
+            <span class="blocked-combo-badge" style="cursor:default;" title="${b.tag} Kode ${escapeHtml(b.code)}">
+              <span class="tag-badge ${tagClass}" style="font-size:9px; padding:1px 5px; font-weight:700;">${b.tag}</span>
+              <span style="font-size:10.5px; font-weight:700; color:#fbbf24;">Kode ${escapeHtml(b.code)}:</span>
+              <span style="font-size:11px; font-weight:700; color:#f8fafc; font-family:'JetBrains Mono',monospace;">${formatRp(b.val)}</span>
+            </span>
+          `;
+        }).join('');
+
+      banner.innerHTML = `
+        <div class="tree-scope-info">
+          <div class="tree-scope-badge-wrap">
+            <span class="tree-lvl-badge tree-lvl-${scopeNode.level || 0}">${levelLabel}</span>
+            ${codeBadge}
+          </div>
+          <div class="tree-scope-name">${escapeHtml(scopeNode.name || 'Seluruh Satker')}</div>
+          <div class="tree-scope-path">${escapeHtml(scopeNode.fullPath || 'SATKER')}</div>
+        </div>
+        <div class="tree-scope-metrics">
+          <div class="tree-scope-metric-box">
+            <span class="tree-scope-metric-lbl">Pagu Anggaran</span>
+            <span class="tree-scope-metric-val" style="color:#38bdf8;">${formatRp(scopeNode.totalVal)}</span>
+          </div>
+          <div style="height:32px; width:1px; background:rgba(148,163,184,0.2);"></div>
+          <div class="tree-scope-metric-box">
+            <span class="tree-scope-metric-lbl">Sumber Dana</span>
+            <div style="display:flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700; font-family:'JetBrains Mono',monospace;">
+              <span style="color:#60a5fa;"><span class="tag-badge rm" style="font-size:9px; padding:1px 4px;">RM</span> ${formatRp(scopeNode.totalRM || 0)}</span>
+              <span style="color:#475569;">|</span>
+              <span style="color:#4ade80;"><span class="tag-badge pnbp" style="font-size:9px; padding:1px 4px;">PNP</span> ${formatRp(scopeNode.totalPNBP || 0)}</span>
+              ${(scopeNode.totalPLN && scopeNode.totalPLN > 0) ? `
+              <span style="color:#475569;">|</span>
+              <span style="color:#c084fc;"><span class="tag-badge pln" style="font-size:9px; padding:1px 4px;">PLN</span> ${formatRp(scopeNode.totalPLN)}</span>` : ''}
+            </div>
+          </div>
+          <div style="height:32px; width:1px; background:rgba(148,163,184,0.2);"></div>
+          <div class="tree-scope-metric-box">
+            <span class="tree-scope-metric-lbl">Total Diblokir ⭐</span>
+            <div style="display:flex; align-items:baseline; gap:6px;">
+              <span class="tree-scope-metric-val" style="color:#fbbf24;">${formatRp(scopeNode.totalBlocked || 0)}</span>
+              <span style="font-size:11.5px; color:#fbbf24; font-weight:700;">(${scopeNode.blockedPct}%)</span>
+            </div>
+            ${scopeBlockCodeBadgesHtml ? `<div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap; margin-top:3px;">${scopeBlockCodeBadgesHtml}</div>` : ''}
+            ${comboBadgesHtml ? `<div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin-top:2px;">${comboBadgesHtml}</div>` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderTreeScopeCards(scopeKey) {
+      const container = document.getElementById('treeScopeCardsContainer');
+      if (!container) return;
+
+      const scopeNode = currentRecapData.nodeSummaries[scopeKey] || currentRecapData.rootSummary;
+      const activeLevel = scopeNode ? scopeNode.level : 0;
+      const entitiesByLevel = getEntitiesUnderScopeByLevel(scopeKey);
+      const subLevels = LEVEL_METADATA.filter(m => m.level > activeLevel);
+
+      if (subLevels.length === 0) {
+        container.innerHTML = `
+          <div style="grid-column: 1 / -1; padding:18px; text-align:center; color:#94a3b8; background:rgba(30,41,59,0.5); border-radius:10px;">
+            Lingkup ini berada pada tingkat paling dasar (${scopeNode.levelName || 'Akun'}). Tidak ada tingkat hirarki di bawahnya.
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      subLevels.forEach(meta => {
+        const items = entitiesByLevel[meta.level] || [];
+        const count = items.length;
+        const sumVal = items.reduce((s, it) => s + (it.totalVal || 0), 0);
+
+        html += `
+          <div class="tree-tier-card" style="--tier-accent: ${meta.accent};">
+            <div class="tree-tier-top">
+              <div class="tree-tier-name">
+                <i class="fa-solid ${meta.icon}" style="color:${meta.accent};"></i>
+                ${meta.name}
+              </div>
+              <span class="tree-tier-badge" style="color:${meta.accent}; border-color:${meta.accent}40; background:${meta.accent}20;">
+                Level ${meta.level}
+              </span>
+            </div>
+            <div>
+              <div class="tree-tier-count">${count} <span style="font-size:13px; font-weight:600; color:#94a3b8;">${meta.name}</span></div>
+              <div class="tree-tier-amount">${formatRp(sumVal)}</div>
+            </div>
+            <button type="button" class="tree-tier-btn-detail" onclick="showQuickListDetail(${meta.level}, '${meta.name}')"
+                    ${count === 0 ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}
+                    title="Lihat daftar ${count} ${meta.name} dan nominal masing-masing">
+              <i class="fa-solid fa-eye"></i> Lihat Rincian (${count})
+            </button>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    window.showQuickListDetail = function (targetLevel, targetLevelName) {
+      if (!currentRecapData) return;
+      const scopeNode = currentRecapData.nodeSummaries[treeActiveScopeKey] || currentRecapData.rootSummary;
+      const entitiesByLevel = getEntitiesUnderScopeByLevel(treeActiveScopeKey);
+      const rawItems = entitiesByLevel[targetLevel] || [];
+
+      currentQuickListData = rawItems.map(it => {
+        const isAccount = targetLevel === 7;
+        const totalVal = it.totalVal || 0;
+        const totalRM = it.totalRM || 0;
+        const totalPNBP = it.totalPNBP || 0;
+        const totalPLN = it.totalPLN || 0;
+        const totalBlocked = it.totalBlocked || 0;
+        const blockedPct = it.blockedPct || (totalVal > 0 ? ((totalBlocked / totalVal) * 100).toFixed(1) : '0.0');
+
+        let comboList = it.blockedBySourceAndCodeList || [];
+        if (isAccount && comboList.length === 0 && it.blockCode && it.totalBlocked > 0) {
+          const tTag = (it.tagging === 'PLN' || it.tagging === 'PHLN') ? 'PLN' : (it.tagging === 'RM' ? 'RM' : 'PNP');
+          comboList = [{ tag: tTag, code: it.blockCode, val: it.totalBlocked }];
+        }
+
+        return {
+          code: it.code,
+          name: it.name || it.uraian || '-',
+          tagging: it.tagging || '',
+          blockCode: it.blockCode || '',
+          totalVal,
+          totalRM,
+          totalPNBP,
+          totalPLN,
+          totalBlocked,
+          blockedPct,
+          blockedBySourceAndCodeList: comboList
+        };
+      });
+
+      currentQuickListLevelName = targetLevelName;
+      const modal = document.getElementById('modalQuickListBackdrop');
+      const title = document.getElementById('quickListModalTitle');
+      const search = document.getElementById('quickListModalSearchInput');
+      if (search) search.value = '';
+
+      const scopeName = scopeNode.key === 'ROOT' ? 'Seluruh Satker' : `[${scopeNode.code}] ${scopeNode.name}`;
+      if (title) {
+        title.innerHTML = `
+          <i class="fa-solid fa-list-ol" style="color:#38bdf8;"></i>
+          Daftar <strong>${currentQuickListData.length} ${targetLevelName}</strong> di bawah <em>${escapeHtml(scopeName)}</em>
+        `;
+      }
+
+      renderQuickListTable(currentQuickListData);
+      if (modal) modal.style.display = 'flex';
+    };
+
+    function renderQuickListTable(items) {
+      const tbody = document.getElementById('tbodyQuickList');
+      const tfoot = document.getElementById('tfootQuickList');
+      const countBadge = document.getElementById('quickListCountBadge');
+      const footerInfo = document.getElementById('quickListModalFooterInfo');
+
+      if (!tbody) return;
+
+      if (countBadge) countBadge.textContent = `${items.length} item`;
+      if (footerInfo) footerInfo.textContent = `Menampilkan ${items.length} dari ${currentQuickListData.length} total entitas`;
+
+      if (items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:#94a3b8;">Tidak ada data entitas yang cocok.</td></tr>`;
+        if (tfoot) tfoot.innerHTML = '';
+        return;
+      }
+
+      let grandVal = 0, grandRM = 0, grandPNBP = 0, grandPLN = 0, grandBlocked = 0;
+
+      let html = '';
+      items.forEach(it => {
+        grandVal += it.totalVal;
+        grandRM += it.totalRM;
+        grandPNBP += it.totalPNBP;
+        grandPLN += it.totalPLN;
+        grandBlocked += it.totalBlocked;
+
+        const comboBadgesList = (it.blockedBySourceAndCodeList || [])
+          .filter(b => b.val > 0 && b.code !== 'RK' && b.code !== '*')
+          .map(b => `
+            <div style="display:flex; align-items:center; gap:5px; white-space:nowrap;">
+              <span class="tag-badge ${b.tag === 'RM' ? 'rm' : (b.tag === 'PLN' ? 'pln' : 'pnbp')}" style="font-size:8.5px; padding:1px 4px; min-width:28px; text-align:center;">${b.tag}</span>
+              <span style="font-size:10px; color:#fbbf24; font-weight:700;">Kode ${escapeHtml(b.code)}:</span>
+              <span style="font-size:10.5px; font-family:'JetBrains Mono',monospace; color:#f8fafc; font-weight:600;">${formatRp(b.val)}</span>
+            </div>
+          `);
+        const comboBadges = comboBadgesList.length > 0
+          ? `<div style="display:flex; flex-direction:column; gap:3px;">${comboBadgesList.join('')}</div>`
+          : '<span style="color:#64748b; font-size:11px;">-</span>';
+
+        const sourcesList = [];
+        if (it.totalRM > 0) {
+          sourcesList.push(`
+            <div style="display:flex; align-items:center; gap:5px; white-space:nowrap;">
+              <span class="tag-badge rm" style="font-size:8.5px; padding:1px 4px; min-width:28px; text-align:center;">RM</span>
+              <span style="color:#60a5fa; font-weight:600; font-size:11px; font-family:'JetBrains Mono',monospace;">${formatRp(it.totalRM)}</span>
+            </div>
+          `);
+        }
+        if (it.totalPNBP > 0) {
+          sourcesList.push(`
+            <div style="display:flex; align-items:center; gap:5px; white-space:nowrap;">
+              <span class="tag-badge pnbp" style="font-size:8.5px; padding:1px 4px; min-width:28px; text-align:center;">PNP</span>
+              <span style="color:#4ade80; font-weight:600; font-size:11px; font-family:'JetBrains Mono',monospace;">${formatRp(it.totalPNBP)}</span>
+            </div>
+          `);
+        }
+        if (it.totalPLN > 0) {
+          sourcesList.push(`
+            <div style="display:flex; align-items:center; gap:5px; white-space:nowrap;">
+              <span class="tag-badge pln" style="font-size:8.5px; padding:1px 4px; min-width:28px; text-align:center;">PLN</span>
+              <span style="color:#c084fc; font-weight:600; font-size:11px; font-family:'JetBrains Mono',monospace;">${formatRp(it.totalPLN)}</span>
+            </div>
+          `);
+        }
+        const sourcesHtml = sourcesList.length > 0
+          ? `<div style="display:flex; flex-direction:column; gap:3px;">${sourcesList.join('')}</div>`
+          : '<span style="color:#64748b; font-size:11px;">-</span>';
+
+        html += `
+          <tr>
+            <td>
+              <span class="tree-code-text">${escapeHtml(it.code)}</span>
+              ${it.tagging ? `<span class="tag-badge ${it.tagging === 'RM' ? 'rm' : (it.tagging === 'PLN' ? 'pln' : 'pnbp')}" style="font-size:9px; padding:1px 4px; margin-left:4px;">${it.tagging}</span>` : ''}
+            </td>
+            <td><div style="font-weight:600; color:#f8fafc;">${escapeHtml(it.name)}</div></td>
+            <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-weight:700; color:#38bdf8;">${formatRp(it.totalVal)}</td>
+            <td>
+              ${sourcesHtml}
+            </td>
+            <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-weight:700; color:#fbbf24;">
+              ${it.totalBlocked > 0 ? `${formatRp(it.totalBlocked)} <span style="font-size:10px; color:#94a3b8;">(${it.blockedPct}%)</span>` : '<span style="color:#64748b;">Rp 0</span>'}
+            </td>
+            <td>${comboBadges}</td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+
+      if (tfoot) {
+        tfoot.innerHTML = `
+          <tr>
+            <td colspan="2" style="text-align:right; font-weight:800; text-transform:uppercase;">TOTAL SELURUH:</td>
+            <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-weight:800; color:#38bdf8;">${formatRp(grandVal)}</td>
+            <td>
+              <div style="display:flex; flex-direction:column; gap:2px; font-size:11px; font-family:'JetBrains Mono',monospace; font-weight:700;">
+                <span style="color:#60a5fa;">RM: ${formatRp(grandRM)}</span>
+                <span style="color:#4ade80;">PNP: ${formatRp(grandPNBP)}</span>
+                ${grandPLN > 0 ? `<span style="color:#c084fc;">PLN: ${formatRp(grandPLN)}</span>` : ''}
+              </div>
+            </td>
+            <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-weight:800; color:#fbbf24;">${formatRp(grandBlocked)}</td>
+            <td></td>
+          </tr>
+        `;
+      }
+    }
+
+    window.filterQuickListModal = function (query) {
+      if (!query) {
+        renderQuickListTable(currentQuickListData);
+        return;
+      }
+      const q = query.toLowerCase().trim();
+      const filtered = currentQuickListData.filter(it => 
+        (it.code || '').toLowerCase().includes(q) ||
+        (it.name || '').toLowerCase().includes(q) ||
+        (it.tagging || '').toLowerCase().includes(q) ||
+        (it.blockCode || '').toLowerCase().includes(q)
+      );
+      renderQuickListTable(filtered);
+    };
+
+    window.closeQuickListModal = function (e) {
+      const modal = document.getElementById('modalQuickListBackdrop');
+      if (modal) modal.style.display = 'none';
+    };
+
+    function renderTreeGridTable() {
+      const tbody = document.getElementById('tbodyTreeRecap');
+      if (!tbody) return;
+
+      if (treePreorderList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:30px; color:#94a3b8;">Tidak ada data pohon struktur.</td></tr>`;
+        return;
+      }
+
+      const isSearchActive = Boolean(treeSearchQuery && treeSearchQuery.trim());
+      let matchingKeys = new Set();
+      if (isSearchActive) {
+        const q = treeSearchQuery.toLowerCase().trim();
+        treePreorderList.forEach(item => {
+          if ((item.code || '').toLowerCase().includes(q) || (item.name || '').toLowerCase().includes(q)) {
+            matchingKeys.add(item.key);
+            let pKey = item.parentKey;
+            while (pKey && pKey !== 'ROOT') {
+              matchingKeys.add(pKey);
+              const pNode = currentRecapData.nodeSummaries[pKey];
+              pKey = pNode ? pNode.parentKey : null;
+            }
+          }
+        });
+      }
+
+      function isNodeVisible(item) {
+        if (isSearchActive) {
+          return matchingKeys.has(item.key);
+        }
+        if (item.parentKey === 'ROOT') return true;
+        let pKey = item.parentKey;
+        while (pKey && pKey !== 'ROOT') {
+          if (!treeExpandedKeys.has(pKey)) return false;
+          const pNode = currentRecapData.nodeSummaries[pKey];
+          pKey = pNode ? pNode.parentKey : null;
+        }
+        return true;
+      }
+
+      let html = '';
+      treePreorderList.forEach(item => {
+        const visible = isNodeVisible(item);
+        const isExpanded = treeExpandedKeys.has(item.key);
+        const isScopeActive = item.key === treeActiveScopeKey;
+        const indentPx = (item.level - 1) * 20;
+
+        let toggleBtnHtml = '';
+        if (item.hasChildren) {
+          toggleBtnHtml = `
+            <button type="button" class="tree-toggle-btn ${isExpanded ? 'expanded' : ''}" onclick="toggleTreeNode('${item.key}')" title="${isExpanded ? 'Tutup' : 'Buka'} rincian ${item.levelName}">
+              <i class="fa-solid ${isExpanded ? 'fa-chevron-down' : 'fa-chevron-right'}"></i>
+            </button>
+          `;
+        } else {
+          toggleBtnHtml = `<span class="tree-toggle-placeholder"></span>`;
+        }
+
+        const comboBadgesList = (item.blockedBySourceAndCodeList || [])
+          .filter(b => b.val > 0 && b.code !== 'RK' && b.code !== '*')
+          .map(b => `
+            <div style="display:flex; align-items:center; gap:5px; white-space:nowrap;">
+              <span class="tag-badge ${b.tag === 'RM' ? 'rm' : (b.tag === 'PLN' ? 'pln' : 'pnbp')}" style="font-size:8.5px; padding:1px 4px; min-width:28px; text-align:center;">${b.tag}</span>
+              <span style="font-size:10px; color:#fbbf24; font-weight:700;">Kode ${escapeHtml(b.code)}:</span>
+              <span style="font-size:10.5px; font-family:'JetBrains Mono',monospace; color:#f8fafc; font-weight:600;">${formatRp(b.val)}</span>
+            </div>
+          `);
+        const comboBadges = comboBadgesList.length > 0
+          ? `<div style="display:flex; flex-direction:column; gap:3px;">${comboBadgesList.join('')}</div>`
+          : '<span style="color:#64748b; font-size:11px;">-</span>';
+
+        const sourcesList = [];
+        if (item.totalRM > 0) {
+          sourcesList.push(`
+            <div style="display:flex; align-items:center; gap:5px; white-space:nowrap;">
+              <span class="tag-badge rm" style="font-size:8.5px; padding:1px 4px; min-width:28px; text-align:center;">RM</span>
+              <span style="color:#60a5fa; font-weight:600; font-size:11px; font-family:'JetBrains Mono',monospace;">${formatRp(item.totalRM)}</span>
+            </div>
+          `);
+        }
+        if (item.totalPNBP > 0) {
+          sourcesList.push(`
+            <div style="display:flex; align-items:center; gap:5px; white-space:nowrap;">
+              <span class="tag-badge pnbp" style="font-size:8.5px; padding:1px 4px; min-width:28px; text-align:center;">PNP</span>
+              <span style="color:#4ade80; font-weight:600; font-size:11px; font-family:'JetBrains Mono',monospace;">${formatRp(item.totalPNBP)}</span>
+            </div>
+          `);
+        }
+        if (item.totalPLN > 0) {
+          sourcesList.push(`
+            <div style="display:flex; align-items:center; gap:5px; white-space:nowrap;">
+              <span class="tag-badge pln" style="font-size:8.5px; padding:1px 4px; min-width:28px; text-align:center;">PLN</span>
+              <span style="color:#c084fc; font-weight:600; font-size:11px; font-family:'JetBrains Mono',monospace;">${formatRp(item.totalPLN)}</span>
+            </div>
+          `);
+        }
+        const sourcesHtml = sourcesList.length > 0
+          ? `<div style="display:flex; flex-direction:column; gap:3px;">${sourcesList.join('')}</div>`
+          : '<span style="color:#64748b; font-size:11px;">-</span>';
+
+        html += `
+          <tr class="tree-row tree-row-l${item.level} ${isScopeActive ? 'active-scope-row' : ''}" 
+              data-node-key="${item.key}" 
+              data-level="${item.level}"
+              style="${visible ? '' : 'display:none;'}">
+            <td>
+              <div style="display:flex; align-items:center; padding-left:${indentPx}px;">
+                ${toggleBtnHtml}
+                <span class="tree-lvl-badge tree-lvl-${item.level}" style="margin-right:6px;">${item.levelName}</span>
+                <span class="tree-code-text">${escapeHtml(item.code)}</span>
+                ${item.tagging ? `<span class="tag-badge ${item.tagging === 'RM' ? 'rm' : (item.tagging === 'PLN' ? 'pln' : 'pnbp')}" style="font-size:9px; padding:1px 4px; margin-left:4px;">${item.tagging}</span>` : ''}
+              </div>
+            </td>
+            <td>
+              <div style="font-weight:600; color:#f8fafc; font-size:12.5px;">${escapeHtml(item.name)}</div>
+            </td>
+            <td style="text-align:center; white-space:nowrap;">
+              ${item.hasChildren ? `
+                <span class="tree-subitem-badge" title="${item.directChildrenCount} sub-item langsung di bawah level ini">
+                  <span class="badge-count">${item.directChildrenCount}</span>
+                  <span class="badge-unit">item</span>
+                </span>` : '<span style="color:#64748b; font-size:11px;">-</span>'}
+            </td>
+            <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-weight:700; color:#38bdf8;">
+              ${formatRp(item.totalVal)}
+            </td>
+            <td>
+              ${sourcesHtml}
+            </td>
+            <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-weight:700; color:#fbbf24;">
+              ${item.totalBlocked > 0 ? `${formatRp(item.totalBlocked)} <span style="font-size:9.5px; color:#94a3b8;">(${item.blockedPct}%)</span>` : '<span style="color:#64748b;">Rp 0</span>'}
+            </td>
+            <td>
+              ${comboBadges}
+            </td>
+            <td style="text-align:center;">
+              <button type="button" class="btn-tree-focus" onclick="setTreeActiveScope('${item.key}')" title="Kunci dan jadikan fokus lingkup analitik">
+                <i class="fa-solid fa-crosshairs"></i> Fokus
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = html;
+    }
+
+    window.toggleTreeNode = function (nodeKey) {
+      if (treeExpandedKeys.has(nodeKey)) {
+        treeExpandedKeys.delete(nodeKey);
+      } else {
+        treeExpandedKeys.add(nodeKey);
+      }
+      renderTreeGridTable();
+    };
+
+    window.expandTreeToLevel = function (targetLevel) {
+      treeExpandedKeys.clear();
+      treeExpandedKeys.add('ROOT');
+      treePreorderList.forEach(item => {
+        if (item.level < targetLevel && item.hasChildren) {
+          treeExpandedKeys.add(item.key);
+        }
+      });
+      renderTreeGridTable();
+    };
+
+    window.expandTreeAll = function (expand) {
+      if (expand) {
+        treeExpandedKeys.clear();
+        treeExpandedKeys.add('ROOT');
+        treePreorderList.forEach(item => {
+          if (item.hasChildren) treeExpandedKeys.add(item.key);
+        });
+      } else {
+        treeExpandedKeys.clear();
+        treeExpandedKeys.add('ROOT');
+      }
+      renderTreeGridTable();
+    };
+
+    window.setTreeActiveScope = function (nodeKey) {
+      treeActiveScopeKey = nodeKey || 'ROOT';
+      if (nodeKey && nodeKey !== 'ROOT') {
+        let pKey = nodeKey;
+        while (pKey && pKey !== 'ROOT') {
+          treeExpandedKeys.add(pKey);
+          const pNode = currentRecapData.nodeSummaries[pKey];
+          pKey = pNode ? pNode.parentKey : null;
+        }
+      }
+      renderTreeRecap();
+    };
+
+    window.handleSearchTreeInput = function (query) {
+      treeSearchQuery = query || '';
+      renderTreeGridTable();
+    };
+
+    window.downloadTreeExcel = function () {
+      try {
+        if (!currentRecapData || treePreorderList.length === 0) {
+          alert('Tidak ada data struktur hirarki untuk di-export!');
+          return;
+        }
+
+        if (typeof XLSX === 'undefined') {
+          alert('Library Excel (SheetJS) belum siap. Silakan refresh halaman.');
+          return;
+        }
+
+        const scopeNode = currentRecapData.nodeSummaries[treeActiveScopeKey] || currentRecapData.rootSummary;
+        const rows = [];
+
+        rows.push(['REKAPITULASI POHON STRUKTUR HIRARKI ANGGARAN - KEMNAKER']);
+        rows.push(['Lingkup Aktif:', scopeNode.key === 'ROOT' ? 'Seluruh Satker (Total All Level)' : `[${scopeNode.code}] ${scopeNode.name}`]);
+        rows.push(['Path Lingkup:', scopeNode.fullPath || 'SATKER']);
+        rows.push(['Total Pagu Lingkup:', scopeNode.totalVal]);
+        rows.push(['Total RM Lingkup:', scopeNode.totalRM || 0]);
+        rows.push(['Total PNP Lingkup:', scopeNode.totalPNBP || 0]);
+        rows.push(['Total PLN Lingkup:', scopeNode.totalPLN || 0]);
+        rows.push(['Total Blokir Lingkup:', scopeNode.totalBlocked || 0]);
+        rows.push(['Tanggal Export:', new Date().toLocaleString('id-ID')]);
+        rows.push([]);
+
+        rows.push([
+          'Level',
+          'Tingkat',
+          'Kode Hirarki',
+          'Uraian / Nomenklatur',
+          'Jumlah Sub-Item',
+          'Total Pagu (Rp)',
+          'Pagu RM (Rp)',
+          'Pagu PNP (Rp)',
+          'Pagu PLN (Rp)',
+          'Total Diblokir (Rp)',
+          '% Diblokir',
+          'Rincian Blokir (Sumber Dana & Kode)'
+        ]);
+
+        treePreorderList.forEach(item => {
+          const indentStr = '  '.repeat(item.level - 1);
+          const comboStr = (item.blockedBySourceAndCodeList || [])
+            .filter(b => b.val > 0)
+            .map(b => `${b.tag} Kode ${b.code}: Rp ${b.val.toLocaleString('id-ID')}`)
+            .join(' | ');
+
+          rows.push([
+            item.level,
+            item.levelName,
+            indentStr + item.code,
+            item.name,
+            item.hasChildren ? item.directChildrenCount : 0,
+            item.totalVal,
+            item.totalRM,
+            item.totalPNBP,
+            item.totalPLN,
+            item.totalBlocked,
+            parseFloat(item.blockedPct) / 100,
+            comboStr || '-'
+          ]);
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+
+        ws['!cols'] = [
+          { wch: 8 },
+          { wch: 14 },
+          { wch: 25 },
+          { wch: 55 },
+          { wch: 16 },
+          { wch: 18 },
+          { wch: 16 },
+          { wch: 16 },
+          { wch: 16 },
+          { wch: 18 },
+          { wch: 12 },
+          { wch: 45 }
+        ];
+
+        if (!ws['!rows']) ws['!rows'] = [];
+        const startRowIdx = 10;
+        treePreorderList.forEach((item, idx) => {
+          ws['!rows'][startRowIdx + idx] = { level: Math.max(0, item.level - 1) };
+        });
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Pohon Hirarki');
+
+        const fileName = `Rekap_Struktur_Hirarki_${scopeNode.code || 'SATKER'}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+      } catch (err) {
+        alert('Gagal export Excel: ' + err.message);
+      }
+    };
+
+    window.downloadTreePdf = function () {
+      try {
+        if (!currentRecapData || treePreorderList.length === 0) {
+          alert('Tidak ada data struktur hirarki untuk di-export!');
+          return;
+        }
+
+        if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
+          alert('Library PDF (jsPDF) belum siap. Silakan refresh halaman.');
+          return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('landscape', 'mm', 'a4');
+        const scopeNode = currentRecapData.nodeSummaries[treeActiveScopeKey] || currentRecapData.rootSummary;
+
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('REKAPITULASI POHON STRUKTUR HIRARKI ANGGARAN', 14, 12);
+
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(71, 85, 105);
+        const scopeTitle = scopeNode.key === 'ROOT' ? 'Seluruh Satker (Total All Level)' : `[${scopeNode.code}] ${scopeNode.name}`;
+        doc.text(`Lingkup: ${scopeTitle} | Pagu: ${formatRp(scopeNode.totalVal)} | Blokir: ${formatRp(scopeNode.totalBlocked)} (${scopeNode.blockedPct}%) | Export: ${new Date().toLocaleString('id-ID')}`, 14, 18);
+
+        const tableBody = treePreorderList.map(item => {
+          const indentStr = '  '.repeat(item.level - 1);
+          return [
+            item.levelName,
+            indentStr + item.code,
+            item.name.length > 40 ? item.name.substring(0, 38) + '...' : item.name,
+            item.hasChildren ? String(item.directChildrenCount) : '-',
+            formatRp(item.totalVal),
+            formatRp(item.totalRM),
+            formatRp(item.totalPNBP),
+            formatRp(item.totalPLN),
+            formatRp(item.totalBlocked)
+          ];
+        });
+
+        doc.autoTable({
+          startY: 22,
+          head: [[
+            'Tingkat', 'Kode', 'Uraian', 'Sub', 'Pagu Total', 'RM', 'PNP', 'PLN', 'Blokir'
+          ]],
+          body: tableBody,
+          theme: 'grid',
+          headStyles: {
+            fillColor: [15, 23, 42],
+            textColor: [248, 250, 252],
+            fontSize: 7.5,
+            fontStyle: 'bold',
+            halign: 'center'
+          },
+          bodyStyles: {
+            fontSize: 7,
+            cellPadding: 1.8
+          },
+          columnStyles: {
+            0: { cellWidth: 20 },
+            1: { cellWidth: 32, fontStyle: 'bold' },
+            2: { cellWidth: 70 },
+            3: { cellWidth: 12, halign: 'center' },
+            4: { cellWidth: 28, halign: 'right', fontStyle: 'bold' },
+            5: { cellWidth: 26, halign: 'right' },
+            6: { cellWidth: 26, halign: 'right' },
+            7: { cellWidth: 26, halign: 'right' },
+            8: { cellWidth: 28, halign: 'right', fontStyle: 'bold' }
+          },
+          didParseCell: function (data) {
+            if (data.section === 'body') {
+              const rowItem = treePreorderList[data.row.index];
+              if (rowItem) {
+                if (rowItem.level === 1) {
+                  data.cell.styles.fillColor = [238, 242, 255];
+                  data.cell.styles.fontStyle = 'bold';
+                } else if (rowItem.level === 2) {
+                  data.cell.styles.fillColor = [240, 253, 244];
+                }
+              }
+            }
+          },
+          margin: { left: 14, right: 14 }
+        });
+
+        const fileName = `Rekap_Struktur_Hirarki_${scopeNode.code || 'SATKER'}_${new Date().toISOString().slice(0, 10)}.pdf`;
+        doc.save(fileName);
+      } catch (err) {
+        alert('Gagal export PDF: ' + err.message);
+      }
+    };
   </script>
 </body>
 

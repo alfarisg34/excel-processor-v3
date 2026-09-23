@@ -370,6 +370,7 @@ async function parseHierarchyRecap(buffer) {
     let blockedPLN = 0;
     let totalBlocked = 0;
     const blockedByCodeMap = new Map();
+    const blockedBySourceAndCodeMap = new Map();
 
     const d6Map = new Map();
 
@@ -381,12 +382,20 @@ async function parseHierarchyRecap(buffer) {
 
       if (r.isBlocked) {
         totalBlocked += r.val;
-        if (r.tagging === 'RM') blockedRM += r.val;
-        else if (r.tagging === 'PLN' || r.tagging === 'PHLN') blockedPLN += r.val;
+        let tagGroup = 'PNP';
+        if (r.tagging === 'RM') tagGroup = 'RM';
+        else if (r.tagging === 'PLN' || r.tagging === 'PHLN') tagGroup = 'PLN';
+        else tagGroup = 'PNP';
+
+        if (tagGroup === 'RM') blockedRM += r.val;
+        else if (tagGroup === 'PLN') blockedPLN += r.val;
         else blockedPNBP += r.val;
 
         const codeKey = r.blockCode || 'Tanpa Kode';
         blockedByCodeMap.set(codeKey, (blockedByCodeMap.get(codeKey) || 0) + r.val);
+
+        const sourceCodeKey = `${tagGroup}__${codeKey}`;
+        blockedBySourceAndCodeMap.set(sourceCodeKey, (blockedBySourceAndCodeMap.get(sourceCodeKey) || 0) + r.val);
       }
 
       // Group Digit 6 under node by code & tagging
@@ -462,7 +471,22 @@ async function parseHierarchyRecap(buffer) {
       blockedByCode[bCode] = bVal;
       blockedByCodeList.push({ code: bCode, val: bVal });
     }
-    blockedByCodeList.sort((a, b) => a.code.localeCompare(b.code));
+    blockedByCodeList.sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
+
+    const blockedBySourceAndCode = { RM: {}, PNP: {}, PLN: {} };
+    const blockedBySourceAndCodeList = [];
+    for (const [sKey, sVal] of blockedBySourceAndCodeMap.entries()) {
+      const [tag, code] = sKey.split('__');
+      if (!blockedBySourceAndCode[tag]) blockedBySourceAndCode[tag] = {};
+      blockedBySourceAndCode[tag][code] = sVal;
+      blockedBySourceAndCodeList.push({ tag, code, val: sVal });
+    }
+    const tagPriority = { 'RM': 1, 'PNP': 2, 'PLN': 3 };
+    blockedBySourceAndCodeList.sort((a, b) => {
+      const tDiff = (tagPriority[a.tag] || 9) - (tagPriority[b.tag] || 9);
+      if (tDiff !== 0) return tDiff;
+      return a.code.localeCompare(b.code, undefined, { numeric: true });
+    });
 
     nodeSummaries[key] = {
       key: node.key,
@@ -483,6 +507,8 @@ async function parseHierarchyRecap(buffer) {
       blockedPct: totalVal > 0 ? ((totalBlocked / totalVal) * 100).toFixed(1) : '0.0',
       blockedByCode,
       blockedByCodeList,
+      blockedBySourceAndCode,
+      blockedBySourceAndCodeList,
       recordCount: node.records.length,
       digit6List
     };
@@ -513,16 +539,114 @@ async function parseHierarchyRecap(buffer) {
     }
   }
 
-  // Sort nodes in each level by code
-  for (const lvl in nodesByLevel) {
-    nodesByLevel[lvl].sort((a, b) => a.code.localeCompare(b.code));
+  // Build childrenMap (parentKey -> array of childKeys)
+  const childrenMap = new Map();
+  for (const nodeKey in nodeSummaries) {
+    const pKey = nodeSummaries[nodeKey].parentKey;
+    if (pKey) {
+      if (!childrenMap.has(pKey)) childrenMap.set(pKey, []);
+      childrenMap.get(pKey).push(nodeKey);
+    }
   }
+
+  // Sort child keys by node code
+  for (const [pKey, cKeys] of childrenMap.entries()) {
+    cKeys.sort((a, b) => {
+      const nodeA = nodeSummaries[a];
+      const nodeB = nodeSummaries[b];
+      return (nodeA?.code || '').localeCompare(nodeB?.code || '', undefined, { numeric: true });
+    });
+  }
+
+  // Attach childrenKeys and directChildrenCount to each nodeSummary
+  for (const nodeKey in nodeSummaries) {
+    const s = nodeSummaries[nodeKey];
+    const cKeys = childrenMap.get(nodeKey) || [];
+    s.childrenKeys = cKeys;
+    s.directChildrenCount = s.level === 6 ? (s.digit6List ? s.digit6List.length : 0) : cKeys.length;
+    s.accountCount = s.digit6List ? s.digit6List.length : 0;
+  }
+
+  // Recursive tree builder
+  function buildTree(nodeKey) {
+    const s = nodeSummaries[nodeKey];
+    if (!s) return null;
+    const cKeys = childrenMap.get(nodeKey) || [];
+    const children = [];
+    for (const cKey of cKeys) {
+      const child = buildTree(cKey);
+      if (child) children.push(child);
+    }
+
+    // If Level 6 (Subkomponen), append its accounts (Level 7)
+    if (s.level === 6 && s.digit6List && s.digit6List.length > 0) {
+      s.digit6List.forEach(d => {
+        children.push({
+          key: `${nodeKey}__${d.code}__${d.tagging}`,
+          code: d.code,
+          name: d.name,
+          level: 7,
+          levelName: 'Akun',
+          parentKey: nodeKey,
+          fullPath: `${s.fullPath} > ${d.code}`,
+          totalVal: d.totalVal,
+          totalRM: d.totalRM || 0,
+          totalPNBP: d.totalPNBP || 0,
+          totalPLN: d.totalPLN || 0,
+          blockedRM: d.blockedRM || 0,
+          blockedPNBP: d.blockedPNBP || 0,
+          blockedPLN: d.blockedPLN || 0,
+          totalBlocked: d.totalBlocked || 0,
+          blockedPct: d.blockedPct || '0.0',
+          tagging: d.tagging,
+          blockCode: d.blockCode,
+          blockedByCodeList: (d.blockCode && d.blockCode !== 'RK' && d.blockCode !== '*') ? [{ code: d.blockCode, val: d.totalBlocked }] : [],
+          blockedBySourceAndCodeList: (d.totalBlocked > 0 && d.blockCode) ? [{
+            tag: (d.tagging === 'PLN' || d.tagging === 'PHLN') ? 'PLN' : (d.tagging === 'RM' ? 'RM' : 'PNP'),
+            code: d.blockCode,
+            val: d.totalBlocked
+          }] : [],
+          directChildrenCount: 0,
+          accountCount: 1,
+          children: []
+        });
+      });
+    }
+
+    return {
+      key: s.key,
+      code: s.code,
+      name: s.name,
+      level: s.level,
+      levelName: s.levelName,
+      parentKey: s.parentKey,
+      fullPath: s.fullPath,
+      totalVal: s.totalVal,
+      totalRM: s.totalRM,
+      totalPNBP: s.totalPNBP,
+      totalPLN: s.totalPLN,
+      blockedRM: s.blockedRM,
+      blockedPNBP: s.blockedPNBP,
+      blockedPLN: s.blockedPLN,
+      totalBlocked: s.totalBlocked,
+      blockedPct: s.blockedPct,
+      blockedByCodeList: s.blockedByCodeList,
+      blockedBySourceAndCodeList: s.blockedBySourceAndCodeList,
+      directChildrenCount: s.directChildrenCount,
+      accountCount: s.accountCount,
+      children
+    };
+  }
+
+  const hierarchyTree = buildTree('ROOT');
 
   return {
     rootSummary: nodeSummaries['ROOT'],
     nodeSummaries,
     levelOptions,
-    nodesByLevel
+    nodesByLevel,
+    childrenMap: Object.fromEntries(childrenMap),
+    hierarchyTree
   };
 }
 
