@@ -3,7 +3,9 @@ const path = require('path');
 const validateInput = require('../src/steps/00-validate-input');
 
 async function test() {
-  const filePath = path.join(__dirname, '../RINCIAN KERTAS KERJA SATKER.xlsx');
+  const filePath = fs.existsSync(path.join(__dirname, '../RINCIAN KERTAS KERJA SATKER.xlsx'))
+    ? path.join(__dirname, '../RINCIAN KERTAS KERJA SATKER.xlsx')
+    : path.join(__dirname, '../data/RINCIAN KERTAS KERJA SATKER.xlsx');
   console.log('Testing validateInput on:', filePath);
 
   const buffer = fs.readFileSync(filePath);

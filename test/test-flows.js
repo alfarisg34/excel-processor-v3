@@ -7,8 +7,12 @@ async function runTests() {
   console.log('🧪 Running Excel Processor V3 Flow Verification');
   console.log('==============================================');
 
-  const rkkPath = path.join(__dirname, '..', 'RINCIAN KERTAS KERJA SATKER.xlsx');
-  const faPath = path.join(__dirname, '..', 'Laporan Fa Detail (16 Segmen).xlsx');
+  const rkkPath = fs.existsSync(path.join(__dirname, '..', 'RINCIAN KERTAS KERJA SATKER.xlsx'))
+    ? path.join(__dirname, '..', 'RINCIAN KERTAS KERJA SATKER.xlsx')
+    : path.join(__dirname, '..', 'data', 'RINCIAN KERTAS KERJA SATKER.xlsx');
+  const faPath = fs.existsSync(path.join(__dirname, '..', 'Laporan Fa Detail (16 Segmen).xlsx'))
+    ? path.join(__dirname, '..', 'Laporan Fa Detail (16 Segmen).xlsx')
+    : path.join(__dirname, '..', 'data', 'Laporan Fa Detail (16 Segmen).xlsx');
 
   if (!fs.existsSync(rkkPath)) {
     console.error('❌ RKK file not found at:', rkkPath);

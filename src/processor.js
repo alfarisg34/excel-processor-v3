@@ -11,7 +11,7 @@ const faMatching = require('./steps/06-fa-matching');
  * @param {Buffer} [faBuffer] - Optional Laporan FA Detail buffer
  * @returns {Promise<ExcelJS.Workbook>} Processed ExcelJS Workbook
  */
-async function processExcel(rkkBuffer, faBuffer = null) {
+async function processExcel(rkkBuffer, faBuffer = null, options = {}) {
   // Step 1: Read & parse input
   const workbook = await parseInput(rkkBuffer);
 
@@ -22,14 +22,14 @@ async function processExcel(rkkBuffer, faBuffer = null) {
   await formulas(workbook);
 
   // Step 4: Map to RAB layout + SEMULA/MENJADI/SELISIH + Summary columns
-  const outWorkbook = await mapToRab(workbook);
+  const outWorkbook = await mapToRab(workbook, options);
 
   // Step 5: Styling (Font Arial 6pt, row colors, headers, borders)
   await styling(outWorkbook);
 
   // Step 6: Laporan FA Matching (if FA file provided)
   if (faBuffer) {
-    await faMatching(outWorkbook, faBuffer);
+    await faMatching(outWorkbook, faBuffer, options);
   }
 
   return outWorkbook;

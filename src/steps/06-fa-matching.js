@@ -4,6 +4,16 @@ const { getCellText } = require('../utils/excel-helpers');
 const PATTERNS = require('../utils/patterns');
 
 /**
+ * Format Date to DDMMYY (e.g. 230926)
+ */
+function getProcessDateDDMMYY(d = new Date()) {
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = String(d.getFullYear()).slice(-2);
+  return `${day}${month}${year}`;
+}
+
+/**
  * Get hierarchy numeric order level
  */
 function getCodeLevel(code) {
@@ -22,9 +32,44 @@ function getCodeLevel(code) {
 }
 
 /**
+ * Helper to calculate nominal Pagu from a detail row (-)
+ */
+function getDetailRowPagu(row) {
+  const cell19 = row.getCell(19).value;
+  if (typeof cell19 === 'number') return cell19;
+  if (cell19 && typeof cell19.result === 'number') return cell19.result;
+
+  const cell39 = row.getCell(39).value;
+  if (typeof cell39 === 'number') return cell39;
+  if (cell39 && typeof cell39.result === 'number') return cell39.result;
+
+  const hargasat = parseFloat(getCellText(row.getCell(18)).replace(/[^0-9.-]/g, '')) || 
+                   parseFloat(getCellText(row.getCell(38)).replace(/[^0-9.-]/g, '')) || 0;
+  
+  const e = parseFloat(getCellText(row.getCell(5)));
+  const h = parseFloat(getCellText(row.getCell(8)));
+  const k = parseFloat(getCellText(row.getCell(11)));
+  const n = parseFloat(getCellText(row.getCell(14)));
+
+  let vol = 1;
+  let hasMultiplier = false;
+  if (!isNaN(e)) { vol *= e; hasMultiplier = true; }
+  if (!isNaN(h)) { vol *= h; hasMultiplier = true; }
+  if (!isNaN(k)) { vol *= k; hasMultiplier = true; }
+  if (!isNaN(n)) { vol *= n; hasMultiplier = true; }
+
+  if (!hasMultiplier) {
+    const p = parseFloat(getCellText(row.getCell(16)).replace(/[^0-9.-]/g, ''));
+    if (!isNaN(p)) vol = p;
+  }
+
+  return Math.round(vol * hargasat);
+}
+
+/**
  * Helper to parse Laporan FA Detail (16 Segmen) with full multi-criteria hierarchy context
  * @param {Buffer} faBuffer
- * @returns {Promise<Array<{rawRowNum: number, program: string, kegiatan: string, kro: string, ro: string, fullRo: string, komponen: string, subkomponen: string, akun: string, uraian: string, pagu: number, sisa: number}>>}
+ * @returns {Promise<Array<{rawRowNum: number, program: string, kegiatan: string, kro: string, ro: string, fullRo: string, komponen: string, subkomponen: string, akun: string, uraian: string, pagu: number, realisasi: number, sisa: number}>>}
  */
 async function parseLaporanFA(faBuffer) {
   const faWorkbook = new ExcelJS.Workbook();
@@ -55,7 +100,7 @@ async function parseLaporanFA(faBuffer) {
       sisaNum = isNaN(parsed) ? 0 : parsed;
     }
 
-    // Read Pagu strictly from Column 17
+    // Read Pagu strictly from Column 17 (Pagu Revisi)
     const paguRaw = row.getCell(17).value;
     let paguNum = 0;
     if (typeof paguRaw === 'number') {
@@ -64,6 +109,17 @@ async function parseLaporanFA(faBuffer) {
       const resVal = (typeof paguRaw === 'object' && paguRaw.result !== undefined) ? paguRaw.result : paguRaw;
       const parsed = parseFloat(String(resVal).replace(/[^0-9.-]/g, ''));
       paguNum = isNaN(parsed) ? 0 : parsed;
+    }
+
+    // Read Realisasi s.d. Periode strictly from Column 26
+    const realRaw = row.getCell(26).value;
+    let realNum = 0;
+    if (typeof realRaw === 'number') {
+      realNum = realRaw;
+    } else if (realRaw !== null && realRaw !== undefined) {
+      const resVal = (typeof realRaw === 'object' && realRaw.result !== undefined) ? realRaw.result : realRaw;
+      const parsed = parseFloat(String(resVal).replace(/[^0-9.-]/g, ''));
+      realNum = isNaN(parsed) ? 0 : parsed;
     }
 
     // Track hierarchy context from FA rows
@@ -113,6 +169,7 @@ async function parseLaporanFA(faBuffer) {
         akun: ctx.akun,
         uraian: cleanUraian,
         pagu: paguNum,
+        realisasi: realNum,
         sisa: sisaNum
       });
     }
@@ -122,13 +179,14 @@ async function parseLaporanFA(faBuffer) {
 }
 
 /**
- * Step 6: Match Laporan FA to worksheet detail rows and insert Sisa Anggaran in Column 42 (AP)
- * with multi-criteria hierarchy matching, hierarchical SUM across all levels, and unmatched items tracking.
+ * Step 6: Match Laporan FA to worksheet detail rows, inserting Realisasi s/d {DDMMYY} in Col AP (42)
+ * and Sisa Anggaran in Col AQ (43) with multi-criteria hierarchy + Pagu matching and hierarchical SUM.
  * @param {ExcelJS.Workbook} workbook
  * @param {Buffer} [faBuffer] - Optional Laporan FA file buffer
+ * @param {Object} [options]
  * @returns {Promise<Object|null>} Matching summary report
  */
-async function faMatching(workbook, faBuffer) {
+async function faMatching(workbook, faBuffer, options = {}) {
   if (!faBuffer) {
     return null; // Optional step, skip if no FA file provided
   }
@@ -145,17 +203,25 @@ async function faMatching(workbook, faBuffer) {
   let totalDetailCount = 0;
   let normalDetailCount = 0;
 
-  workbook.worksheets.forEach((worksheet) => {
-    // Target Column 42 (AP)
-    const colFA = 42;
+  const processDate = options.processDate || new Date();
+  const dateStr = getProcessDateDDMMYY(processDate);
+  const realisasiHeader = `REALISASI\ns/d\n${dateStr}`;
+  const sisaHeader = 'SISA\nANGGARAN';
 
-    // Set header at row 1 (master cell of merged AP1:AP3)
-    worksheet.getRow(1).getCell(colFA).value = 'SISA ANGGARAN';
+  workbook.worksheets.forEach((worksheet) => {
+    // Target Columns: AP (42) for Realisasi, AQ (43) for Sisa Anggaran
+    const colReal = 42;
+    const colSisa = 43;
+
+    // Set headers at row 1 (master cells of merged ranges AP1:AP3 and AQ1:AQ3)
+    worksheet.getRow(1).getCell(colReal).value = realisasiHeader;
+    worksheet.getRow(1).getCell(colSisa).value = sisaHeader;
 
     const rkkCtx = { program: '', kegiatan: '', kro: '', ro: '', komponen: '', subkomponen: '', akun: '' };
     const maxR = worksheet.rowCount;
+    const detailRows = [];
 
-    // 1. Pass 1: Detail Row Matching (Row 4 onwards)
+    // 1. Scan and collect detail rows with their full hierarchy context & Pagu
     for (let r = 4; r <= maxR; r++) {
       const row = worksheet.getRow(r);
       const code = getCellText(row.getCell(1)).trim();
@@ -163,7 +229,7 @@ async function faMatching(workbook, faBuffer) {
       const valT = getCellText(row.getCell(20)).trim();
       const valAN = getCellText(row.getCell(40)).trim();
       const cleanUraian = uraian.replace(/\s*\[.*?(?:\]\s*)?$/, '').replace(/\s+/g, ' ').trim();
-      const jumlahS = parseFloat(getCellText(row.getCell(19)).replace(/[^0-9.-]/g, '')) || 0;
+      const pagu = getDetailRowPagu(row);
 
       if (PATTERNS.CODE_322.test(code)) {
         const m = code.match(/\.([A-Za-z]{2})$/);
@@ -199,13 +265,14 @@ async function faMatching(workbook, faBuffer) {
         const isBlocked = isBlockedStar || isBlockedRK || isBlockedText;
 
         if (isBlocked) {
-          row.getCell(colFA).value = 0;
+          row.getCell(colReal).value = 0;
+          row.getCell(colSisa).value = 0;
           const isRK = isBlockedRK || (rkkCtx.akunTagging === 'PLN' && !isBlockedStar);
           blockedItems.push({
             rowNumber: r,
             hierarchyPath: [rkkCtx.program, rkkCtx.kegiatan, rkkCtx.kro, rkkCtx.ro, rkkCtx.komponen, rkkCtx.subkomponen, rkkCtx.akun].filter(Boolean).join(' > '),
             uraian: cleanUraian,
-            pagu: jumlahS,
+            pagu: pagu,
             tagging: valT || valAN || (isRK ? 'RK' : '*'),
             status: isRK ? 'Anggaran Diblokir (Tagging RK)' : 'Anggaran Diblokir (Tagging *)'
           });
@@ -213,50 +280,88 @@ async function faMatching(workbook, faBuffer) {
         }
 
         normalDetailCount++;
-        let foundIdx = -1;
+        detailRows.push({
+          rowNum: r,
+          ctx: { ...rkkCtx },
+          cleanUraian,
+          pagu,
+          tagging: valT || valAN || '-',
+          matchedIdx: -1
+        });
+      }
+    }
 
-        // Strict Hierarchy Matching:
-        // Must strictly match Akun + Komponen + Subkomponen + RO + Uraian
-        for (let i = 0; i < faData.length; i++) {
-          if (faUsed.has(i)) continue;
-          const fa = faData[i];
-          const matchAkun = !rkkCtx.akun || !fa.akun || rkkCtx.akun === fa.akun;
-          const matchKomp = !rkkCtx.komponen || !fa.komponen || rkkCtx.komponen === fa.komponen;
-          const matchSub = !rkkCtx.subkomponen || !fa.subkomponen || rkkCtx.subkomponen.toUpperCase() === fa.subkomponen.toUpperCase();
-          const matchRo = !rkkCtx.ro || !fa.ro || rkkCtx.ro === fa.ro || rkkCtx.ro.endsWith(fa.ro) || fa.ro.endsWith(rkkCtx.ro);
-          const matchName = cleanUraian.toLowerCase() === fa.uraian.toLowerCase();
+    // 2. Two-Pass Matching Strategy:
+    // Pass 1: Strict Hierarchy + Uraian + Pagu (prevents unordered items under the same Akun from swapping!)
+    for (const d of detailRows) {
+      for (let i = 0; i < faData.length; i++) {
+        if (faUsed.has(i)) continue;
+        const fa = faData[i];
+        const matchAkun = !d.ctx.akun || !fa.akun || d.ctx.akun === fa.akun;
+        const matchKomp = !d.ctx.komponen || !fa.komponen || d.ctx.komponen === fa.komponen;
+        const matchSub = !d.ctx.subkomponen || !fa.subkomponen || d.ctx.subkomponen.toUpperCase() === fa.subkomponen.toUpperCase();
+        const matchRo = !d.ctx.ro || !fa.ro || d.ctx.ro === fa.ro || d.ctx.ro.endsWith(fa.ro) || fa.ro.endsWith(d.ctx.ro);
+        const matchName = d.cleanUraian.toLowerCase() === fa.uraian.toLowerCase();
+        const matchPagu = Math.abs(d.pagu - fa.pagu) <= 1 || (d.pagu > 0 && Math.abs(d.pagu - fa.pagu) / d.pagu < 0.001);
 
-          if (matchAkun && matchKomp && matchSub && matchRo && matchName) {
-            foundIdx = i;
-            break;
-          }
-        }
-
-        if (foundIdx !== -1) {
-          faUsed.add(foundIdx);
-          row.getCell(colFA).value = faData[foundIdx].sisa;
-          matchedItems.push({
-            rowNumber: r,
-            hierarchyPath: [rkkCtx.program, rkkCtx.kegiatan, rkkCtx.kro, rkkCtx.ro, rkkCtx.komponen, rkkCtx.subkomponen, rkkCtx.akun].filter(Boolean).join(' > '),
-            uraian: cleanUraian,
-            pagu: jumlahS,
-            sisa: faData[foundIdx].sisa
-          });
-        } else {
-          row.getCell(colFA).value = 0;
-          unmatchedItems.push({
-            rowNumber: r,
-            hierarchyPath: [rkkCtx.program, rkkCtx.kegiatan, rkkCtx.kro, rkkCtx.ro, rkkCtx.komponen, rkkCtx.subkomponen, rkkCtx.akun].filter(Boolean).join(' > '),
-            uraian: cleanUraian,
-            pagu: jumlahS,
-            tagging: valT || valAN || '-',
-            status: 'Tidak Ditemukan di FA'
-          });
+        if (matchAkun && matchKomp && matchSub && matchRo && matchName && matchPagu) {
+          d.matchedIdx = i;
+          faUsed.add(i);
+          break;
         }
       }
     }
 
-    // 2. Pass 2: Bottom-up hierarchical SUM in Column AP (42) for all header codes (from level 6-digit to 322)
+    // Pass 2: Fallback without Pagu for any remaining unmatched detail items
+    for (const d of detailRows) {
+      if (d.matchedIdx !== -1) continue;
+      for (let i = 0; i < faData.length; i++) {
+        if (faUsed.has(i)) continue;
+        const fa = faData[i];
+        const matchAkun = !d.ctx.akun || !fa.akun || d.ctx.akun === fa.akun;
+        const matchKomp = !d.ctx.komponen || !fa.komponen || d.ctx.komponen === fa.komponen;
+        const matchSub = !d.ctx.subkomponen || !fa.subkomponen || d.ctx.subkomponen.toUpperCase() === fa.subkomponen.toUpperCase();
+        const matchRo = !d.ctx.ro || !fa.ro || d.ctx.ro === fa.ro || d.ctx.ro.endsWith(fa.ro) || fa.ro.endsWith(d.ctx.ro);
+        const matchName = d.cleanUraian.toLowerCase() === fa.uraian.toLowerCase();
+
+        if (matchAkun && matchKomp && matchSub && matchRo && matchName) {
+          d.matchedIdx = i;
+          faUsed.add(i);
+          break;
+        }
+      }
+    }
+
+    // Populate detail row cells (Col AP for Realisasi, Col AQ for Sisa Anggaran)
+    for (const d of detailRows) {
+      const row = worksheet.getRow(d.rowNum);
+      if (d.matchedIdx !== -1) {
+        const matchedFA = faData[d.matchedIdx];
+        row.getCell(colReal).value = matchedFA.realisasi;
+        row.getCell(colSisa).value = matchedFA.sisa;
+        matchedItems.push({
+          rowNumber: d.rowNum,
+          hierarchyPath: [d.ctx.program, d.ctx.kegiatan, d.ctx.kro, d.ctx.ro, d.ctx.komponen, d.ctx.subkomponen, d.ctx.akun].filter(Boolean).join(' > '),
+          uraian: d.cleanUraian,
+          pagu: d.pagu,
+          realisasi: matchedFA.realisasi,
+          sisa: matchedFA.sisa
+        });
+      } else {
+        row.getCell(colReal).value = 0;
+        row.getCell(colSisa).value = 0;
+        unmatchedItems.push({
+          rowNumber: d.rowNum,
+          hierarchyPath: [d.ctx.program, d.ctx.kegiatan, d.ctx.kro, d.ctx.ro, d.ctx.komponen, d.ctx.subkomponen, d.ctx.akun].filter(Boolean).join(' > '),
+          uraian: d.cleanUraian,
+          pagu: d.pagu,
+          tagging: d.tagging,
+          status: 'Tidak Ditemukan di FA'
+        });
+      }
+    }
+
+    // 3. Pass 2: Bottom-up hierarchical SUM in Column AP (42) and AQ (43) for all header codes (level 9 to 1)
     const codeRows = [];
     for (let r = 4; r <= maxR; r++) {
       const row = worksheet.getRow(r);
@@ -300,10 +405,10 @@ async function faMatching(workbook, faBuffer) {
           }
 
           if (directChildren.length > 0) {
-            const sumExpr = 'SUM(' + directChildren.map(r => 'AP' + r).join(',') + ')';
-            worksheet.getRow(curr.rowNumber).getCell(colFA).value = {
-              formula: sumExpr
-            };
+            const sumExprReal = 'SUM(' + directChildren.map(r => 'AP' + r).join(',') + ')';
+            const sumExprSisa = 'SUM(' + directChildren.map(r => 'AQ' + r).join(',') + ')';
+            worksheet.getRow(curr.rowNumber).getCell(colReal).value = { formula: sumExprReal };
+            worksheet.getRow(curr.rowNumber).getCell(colSisa).value = { formula: sumExprSisa };
           }
         }
       }

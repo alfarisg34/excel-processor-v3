@@ -41,14 +41,20 @@ async function styling(workbook) {
     applyRange(worksheet, 2, 2, 1, 40, (cell) => (cell.font.size = 10));
     applyRange(worksheet, 3, 3, 1, 40, (cell) => (cell.font.size = 9));
 
-    // AO1:AP3 (SELISIH & SISA ANGGARAN headers) -> Fill #FFFF00, font Calibri 12pt Red
-    applyRange(worksheet, 1, 3, 41, 42, (cell) => {
+    // AO1:AO3 (SELISIH header) -> Fill #FFFF00, font Calibri 12pt Red
+    applyRange(worksheet, 1, 3, 41, 41, (cell) => {
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF00' } };
       cell.font = { name: 'Calibri', size: 12, color: { argb: 'FFFF0000' }, bold: true };
     });
 
+    // AP1:AQ3 (REALISASI & SISA ANGGARAN headers) -> Fill #B8CCE4, font Calibri 12pt Black
+    applyRange(worksheet, 1, 3, 42, 43, (cell) => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB8CCE4' } };
+      cell.font = { name: 'Calibri', size: 12, color: { argb: 'FF000000' }, bold: true };
+    });
+
     // Header alignment: center, middle, wrapText
-    applyRange(worksheet, 1, 3, 1, 42, (cell) => {
+    applyRange(worksheet, 1, 3, 1, 43, (cell) => {
       cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
     });
 
@@ -59,12 +65,12 @@ async function styling(workbook) {
       cell.border = { top: whiteBorder, bottom: whiteBorder, left: whiteBorder, right: whiteBorder };
     });
 
-    // Black border A3:AN3 and AO1:AP3
+    // Black border A3:AN3 and AO1:AQ3
     applyRange(worksheet, 3, 3, 1, 40, (cell) => {
       const blackBorder = { style: 'thin', color: { argb: 'FF000000' } };
       cell.border = { top: blackBorder, bottom: blackBorder, left: blackBorder, right: blackBorder };
     });
-    applyRange(worksheet, 1, 3, 41, 42, (cell) => {
+    applyRange(worksheet, 1, 3, 41, 43, (cell) => {
       const blackBorder = { style: 'thin', color: { argb: 'FF000000' } };
       cell.border = { top: blackBorder, bottom: blackBorder, left: blackBorder, right: blackBorder };
     });
@@ -97,9 +103,10 @@ async function styling(workbook) {
     outsideBorder(worksheet, 4, XX, 21, 40);
     outsideBorder(worksheet, 4, XX, 41, 41);
     outsideBorder(worksheet, 4, XX, 42, 42);
+    outsideBorder(worksheet, 4, XX, 43, 43);
 
-    // Bottom border AXX:APXX
-    bottomBorder(worksheet, XX, XX, 1, 42);
+    // Bottom border AXX:AQXX
+    bottomBorder(worksheet, XX, XX, 1, 43);
 
     // 6. Signature Block Styling (ONLY for rows r > XX)
     const maxR = worksheet.rowCount;
@@ -151,10 +158,67 @@ async function styling(workbook) {
       colMenjadi.width = w;
     }
     worksheet.getColumn(41).width = 14; // AO SELISIH
-    worksheet.getColumn(42).width = 18; // AP SISA ANGGARAN REALISASI FA
-    for (let c = 43; c <= 57; c++) {
-      worksheet.getColumn(c).width = 14; // AQ..BE (15 Summary Columns)
+    worksheet.getColumn(42).width = 18; // AP REALISASI S/D DDMMYY
+    worksheet.getColumn(43).width = 18; // AQ SISA ANGGARAN REALISASI FA
+    worksheet.getColumn(44).width = 4;  // AR JEDA (KOLOM KOSONG)
+    for (let c = 45; c <= 59; c++) {
+      worksheet.getColumn(c).width = 14; // AS..BG (15 Summary Columns)
     }
+
+    // 8. Summary block formatting & styling (Cols 45-59 for each trigger row)
+    const thinBorder = {
+      top: { style: 'thin', color: { argb: 'FF000000' } },
+      bottom: { style: 'thin', color: { argb: 'FF000000' } },
+      left: { style: 'thin', color: { argb: 'FF000000' } },
+      right: { style: 'thin', color: { argb: 'FF000000' } },
+    };
+
+    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+      const cell45Val = row.getCell(45).value;
+      if (cell45Val === '524 SEMULA') {
+        const headerRow = row;
+        const dataRow = worksheet.getRow(rowNumber + 1);
+
+        for (let c = 45; c <= 59; c++) {
+          // Style Header Cell (Row Y)
+          const hCell = headerRow.getCell(c);
+          hCell.border = thinBorder;
+          const hVal = (hCell.value || '').toString().trim();
+          const isSelisih = hVal.startsWith('SELISIH');
+
+          hCell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: isSelisih ? 'FFFFFF00' : 'FFB8CCE4' },
+          };
+          hCell.font = {
+            name: 'Arial',
+            size: 6,
+            bold: true,
+            color: { argb: 'FF000000' },
+          };
+          hCell.alignment = {
+            horizontal: 'center',
+            vertical: 'middle',
+            wrapText: true,
+          };
+
+          // Style Data Cell (Row Y+1)
+          const dCell = dataRow.getCell(c);
+          dCell.border = thinBorder;
+          dCell.font = {
+            name: 'Arial',
+            size: 6,
+            bold: true,
+            color: { argb: 'FF000000' },
+          };
+          dCell.alignment = {
+            horizontal: 'right',
+            vertical: 'middle',
+          };
+        }
+      }
+    });
   });
 }
 

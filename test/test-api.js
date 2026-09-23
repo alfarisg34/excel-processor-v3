@@ -8,7 +8,9 @@ async function testApi() {
     const port = server.address().port;
     console.log(`Test server running on port ${port}`);
 
-    const filePath = path.join(__dirname, '../RINCIAN KERTAS KERJA SATKER.xlsx');
+    const filePath = fs.existsSync(path.join(__dirname, '../RINCIAN KERTAS KERJA SATKER.xlsx'))
+      ? path.join(__dirname, '../RINCIAN KERTAS KERJA SATKER.xlsx')
+      : path.join(__dirname, '../data/RINCIAN KERTAS KERJA SATKER.xlsx');
     const fileBuffer = fs.readFileSync(filePath);
 
     const boundary = '--------------------------' + Date.now().toString(16);

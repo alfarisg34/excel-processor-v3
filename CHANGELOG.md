@@ -7,6 +7,31 @@ dan proyek ini menganut standar [Semantic Versioning (SemVer 2.0.0)](https://sem
 
 ---
 
+## [3.3.1] - 2026-09-23
+
+### Improved (UI/UX & STYLING)
+- **Penyempurnaan Tampilan Blok Summary & Jeda Kolom Pemisah**:
+  - Menambahkan jeda satu kolom kosong di sebelah kiri blok summary pada **Kolom 44 (AR)** dengan lebar proporsional (width: 4) sebagai pemisah bersih antara tabel utama dan tabel rekapitulasi samping.
+  - Memindahkan 15 kolom summary ke **Kolom 45–59 (AS–BG)** dan menyinkronkan seluruh formula selisih (`SELISIH 524` = `AT-AS`, `SELISIH NON 524` = `AW-AV`, `SELISIH RM` = `AZ-AY`, `SELISIH PNBP` = `BC-BB`, `SELISIH PLN` = `BF-BE`).
+  - Menambahkan garis cell (*thin black border*) lengkap pada seluruh sisi cell baik pada baris header (Row Y) maupun baris data nilai (Row Y+1).
+  - Memberikan warna header tematik: abu-abu/biru lembut `#B8CCE4` untuk seluruh kolom SEMULA & MENJADI, serta kuning cerah `#FFFF00` untuk seluruh kolom SELISIH dengan font hitam tebal dan alignment terpusat (*center/middle*).
+  - Memperbarui styling header Kolom AP (`REALISASI\ns/d\n{DDMMYY}`) dan AQ (`SISA\nANGGARAN`) dengan fill `#B8CCE4`, font hitam `#000000`, teks kapital, dan line break (*enter*).
+
+---
+
+## [3.3.0] - 2026-09-23
+
+### Added (FEAT)
+- **Kolom Baru Realisasi s/d {DDMMYY} (Kolom 42 / AP)**: Menambahkan kolom baru langsung di sebelah kanan Kolom AO untuk menampilkan nilai realisasi kumulatif yang bersumber dari kolom `s.d. Periode ` pada Laporan FA Detail (16 Segmen). Tanggal proses dinamis otomatis diformat `DDMMYY` pada header kolom.
+- **Formula Hirarki Realisasi & Sisa Anggaran**: Menerapkan formula penjumlahan berjenjang otomatis (*hierarchical SUM*) dari level sub-grup `>` dan akun digit 6 hingga level Program (322) secara simetris pada Kolom Realisasi (AP) dan Kolom Sisa Anggaran (AQ).
+
+### Improved (IMPROVE)
+- **Pencocokan Multi-Kriteria Berbasis Pagu (Pagu-Aware Matching)**: Mengimplementasikan strategi pencocokan dua tahap (*two-pass matching*) dengan verifikasi nominal Pagu Revisi FA terhadap Pagu RKK Satker. Mencegah item dengan uraian identik dalam satu akun yang sama (seperti *"Fullboard Paket Meeting"*) tertukar penempatan sisa anggaran dan realisasinya akibat perbedaan urutan antara dokumen RKK dan Laporan FA.
+- **Relasi Matematis Anggaran**: Menjamin integritas perhitungan bahwa $\text{Realisasi} + \text{Sisa Anggaran} = \text{Nominal Pagu}$.
+- **Penataan Ulang Kolom Summary**: Menggeser Kolom Sisa Anggaran ke Kolom 43 (AQ) serta memindahkan 15 kolom summary ke Kolom 44–58 (AR–BF) dengan formula selisih dan border yang disesuaikan secara presisi.
+
+---
+
 ## [3.2.0] - 2026-09-21
 
 ### Added (FEAT)

@@ -28,8 +28,10 @@ It transforms raw RKK Satker input files into a **20-column side-by-side compari
 ### 2. 📊 Alur 2: Processing Dengan Realisasi (Laporan FA Detail)
 - **Multi-Criteria Hierarchy Matching**:
   - Matches detail line items (`-`) against Laporan FA Detail (16 Segmen) using strict multi-tier hierarchy: Akun (6-digit) + Komponen (3-digit) + Subkomponen (Single Alpha) + RO + Uraian.
-- **Sisa Anggaran in Column 42 (AP)**:
-  - Appends Sisa Anggaran (Col 42 / `AP`) directly into the output worksheet.
+- **Realisasi s/d {DDMMYY} in Column 42 (AP) & Sisa Anggaran in Column 43 (AQ)**:
+  - Appends Realisasi kumulatif (Col 42 / `AP`) dan Sisa Anggaran (Col 43 / `AQ`) langsung pada worksheet output.
+  - Memverifikasi Pagu Revisi FA terhadap Pagu RKK Satker guna mencegah tertukarnya item ber-uraian identik pada kode akun yang sama.
+  - Menghitung formula `SUM(...)` hirarki berjenjang dinamis secara simetris untuk kolom Realisasi dan Sisa Anggaran.
   - Tracks blocked budget allocations (`*` / `Blokir`), matched records, and unmatched records with real-time UI summary reporting.
 
 ### 3. 🌳 Alur 3: Rekap Hirarki Satker
@@ -79,7 +81,7 @@ excel-processor-v3/
 │   │   ├── 03-formulas.js       # Intermediate volume & sum formulas
 │   │   ├── 04-map-to-rab.js     # Side-by-side mapping, cleanup, & formula recalculation
 │   │   ├── 05-styling.js        # Color coding, fonts, borders, & signature styling
-│   │   └── 06-fa-matching.js    # Realisasi & Sisa Anggaran FA matching (Col 42 / AP)
+│   │   └── 06-fa-matching.js    # Realisasi (Col 42 / AP) & Sisa Anggaran (Col 43 / AQ) FA matching
 │   └── utils/
 │       ├── excel-helpers.js     # Cell text extraction & border styling utilities
 │       ├── hierarchy-recap.js   # Tree parser for Alur 3 hierarchical recap & analytics

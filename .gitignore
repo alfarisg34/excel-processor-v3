@@ -7,3 +7,5 @@ test_output/
 *.log
 .DS_Store
 scratch*.js
+scratch/
+data/

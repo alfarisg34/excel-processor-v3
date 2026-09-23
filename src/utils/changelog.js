@@ -3,6 +3,62 @@ const path = require('path');
 
 const releases = [
   {
+    version: '3.3.1',
+    date: '2026-09-23',
+    type: 'PATCH',
+    title: 'Penyempurnaan Tampilan Blok Summary, Garis Cell, & Jeda Kolom Pemisah',
+    changes: [
+      {
+        type: 'IMPROVE',
+        title: 'Jeda Kolom Pemisah (Kolom 44 / AR)',
+        desc: 'Menambahkan satu kolom kosong sebagai separator di sebelah kiri blok summary dengan lebar proporsional (width: 4).'
+      },
+      {
+        type: 'IMPROVE',
+        title: 'Penataan Ulang & Formula 15 Kolom Summary (Kolom 45-59 / AS-BG)',
+        desc: 'Memindahkan blok summary ke Kolom 45-59 serta menyinkronkan seluruh formula selisih (SELISIH 524 = AT-AS, SELISIH NON 524 = AW-AV, dst.).'
+      },
+      {
+        type: 'IMPROVE',
+        title: 'Garis Cell (Borders) Lengkap',
+        desc: 'Menerapkan garis cell tipis hitam (thin border) pada seluruh sisi cell di baris header maupun baris data nilai pada blok summary.'
+      },
+      {
+        type: 'IMPROVE',
+        title: 'Pewarnaan Tematik Header Blok Summary (#B8CCE4 & #FFFF00)',
+        desc: 'Pewarnaan header blok summary dengan abu-abu/biru lembut #B8CCE4 untuk kolom SEMULA & MENJADI, serta kuning cerah #FFFF00 untuk kolom SELISIH.'
+      }
+    ]
+  },
+  {
+    version: '3.3.0',
+    date: '2026-09-23',
+    type: 'MINOR',
+    title: 'Kolom Realisasi s/d {DDMMYY}, Pencocokan Berbasis Pagu & Dual Hierarchical SUM',
+    changes: [
+      {
+        type: 'FEAT',
+        title: 'Kolom Baru Realisasi s/d {DDMMYY}',
+        desc: 'Menambahkan kolom baru langsung di sebelah kanan Kolom AO (Kolom 42 / AP) untuk menyajikan realisasi kumulatif dari kolom s.d. Periode pada dokumen Laporan FA Detail (16 Segmen) dengan format tanggal dinamis DDMMYY.'
+      },
+      {
+        type: 'FEAT',
+        title: 'Formula Hirarki Realisasi & Sisa Anggaran',
+        desc: 'Formula SUM berjenjang diterapkan otomatis dari level sub-grup (>) dan akun digit 6 hingga level Program (322) secara simetris pada Kolom Realisasi (AP) dan Kolom Sisa Anggaran (AQ).'
+      },
+      {
+        type: 'IMPROVE',
+        title: 'Pencocokan Multi-Kriteria Berbasis Pagu (Pagu-Aware Matching)',
+        desc: 'Mencegah item dengan uraian sama persis pada kode akun yang sama (misal Fullboard Paket Meeting) tertukar akibat perbedaan urutan antara dokumen RKK dan FA Detail dengan strategi pencocokan dua tahap berbasis verifikasi nominal pagu.'
+      },
+      {
+        type: 'IMPROVE',
+        title: 'Penataan Ulang Kolom RAB & Summary',
+        desc: 'Kolom Sisa Anggaran dipindahkan ke Kolom 43 (AQ), dan 15 kolom summary bergeser ke Kolom 44-58 (AR-BF) dengan penyesuaian formula selisih dan border styling.'
+      }
+    ]
+  },
+  {
     version: '3.2.0',
     date: '2026-09-21',
     type: 'PATCH',
