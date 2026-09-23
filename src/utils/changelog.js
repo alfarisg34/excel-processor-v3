@@ -3,6 +3,72 @@ const path = require('path');
 
 const releases = [
   {
+    version: '3.4.0',
+    date: '2026-09-23',
+    type: 'MINOR',
+    title: 'Pohon Struktur & Drilldown Hirarki Interaktif, Dual-View Tabs & Analisis Blokir',
+    changes: [
+      {
+        type: 'FEAT',
+        title: 'Pohon Struktur & Drilldown Hirarki Interaktif',
+        desc: 'Visualisasi hierarki anggaran 7-tingkat (Program s/d Akun) dengan navigasi breadcrumb dinamis, kartu metrik per level (Scope Multi-Tier Cards), popover modal rincian entitas lengkap pencarian dan totalitas, serta tabel pohon interaktif dengan tombol lipat/buka.'
+      },
+      {
+        type: 'FEAT',
+        title: 'Dual-View Tabs di Menu Rekap Hirarki Satker',
+        desc: 'Menghadirkan tab switcher terpadu antara Tampilan 1: Struktur & Drilldown Hirarki dan Tampilan 2: Analisis Detail Akun cukup dengan satu kali upload file RKK.'
+      },
+      {
+        type: 'FEAT',
+        title: 'Ekspor Excel Berjenjang (Native Outline Grouping) & PDF Eksekutif',
+        desc: 'Ekspor Excel berjenjang yang memanfaatkan fitur bawaan row.outlineLevel Microsoft Excel untuk melipat baris secara otomatis, serta dokumen PDF landscape A4 siap cetak.'
+      },
+      {
+        type: 'FEAT',
+        title: 'Informasi Agregat Kode Blokir Murni (Kode A, Kode 2, dst.)',
+        desc: 'Menampilkan ringkasan total blokir murni per kode blokir pada kartu KPI Total Diblokir dan banner lingkup aktif, dilengkapi aksi klik interaktif untuk memfilter tabel akun.'
+      },
+      {
+        type: 'UI',
+        title: 'Tata Letak Vertikal Kolom Sumber Dana & Rincian Blokir',
+        desc: 'Menyusun rincian sumber dana (RM, PNP, PLN) dan rincian blokir secara vertikal per baris dengan nilai monospaced sejajar agar tabel tampak lebih lapang dan rapi.'
+      },
+      {
+        type: 'FIX',
+        title: 'Indikator Panah Toggle Pohon & Penyelarasan Badge Sub-Item',
+        desc: 'Ikon panah toggle kini dinamis berubah menjadi chevron-down saat terbuka dan chevron-right saat tertutup. Badge Sub-Item dirapikan dalam satu baris horizontal tanpa terpotong.'
+      },
+      {
+        type: 'FIX',
+        title: 'Interaktivitas Checkbox & Tombol Bersihkan Filter Kode Blokir',
+        desc: 'Memperbaiki siklus pembaruan filter kode blokir sehingga status uncheck checkbox dan tombol Bersihkan tetap terjaga tanpa ter-reset otomatis.'
+      }
+    ]
+  },
+  {
+    version: '3.3.2',
+    date: '2026-09-23',
+    type: 'PATCH',
+    title: 'Rincian Blokir Sumber Dana & Kode Blokir Dinamis',
+    changes: [
+      {
+        type: 'FEAT',
+        title: 'Rincian Kombinasi Sumber Dana x Kode Blokir',
+        desc: 'Menyajikan rincian dana diblokir berdasarkan kombinasi Sumber Dana dan Kode Blokir (contoh: [PNP] Kode A: Rp ..., [PLN] Kode A: Rp ...) pada kartu KPI Total Diblokir lengkap dengan fitur Click-to-Filter.'
+      },
+      {
+        type: 'IMPROVE',
+        title: 'Dropdown Multi-Select Kode Blokir Terkategori',
+        desc: 'Dropdown filter Kode Blokir kini menyajikan sub-badge per sumber dana pada setiap item kode blokir.'
+      },
+      {
+        type: 'IMPROVE',
+        title: 'Sinkronisasi Dinamis Tingkat Hirarki',
+        desc: 'Rincian kombinasi blokir otomatis menyesuaikan secara real-time setiap kali pengguna mengganti dropdown Filter Tingkat Hirarki atau Parent Node.'
+      }
+    ]
+  },
+  {
     version: '3.3.1',
     date: '2026-09-23',
     type: 'PATCH',

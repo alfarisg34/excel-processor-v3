@@ -36,8 +36,9 @@ app.get('/api/changelog', (req, res) => {
   try {
     const limit = parseInt(req.query.limit, 10) || 100;
     const gitCommits = getGitCommits(limit);
+    const currentVersion = (releases && releases.length > 0) ? releases[0].version : '3.4.0';
     res.json({
-      currentVersion: '3.3.1',
+      currentVersion,
       releases,
       gitCommits
     });
