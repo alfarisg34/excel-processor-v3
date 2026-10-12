@@ -27,13 +27,13 @@ async function run() {
   }
   const elements = new Map();
   const get = id => { if (!elements.has(id)) elements.set(id,new Element(id)); return elements.get(id); };
-  const alerts=[], exports=[], pdfs=[], activeIntervals=new Set();
+  const alerts=[], exports=[], exportOptions=[], pdfs=[], activeIntervals=new Set();
   const deferred=()=>{let resolve;const promise=new Promise(r=>{resolve=r;});return {promise,resolve};};
   const XLSX={utils:{
     aoa_to_sheet:rows=>({rows}),
     book_new:()=>({sheets:[]}),
     book_append_sheet:(wb,sheet,name)=>wb.sheets.push({sheet,name})
-  },writeFile:wb=>exports.push(wb)};
+  },writeFile:(wb,filename,options)=>{exports.push(wb);exportOptions.push(options);}};
   class Pdf {
     constructor(){this.tables=[];this.internal={pageSize:{getWidth:()=>297,getHeight:()=>210}};pdfs.push(this);}
     setFontSize(){} setTextColor(){} setFont(){} text(){} addPage(){} setFillColor(){} rect(){}
@@ -125,6 +125,39 @@ async function run() {
   assert.ok(exports.every(w=>w.sheets.some(s=>s.name==='Sumber dan Atribusi')));
   assert.equal(pdfs.length,2);
   assert.ok(pdfs.every(d=>d.tables.length===2));
+
+  // Outline buttons must keep parents visible and group only their descendants.
+  const treeSheet = exports[1].sheets.find(s=>s.name==='Pohon Hirarki').sheet;
+  const treeItems = vm.runInContext('getTreeExportItems()',context);
+  assert.equal(treeSheet['!outline'].above,true);
+  assert.equal(exportOptions[1].cellStyles,true);
+  assert.equal(treeSheet.rows[10][0],'Level');
+  assert.equal(treeSheet['!rows'][10],undefined,'Header must stay outside outline groups');
+  treeItems.forEach((item,index)=>{
+    assert.equal(treeSheet.rows[11+index][0],item.level);
+    assert.equal(treeSheet['!rows'][11+index].level,item.level-1,'Outline must align with the data row');
+  });
+  for(let button=1;button<=7;button++) {
+    const visible=treeItems.filter((item,index)=>treeSheet['!rows'][11+index].level<button);
+    assert.ok(visible.every(item=>item.level<=button));
+    assert.ok(visible.some(item=>item.level===button));
+  }
+  const focus=treeItems.find(item=>item.level===5);
+  context.outlineFocusKey=focus.key;
+  vm.runInContext('treeActiveScopeKey=outlineFocusKey; downloadTreeExcel();',context);
+  const focusedSheet=exports.pop().sheets.find(s=>s.name==='Pohon Hirarki').sheet;
+  exportOptions.pop();
+  assert.equal(focusedSheet.rows[11][2].trim(),focus.code);
+  assert.equal(focusedSheet['!rows'][11].level,0,'Focused parent must remain visible at button 1');
+  focusedSheet.rows.slice(11).forEach((row,index)=>assert.equal(focusedSheet['!rows'][11+index].level,row[0]-5));
+  vm.runInContext("treeActiveScopeKey='ROOT'; treeSearchQuery='Belanja Bahan'; downloadTreeExcel();",context);
+  const searchedSheet=exports.pop().sheets.find(s=>s.name==='Pohon Hirarki').sheet;
+  exportOptions.pop();
+  assert.ok(searchedSheet.rows.slice(11).filter(row=>row[0]===7).every(row=>row[3]==='Belanja Bahan'));
+  searchedSheet.rows.slice(11).forEach((row,index)=>assert.equal(searchedSheet['!rows'][11+index].level,row[0]-1));
+  vm.runInContext("treeSearchQuery='no matching hierarchy'; downloadTreeExcel(); treeSearchQuery='';",context);
+  assert.equal(exports.length,2,'Empty search must not download an empty hierarchy');
+  assert.match(alerts.pop(),/Tidak ada data struktur/);
 
   // Facet regression: normal travel accounts must not inherit block codes/PLN
   // from unrelated accounts in the same root scope.
@@ -296,7 +329,7 @@ async function run() {
   context.fetch=savedFetch;
   vm.runInContext('renderLevelValidationReport(auditPanel,{overallStatus:"INCOMPLETE",validationComplete:false,totalItemsCount:0,matchCount:0,diffCount:0,totalDiff:0,diagnostics:[{message:"Evaluasi gagal"}]},"test")',context);
   assert.ok(context.auditPanel.innerHTML.includes('Validasi tidak selesai'));
-  console.log('Frontend: multiple upload, year/owner confirmation, compact hydration, escaped evidence/details, owner filter, dynamic funding/status/block-code facets, all five empty-filter buttons, loading/cancellation/retry/error recovery, uncoded blocked details, reset and four exports passed (DOM simulation; visual browser unavailable).');
+  console.log('Frontend: multiple upload, year/owner confirmation, compact hydration, escaped evidence/details, owner filter, dynamic funding/status/block-code facets, all five empty-filter buttons, loading/cancellation/retry/error recovery, uncoded blocked details, reset, four exports and hierarchy outlines (header, seven levels, focused branch, search) passed (DOM simulation; visual browser unavailable).');
 }
 if(require.main===module)run().catch(e=>{console.error(e);process.exitCode=1;});
 module.exports=run;

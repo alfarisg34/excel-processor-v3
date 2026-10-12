@@ -659,7 +659,7 @@
               Center</a></span>
           <a href="/changelog" class="version-pill" id="footerVersionBadge"
             title="Buka Catatan Pembaruan &amp; Log Versi">
-            <i class="fa-solid fa-code-branch" style="font-size: 11px;"></i> v3.6.0
+            <i class="fa-solid fa-code-branch" style="font-size: 11px;"></i> v3.6.1
           </a>
         </div>
       </footer>
@@ -3759,6 +3759,11 @@
         }
 
         const scopeNode = currentRecapData.nodeSummaries[treeActiveScopeKey] || currentRecapData.rootSummary;
+        const exportItems = getTreeExportItems();
+        if (exportItems.length === 0) {
+          alert('Tidak ada data struktur hirarki untuk di-export!');
+          return;
+        }
         const rows = [];
 
         rows.push(['REKAPITULASI POHON STRUKTUR HIRARKI ANGGARAN - KEMNAKER']);
@@ -3787,7 +3792,8 @@
           'Rincian Blokir (Sumber Dana & Kode)'
         ]);
 
-        getTreeExportItems().forEach(item => {
+        const startRowIdx = rows.length;
+        exportItems.forEach(item => {
           const indentStr = '  '.repeat(item.level - 1);
           const comboStr = (item.blockedBySourceAndCodeList || [])
             .filter(b => b.val > 0)
@@ -3827,10 +3833,13 @@
           { wch: 45 }
         ];
 
-        if (!ws['!rows']) ws['!rows'] = [];
-        const startRowIdx = 10;
-        getTreeExportItems().forEach((item, idx) => {
-          ws['!rows'][startRowIdx + idx] = { level: Math.max(0, item.level - 1) };
+        // Excel uses zero-based outline depths. Parents precede their children;
+        // keep the header outside groups and start focused branches at depth 0.
+        ws['!outline'] = { above: true };
+        ws['!rows'] = [];
+        const baseLevel = Math.min(...exportItems.map(item => item.level));
+        exportItems.forEach((item, idx) => {
+          ws['!rows'][startRowIdx + idx] = { level: Math.max(0, item.level - baseLevel) };
         });
 
         const wb = XLSX.utils.book_new();
@@ -3838,7 +3847,7 @@
         appendRecapExcelSources(wb);
 
         const fileName = `Rekap_Struktur_Hirarki_${scopeNode.code || 'SATKER'}_${new Date().toISOString().slice(0, 10)}.xlsx`;
-        XLSX.writeFile(wb, fileName);
+        XLSX.writeFile(wb, fileName, { cellStyles: true });
       } catch (err) {
         alert('Gagal export Excel: ' + err.message);
       }

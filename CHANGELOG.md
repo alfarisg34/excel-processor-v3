@@ -7,6 +7,17 @@ dan proyek ini menganut standar [Semantic Versioning (SemVer 2.0.0)](https://sem
 
 ---
 
+## [3.6.1] - 2026-10-12
+
+### Added
+- PRD.md berdasarkan implementasi sistem saat ini: alur RAB/FA, validasi, rekap batch, atribusi sumber, filter, ekspor, API, batas operasional, dan kriteria penerimaan.
+- Pengujian regresi outline Excel untuk header, tujuh tingkat hirarki, akun terakhir, fokus cabang, pencarian, dan hasil kosong.
+
+### Fixed
+- Level outline ekspor Excel rekap hirarki tidak lagi bergeser satu baris; header tetap di luar kelompok dan Program sampai Akun memperoleh kedalaman yang sesuai.
+- Tombol lipat memakai induk di atas rincian sehingga kelompok mengikuti cabang hirarki, dengan level 1–7 menampilkan Program sampai Akun pada ekspor penuh.
+- Ekspor fokus cabang memulai outline dari kedalaman nol pada induk fokus; metadata baris disertakan saat penulisan XLSX dan pencarian tanpa hasil tidak menghasilkan unduhan struktur kosong.
+
 ## [3.6.0] - 2026-10-12
 
 ### Added

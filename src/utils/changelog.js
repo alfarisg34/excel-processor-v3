@@ -3,6 +3,34 @@ const path = require('path');
 
 const releases = [
   {
+    version: '3.6.1',
+    date: '2026-10-12',
+    type: 'PATCH',
+    title: 'Perbaikan Level Excel Rekap Hirarki & Dokumentasi PRD',
+    changes: [
+      {
+        type: 'FIX',
+        title: 'Level Outline Selaras dengan Baris Hirarki',
+        desc: 'Header berada di luar kelompok dan seluruh baris Program sampai Akun, termasuk akun terakhir, memperoleh kedalaman yang sesuai. Tombol 1–7 mengikuti tujuh tingkat struktur pada ekspor penuh.'
+      },
+      {
+        type: 'FIX',
+        title: 'Tombol Lipat pada Induk dan Fokus Cabang',
+        desc: 'Ringkasan kelompok berada di atas rincian; induk fokus memulai outline dari kedalaman nol. Metadata baris disertakan saat penulisan XLSX dan pencarian tanpa hasil tidak mengunduh struktur kosong.'
+      },
+      {
+        type: 'DOCS',
+        title: 'PRD Berdasarkan Sistem yang Tersedia',
+        desc: 'PRD.md mendokumentasikan alur RAB/FA, validasi, rekap batch, atribusi, filter, ekspor, API, batas operasional, kriteria penerimaan dan keterbatasan implementasi.'
+      },
+      {
+        type: 'TEST',
+        title: 'Regresi Outline Excel',
+        desc: 'Pengujian frontend mencakup header, tujuh tingkat, akun terakhir, fokus cabang dan pencarian. Serialisasi SheetJS 0.18.5 pada sampel lokal diverifikasi untuk 569 baris hirarki dengan seluruh nilai tabel tetap sama; pemeriksaan visual Microsoft Excel belum dilakukan.'
+      }
+    ]
+  },
+  {
   "version": "3.6.0",
   "date": "2026-10-12",
   "type": "MINOR",
