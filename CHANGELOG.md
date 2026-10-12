@@ -7,6 +7,19 @@ dan proyek ini menganut standar [Semantic Versioning (SemVer 2.0.0)](https://sem
 
 ---
 
+## [3.6.0] - 2026-10-12
+
+### Added
+- Normalisasi uraian multibaris bersama untuk detail/header/grup, provenance semua baris asal, audit struktur dan rekonsiliasi subtotal sampai level akun dan grup.
+- Validator sumber/output seluruh level, evaluator formula tanpa cached result, deteksi detail hilang/tambahan, serta laporan JSON lengkap dengan tautan sementara.
+- Regresi kasus RKK (11), grup/detail tiga baris, formula nested/campuran, angka nol, siklus, dan status validasi UI/API.
+
+### Fixed
+- Rincian validasi dimuat otomatis dari laporan lengkap dan ditampilkan di halaman, termasuk program/detail/subtotal, normalisasi dan diagnostik; ringkasan header terpotong tidak lagi meninggalkan tabel kosong. Loading, retry, timeout dan respons usang ditangani.
+- Detail sumber 1380–1381 dihitung sekali dan header grup 2482–2483 digabung sebelum pemrosesan.
+- Formula S/AM/AP/AQ menjumlahkan anak langsung sehingga induk dan keturunannya tidak dihitung bersamaan.
+- Ringkasan selisih anggaran memakai total program; selisih detail terpisah dan kegagalan evaluasi tidak ditampilkan sebagai valid.
+
 ## [3.5.0] - 2026-10-12
 
 ### Added

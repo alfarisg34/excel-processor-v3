@@ -659,7 +659,7 @@
               Center</a></span>
           <a href="/changelog" class="version-pill" id="footerVersionBadge"
             title="Buka Catatan Pembaruan &amp; Log Versi">
-            <i class="fa-solid fa-code-branch" style="font-size: 11px;"></i> v3.5.0
+            <i class="fa-solid fa-code-branch" style="font-size: 11px;"></i> v3.6.0
           </a>
         </div>
       </footer>
@@ -965,8 +965,9 @@
 
         showStatus(statusProcess, isWithFA ? '✅ Berhasil memproses dan mengunduh file dengan Realisasi!' : '✅ Berhasil memproses dan mengunduh file RAB!', 'success');
 
+        if (!validationReport) validationReport={overallStatus:'INCOMPLETE',validationComplete:false,totalItemsCount:0,matchCount:0,diffCount:0,totalDiff:0,totalBudgetDiff:0,diagnostics:[{message:'Laporan validasi tidak tersedia atau gagal dibaca.'}]};
         if (validationReport) {
-          renderLevelValidationReport(levelValPanel, validationReport, 'val_items_unified');
+          await loadLevelValidationReport(levelValPanel, validationReport, 'val_items_unified');
         }
 
         if (faReport) {
@@ -1004,15 +1005,59 @@
       return isNeg ? '-' + formatted : formatted;
     }
 
-    // Render Level Validation Report Card focused on Detail Level (-)
+
+    async function loadLevelValidationReport(panel, summary, itemsId) {
+      const generation=(panel.validationGeneration||0)+1;
+      panel.validationGeneration=generation;
+      const validUrl=typeof summary.reportUrl==='string' && /^\/api\/validation-reports\/[a-z0-9-]+$/.test(summary.reportUrl);
+      if(!validUrl){renderLevelValidationReport(panel,summary,itemsId);return;}
+      renderLevelValidationReport(panel,{...summary,detailLoadState:'loading'},itemsId);
+      const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),20000);
+      try {
+        const response=await fetch(summary.reportUrl,{cache:'no-store',signal:controller.signal});
+        if(!response.ok)throw new Error(response.status===404?'Laporan kedaluwarsa. Proses ulang file untuk mendapatkan laporan baru.':'Server gagal memuat rincian laporan.');
+        const full=await response.json();
+        if(!Array.isArray(full.programSummary)||!Array.isArray(full.discrepancyItems))throw new Error('Format laporan lengkap tidak valid.');
+        if(panel.validationGeneration!==generation)return;
+        renderLevelValidationReport(panel,{...full,reportUrl:summary.reportUrl,displayedDetailCount:full.discrepancyItems.length,detailLoadState:'ready'},itemsId);
+      } catch(error) {
+        if(panel.validationGeneration!==generation)return;
+        renderLevelValidationReport(panel,{...summary,detailLoadState:'error',detailLoadError:error.name==='AbortError'?'Pemuatan rincian melewati 20 detik.':error.message},itemsId);
+        panel.querySelector('[data-validation-retry]')?.addEventListener('click',()=>loadLevelValidationReport(panel,summary,itemsId));
+      } finally {clearTimeout(timer);}
+    }
+
+    // Render complete validation report
     function renderLevelValidationReport(panelElem, report, itemsId) {
       panelElem.classList.add('show');
 
       const isMatch = report.overallStatus === 'MATCH';
       const badgeClass = isMatch ? 'match' : 'diff';
-      const badgeText = isMatch
-        ? '<i class="fa-solid fa-circle-check"></i> ✅ Semua Item Detail Sesuai 100%'
-        : `<i class="fa-solid fa-triangle-exclamation"></i> ⚠️ Ditemukan ${report.diffCount} Item Detail dengan Selisih Nilai (Total Selisih: ${formatRp(report.totalDiff)})`;
+      const badgeText = isMatch ? 'Semua pemeriksaan selesai dan sesuai' : report.overallStatus === 'INCOMPLETE' ? 'Validasi tidak selesai — periksa laporan' : (report.programDiffCount || 0) + ' program berbeda · ' + (report.diffCount || 0) + ' detail berbeda · ' + (report.subtotalDiffCount || 0) + ' subtotal berbeda; selisih anggaran ' + formatRp(report.totalBudgetDiff ?? report.totalDiff) + (report.validationComplete === false ? ' · Ada pemeriksaan belum selesai' : '');
+      const esc=v=>String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+      const detailsComplete=(report.displayedDetailCount ?? report.discrepancyItems?.length ?? 0);
+      const reportLink=typeof report.reportUrl==='string' && /^\/api\/validation-reports\/[a-z0-9-]+$/.test(report.reportUrl) ? '<a class="btn btn-sm" href="'+report.reportUrl+'" download>Unduh laporan validasi lengkap (berlaku 10 menit)</a>' : 'Laporan lengkap tidak tersedia.';
+      const money=value=>value==null?'—':formatRp(value);
+      const rowLabel=x=>'Sumber: '+esc((x.sourceRows||[]).join(', ')||x.rawRowNum||'—')+'<br>Output: '+esc(x.outRowNum??'—');
+      const loadingHtml=report.detailLoadState==='loading'
+        ? '<p role="status"><i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Memuat rincian validasi lengkap…</p>'
+        : report.detailLoadState==='error'
+          ? '<p role="alert">'+esc(report.detailLoadError)+' <button type="button" class="btn btn-sm" data-validation-retry>Coba lagi</button></p>' : '';
+      function auditSection(title, rows, type) {
+        if(!rows?.length)return '';
+        const body=rows.map(x=>'<tr><td>'+rowLabel(x)+'</td><td>'+esc(x.fullCodePath||x.fullPath||x.code||'—')+'</td><td>'+esc(x.uraian||x.message||x.type||'—')+'</td><td>'+money(x.before??x.expected??x.amount)+'</td><td>'+money(x.after??x.actual)+'</td><td>'+money(x.diff??x.difference)+'</td>'+(type==='subtotal'?'<td>'+money(x.leafTotal)+'</td><td>'+money(x.formulaDifference)+'</td>':'')+'</tr>').join('');
+        return '<details open style="margin:18px 0"><summary style="cursor:pointer;font-weight:700">'+esc(title)+' ('+rows.length+')</summary><div class="level-table-wrapper"><table class="level-summary-table"><thead><tr><th>Baris</th><th>Hirarki / Kode</th><th>Uraian / Temuan</th><th>Nilai sumber</th><th>Nilai output / perhitungan</th><th>Selisih</th>'+(type==='subtotal'?'<th>Total detail unik</th><th>Selisih formula vs detail</th>':'')+'</tr></thead><tbody>'+body+'</tbody></table></div></details>';
+      }
+      const auditHtml='<div style="margin:12px 0">'+loadingHtml+
+        '<p>Detail berbeda: '+(report.diffCount||0)+' · Selisih detail bersih: '+formatRp(report.totalDiff||0)+' · Subtotal berbeda: '+(report.subtotalDiffCount||0)+' · Hilang: '+(report.missingCount||0)+' · Tambahan: '+(report.addedCount||0)+' · Uraian digabung: '+(report.normalizationCount||0)+' · Masalah struktur: '+(report.structuralIssueCount||0)+'. Menampilkan '+detailsComplete+' dari '+(report.diffCount||0)+' perbedaan detail.</p>'+
+        auditSection('Uraian yang dinormalisasi',report.normalizationFindings)+
+        auditSection('Masalah struktur sumber',report.sourceIssues)+
+        auditSection('Peringatan dan perhitungan detail sumber',report.sourceWarnings)+
+        auditSection('Perbedaan subtotal sumber',report.sourceReconciliation)+
+        auditSection('Pemeriksaan yang belum selesai',report.diagnostics)+
+        auditSection('Perbedaan subtotal seluruh level',report.subtotalDiscrepancies,'subtotal')+
+        '<p>'+reportLink+'</p></div>';
+
 
       const matchPct = report.totalItemsCount > 0 ? ((report.matchCount / report.totalItemsCount) * 100).toFixed(1) : '100';
 
@@ -1024,8 +1069,8 @@
       let tableRowsHtml = '';
       itemsToRender.forEach((it, idx) => {
         const tagClass = it.status === 'MATCH' ? 'match' : 'diff';
-        const tagText = it.status === 'MATCH' ? '✅ Sesuai' : '⚠️ Beda';
-        const diffStr = it.diff === 0 ? 'Rp 0' : (it.diff > 0 ? '+' : '') + formatRp(it.diff);
+        const tagText = ({MATCH:'✅ Sesuai',DIFF:'⚠️ Beda',MISSING:'Hilang',ADDED:'Tambahan',INCOMPLETE:'Belum selesai'})[it.status] || 'Perlu review';
+        const diffStr = it.diff == null ? '—' : it.diff === 0 ? 'Rp 0' : (it.diff > 0 ? '+' : '') + formatRp(it.diff);
 
         const taggingVal = (it.tagging || '-').trim();
         let tagBadgeClass = 'muted';
@@ -1038,11 +1083,11 @@
         tableRowsHtml += `
           <tr>
             <td><span class="row-num-badge" title="Nomor Baris di File Excel Output">Row ${it.outRowNum || it.itemNumber || (idx + 1)}</span></td>
-            <td><span class="hierarchy-code">${it.fullCodePath}</span></td>
-            <td><span class="tag-badge ${tagBadgeClass}">${taggingVal}</span></td>
-            <td><strong>${it.uraian}</strong></td>
-            <td>${formatRp(it.valBefore || it.before)}</td>
-            <td>${formatRp(it.valAfter || it.after)}</td>
+            <td><span class="hierarchy-code">${esc(it.fullCodePath)}</span></td>
+            <td><span class="tag-badge ${tagBadgeClass}">${esc(taggingVal)}</span></td>
+            <td><strong>${esc(it.uraian)}</strong></td>
+            <td>${it.valBefore == null ? '—' : formatRp(it.valBefore)}</td>
+            <td>${it.valAfter == null ? '—' : formatRp(it.valAfter)}</td>
             <td style="font-weight:600; color:${it.diff === 0 ? '#4ade80' : '#fbbf24'};">${diffStr}</td>
             <td><span class="status-tag ${tagClass}">${tagText}</span></td>
           </tr>
@@ -1059,8 +1104,8 @@
           programRowsHtml += `
             <tr>
               <td><span class="row-num-badge">Row ${p.outRowNum}</span></td>
-              <td><span class="hierarchy-code">${p.code}</span></td>
-              <td><strong>${p.uraian}</strong></td>
+              <td><span class="hierarchy-code">${esc(p.code)}</span></td>
+              <td><strong>${esc(p.uraian)}</strong></td>
               <td>${formatRp(p.before)}</td>
               <td>${formatRp(p.after)}</td>
               <td style="font-weight:600; color:${p.diff === 0 ? '#4ade80' : '#fbbf24'};">${diffStr}</td>
@@ -1074,7 +1119,7 @@
         <div class="level-val-header">
           <div class="level-val-title">
             <i class="fa-solid fa-sitemap" style="color:#38bdf8;"></i>
-            Validasi Nilai Level Detail (-) &amp; Program (Kode 322) (Tracing Hirarki Kode Tertinggi &rarr; Terendah)
+            Validasi Detail, Struktur &amp; Subtotal Seluruh Hirarki
           </div>
           <div class="level-val-badge ${badgeClass}">
             ${badgeText}
@@ -1087,7 +1132,7 @@
             <div class="val-stat-value">${report.totalItemsCount} Items</div>
           </div>
           <div class="val-stat-card">
-            <div class="val-stat-label">✅ Item Sesuai (100%)</div>
+            <div class="val-stat-label">✅ Detail Sesuai</div>
             <div class="val-stat-value" style="color:#4ade80;">${report.matchCount} Items (${matchPct}%)</div>
           </div>
           <div class="val-stat-card">
@@ -1096,10 +1141,11 @@
           </div>
           <div class="val-stat-card">
             <div class="val-stat-label">💰 Total Selisih Anggaran</div>
-            <div class="val-stat-value" style="color:${report.totalDiff === 0 ? '#4ade80' : '#fbbf24'};">${report.totalDiff > 0 ? '+' : ''}${formatRp(report.totalDiff)}</div>
+            <div class="val-stat-value" style="color:${(report.totalBudgetDiff ?? report.totalDiff) === 0 ? '#4ade80' : '#fbbf24'};">${(report.totalBudgetDiff ?? report.totalDiff) > 0 ? '+' : ''}${formatRp(report.totalBudgetDiff ?? report.totalDiff)}</div>
           </div>
         </div>
 
+        ${auditHtml}
         <!-- Tabel Perbandingan Kode 322 (Program) -->
         <div style="margin-bottom: 22px;">
           <div style="font-weight: 700; color: #f8fafc; font-size: 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
@@ -1120,7 +1166,7 @@
                 </tr>
               </thead>
               <tbody>
-                ${programRowsHtml}
+                ${programRowsHtml || '<tr><td colspan="7">' + (report.detailLoadState === 'loading' ? 'Sedang memuat perbandingan program…' : report.detailLoadState === 'error' ? 'Rincian belum berhasil dimuat. Klik Coba lagi.' : 'Tidak ada data program pada laporan.') + '</td></tr>'}
               </tbody>
             </table>
           </div>
@@ -1147,7 +1193,7 @@
                 </tr>
               </thead>
               <tbody>
-                ${tableRowsHtml}
+                ${tableRowsHtml || '<tr><td colspan="8">' + (report.detailLoadState === 'loading' ? 'Sedang memuat perbedaan detail…' : report.detailLoadState === 'error' ? 'Rincian belum berhasil dimuat. Klik Coba lagi.' : 'Tidak ada perbedaan detail.') + '</td></tr>'}
               </tbody>
             </table>
           </div>

@@ -16,20 +16,7 @@ function getProcessDateDDMMYY(d = new Date()) {
 /**
  * Get hierarchy numeric order level
  */
-function getCodeLevel(code) {
-  if (!code) return 99;
-  if (PATTERNS.CODE_322.test(code)) return 1;
-  if (PATTERNS.DIGIT_4.test(code)) return 2;
-  if (PATTERNS.CODE_43.test(code)) return 3;
-  if (PATTERNS.CODE_433.test(code)) return 4;
-  if (PATTERNS.DIGIT_3.test(code)) return 5;
-  if (PATTERNS.SINGLE_ALPHA.test(code)) return 6;
-  if (PATTERNS.DIGIT_6.test(code)) return 7;
-  if (code === '>') return 8;
-  if (code === '>>') return 9;
-  if (code === '-') return 10;
-  return 99;
-}
+
 
 /**
  * Helper to calculate nominal Pagu from a detail row (-)
@@ -361,58 +348,8 @@ async function faMatching(workbook, faBuffer, options = {}) {
       }
     }
 
-    // 3. Pass 2: Bottom-up hierarchical SUM in Column AP (42) and AQ (43) for all header codes (level 9 to 1)
-    const codeRows = [];
-    for (let r = 4; r <= maxR; r++) {
-      const row = worksheet.getRow(r);
-      const code = getCellText(row.getCell(1)).trim();
-      if (code) {
-        codeRows.push({ rowNumber: r, code });
-      }
-    }
+    require('../utils/budget-hierarchy').applySums(worksheet,['AP','AQ'],4);
 
-    for (let i = codeRows.length - 1; i >= 0; i--) {
-      const curr = codeRows[i];
-      const level = getCodeLevel(curr.code);
-
-      if (level < 10) {
-        const childRows = [];
-        for (let j = i + 1; j < codeRows.length; j++) {
-          const next = codeRows[j];
-          const nextLevel = getCodeLevel(next.code);
-          if (nextLevel <= level) break;
-          childRows.push({ rowNumber: next.rowNumber, level: nextLevel });
-        }
-
-        if (childRows.length > 0) {
-          let directChildren = [];
-          if (level === 7) {
-            let inSubGroup = false;
-            for (const cr of childRows) {
-              if (cr.level === 8 || cr.level === 9) {
-                directChildren.push(cr.rowNumber);
-                inSubGroup = true;
-              } else if (cr.level === 10) {
-                if (!inSubGroup) directChildren.push(cr.rowNumber);
-              }
-            }
-          } else {
-            let minChildLevel = Infinity;
-            for (const cr of childRows) {
-              if (cr.level < minChildLevel) minChildLevel = cr.level;
-            }
-            directChildren = childRows.filter(cr => cr.level === minChildLevel).map(cr => cr.rowNumber);
-          }
-
-          if (directChildren.length > 0) {
-            const sumExprReal = 'SUM(' + directChildren.map(r => 'AP' + r).join(',') + ')';
-            const sumExprSisa = 'SUM(' + directChildren.map(r => 'AQ' + r).join(',') + ')';
-            worksheet.getRow(curr.rowNumber).getCell(colReal).value = { formula: sumExprReal };
-            worksheet.getRow(curr.rowNumber).getCell(colSisa).value = { formula: sumExprSisa };
-          }
-        }
-      }
-    }
   });
 
   const matchingReport = {

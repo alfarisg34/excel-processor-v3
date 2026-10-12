@@ -27,6 +27,15 @@ async function run() {
     assert.deepEqual(batch.body.nodeSummaries.ROOT.digit6List.flatMap(a=>a.detailIndexes).sort(),[0,1]);
     assert.equal((await post('/api/recap-hierarchy',[file],undefined,'file')).body.rootSummary.totalVal,20000);
     assert.equal((await post('/api/validate',[file],undefined,'file')).status,200);
+    const processForm=new FormData();processForm.append('file',new Blob([file.buffer]),file.originalname);
+    const processed=await fetch(base+'/api/process',{method:'POST',body:processForm});
+    assert.equal(processed.status,200);
+    const summaryHeader=processed.headers.get('X-Validation-Summary');assert(summaryHeader.length<=6500);
+    const summary=JSON.parse(decodeURIComponent(summaryHeader));assert.equal(summary.overallStatus,'MATCH');assert.equal(summary.totalBudgetDiff,0);
+    assert.match(summary.reportUrl,/^\/api\/validation-reports\//);
+    const fullReport=await fetch(base+summary.reportUrl);assert.equal(fullReport.status,200);assert.equal((await fullReport.json()).overallStatus,'MATCH');
+    assert.equal((await fetch(base+'/api/validation-reports/not-a-report')).status,404);
+    await processed.arrayBuffer();
     assert.equal((await post('/api/recap-hierarchy/batch',[file],'{broken')).status,400);
     assert.equal((await post('/api/recap-hierarchy/batch',[file],{...manifest,sources:[]})).status,400);
     assert.equal((await post('/api/recap-hierarchy/batch',[file],{...manifest,sources:[{...manifest.sources[0],confirmed:false}]})).status,422);

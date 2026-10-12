@@ -2,29 +2,7 @@ const parseRecap = require('./hierarchy-recap');
 const validateInput = require('../steps/00-validate-input');
 const units = require('../config/unit-registry');
 const { checkFiles, loadSource, fingerprint, inputError } = require('./rkk-metadata');
-const { getCellText } = require('./excel-helpers');
 
-function reconcile(ws, nodes) {
-  const mismatches = [], index = new Map();
-  for (const node of nodes.values()) {
-    if (node.level < 1 || node.level > 4) continue;
-    const key = node.fullPath.split(' > ')[0] + '/' + node.code;
-    if (!index.has(key)) index.set(key, []);
-    index.get(key).push(node);
-  }
-  let program = '';
-  ws.eachRow(row => {
-    const code = [1, 2, 3].map(c => getCellText(row.getCell(c))).find(Boolean) || '';
-    if (/^\d{3}\.\d{2}\.[A-Za-z0-9]{2}$/.test(code)) program = code;
-    const matching = index.get(program + '/' + code) || [];
-    const amountCell = [10, 11].map(c => row.getCell(c)).find(cell => /^-?\d+(?:\.\d+)?$/.test(getCellText(cell)));
-    if (matching.length !== 1 || !amountCell) return;
-    const actual = matching[0].records.reduce((s, r) => s + r.val, 0);
-    const expected = Number(getCellText(amountCell));
-    if (actual !== expected) mismatches.push({ cell: amountCell.address, code, expected, actual, difference: actual - expected });
-  });
-  return mismatches;
-}
 async function inspectSource(file) {
   const loaded = await loadSource(file);
   const validation = await validateInput(file.buffer);
@@ -32,8 +10,9 @@ async function inspectSource(file) {
   const records = nodes.get('ROOT').records;
   if (!records.length || records.some(r => !r.c322 || !r.d4 || !r.c43 || !r.c433 || !r.d3 || !r.alpha || !r.d6 || !Number.isFinite(r.val)))
     throw inputError('Detail RKK kosong atau mempunyai hirarki tidak lengkap: ' + file.originalname);
-  const mismatches = reconcile(loaded.ws, nodes);
-  return { nodes, metadata: { ...loaded.metadata, validation, reconciliation: mismatches, valid: validation.valid && !mismatches.length,
+  const audit=require('./rkk-detail-normalizer').normalize(loaded.ws);
+  const mismatches = audit.reconciliation;
+  return { nodes, metadata: { ...loaded.metadata, validation, reconciliation: mismatches, normalizationFindings:audit.findings, auditWarnings:audit.warnings, structuralIssues:audit.issues, validationComplete:audit.validationComplete, valid: validation.valid && !mismatches.length && !audit.issues.length,
     totalVal: records.reduce((s, r) => s + r.val, 0), recordCount: records.length } };
 }
 async function inspectFiles(files) {

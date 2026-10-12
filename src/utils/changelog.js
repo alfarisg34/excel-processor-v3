@@ -3,6 +3,44 @@ const path = require('path');
 
 const releases = [
   {
+  "version": "3.6.0",
+  "date": "2026-10-12",
+  "type": "MINOR",
+  "title": "Normalisasi Uraian Multibaris & Validasi Seluruh Hirarki",
+  "changes": [
+    {
+      "type": "FEAT",
+      "title": "Normalisasi Uraian dan Penelusuran Baris Sumber",
+      "desc": "Header, grup dan detail terpisah dikenali sebagai entitas logis dengan pemeriksaan konteks dan angka. Seluruh baris asal disimpan; kasus ambigu meminta koreksi sumber."
+    },
+    {
+      "type": "FEAT",
+      "title": "Audit Struktur dan Subtotal Seluruh Level",
+      "desc": "Rekap dan proses memeriksa hirarki sampai akun, grup dan detail; peringatan detail identik serta perbedaan volume × harga tetap terlihat."
+    },
+    {
+      "type": "FIX",
+      "title": "Formula Subtotal Menghitung Anak Langsung",
+      "desc": "Formula SEMULA, MENJADI, REALISASI dan SISA tidak lagi menjumlahkan induk sekaligus keturunannya. Detail langsung dan grup bertingkat dihitung sekali."
+    },
+    {
+      "type": "FIX",
+      "title": "Rincian Validasi Langsung di Halaman",
+      "desc": "Laporan lengkap dimuat otomatis sehingga batas header HTTP tidak mengosongkan tabel. Program, detail, subtotal, koreksi dan diagnostik tampil dengan loading, retry dan perlindungan respons usang."
+    },
+    {
+      "type": "FIX",
+      "title": "Status dan Ringkasan Selisih yang Akurat",
+      "desc": "Selisih anggaran memakai total program; detail hilang/tambahan, pasangan ambigu dan error formula memengaruhi status. Selisih yang saling meniadakan tidak menghasilkan klaim sesuai."
+    },
+    {
+      "type": "TEST",
+      "title": "Regresi Workbook, API, Frontend dan FA",
+      "desc": "Workbook (11) menghasilkan 1.665 detail dan rekap Rp117.302.994.000. Formula output menyisakan Rp299 perbedaan perkalian/pembulatan yang tetap dilaporkan; kasus multibaris, nested FA dan tampilan laporan lengkap diuji."
+    }
+  ]
+},
+  {
     "version": "3.5.0",
     "date": "2026-10-12",
     "type": "MINOR",

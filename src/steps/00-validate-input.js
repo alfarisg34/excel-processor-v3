@@ -35,7 +35,7 @@ function getCodeLevel(code) {
  */
 async function validateInput(buffer) {
   const workbook = await parseInput(buffer);
-  const worksheet = workbook.worksheets[0]; // Process 1st worksheet
+  const worksheet = require('../utils/rkk-detail-normalizer').normalizedWorksheet(workbook.worksheets[0]); // Process 1st worksheet
 
   const code322Map = new Map();     // code -> list of { row, val }
   const digit4Map = new Map();      // code -> list of { row, val }
@@ -283,7 +283,9 @@ async function validateInput(buffer) {
   }
 
   return {
-    valid: violations.length === 0,
+    valid: violations.length === 0 && !worksheet.rkkNormalization.issues.length,
+    structuralIssues:worksheet.rkkNormalization.issues,
+    normalizationFindings:worksheet.rkkNormalization.findings,
     violations,
     multiLineContinuations,
   };

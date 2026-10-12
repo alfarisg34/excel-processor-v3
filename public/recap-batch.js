@@ -73,10 +73,12 @@
       const problem = entry.error || meta?.error ||
         (meta && !meta.valid ? 'Validasi hirarki atau subtotal gagal. ' +
           (meta.validation?.violations || []).map(v => v.ruleTitle).join('; ') +
-          (meta.reconciliation || []).map(r => r.cell + ': subtotal ' + r.expected + ', detail ' + r.actual).join('; ') : '');
+          (meta.reconciliation || []).map(r => r.cell + ': subtotal ' + r.expected + ', detail ' + r.actual).join('; ') + ' ' + (meta.structuralIssues || []).map(r => 'Baris ' + r.sourceRows.join(', ') + ': ' + r.message).join('; ') : '');
       const evidence = (meta?.evidence || []).filter(e => !['kppn', 'location'].includes(e.type)).slice(0, 8);
       return '<section class="recap-source-card">' +
         '<div class="recap-source-heading"><strong>' + escape(entry.file.name) + '</strong><button type="button" class="btn btn-sm" data-action="remove" data-index="' + index + '">Hapus</button></div>' +
+        ((meta?.normalizationFindings || []).length ? '<p class="recap-batch-help">'+meta.normalizationFindings.map(f=>'Uraian digabung: baris '+escape(f.sourceRows.join(', '))+' · '+escape(f.uraian)).join('<br>')+'</p>' : '') +
+        ((meta?.auditWarnings || []).length ? '<p class="recap-batch-help">'+meta.auditWarnings.map(f=>'Perlu ditinjau: baris '+escape(f.sourceRows.join(', '))+' · '+escape(f.message)).join('<br>')+'</p>' : '') +
         '<p>' + (entry.file.size / 1024).toFixed(1) + ' KiB' + (meta?.totalVal !== undefined ? ' · ' + escape(formatRp(meta.totalVal)) : '') + '</p>' +
         (busy && busyPhase === 'inspect' ? '<p class="recap-source-loading"><span class="recap-loading-spinner" aria-hidden="true"></span>Menunggu hasil pemeriksaan…</p>' : problem ? '<p class="recap-source-error">' + escape(problem) + '</p>' : !meta ? '<p>Belum diperiksa. Klik Periksa ulang file.</p>' :
           '<div class="recap-batch-controls"><label>Unit pemilik file (Satker/Direktorat)<select data-action="owner" data-index="' + index + '">' + options(entry.ownerId, 'Pilih unit pemilik') + '</select></label>' +

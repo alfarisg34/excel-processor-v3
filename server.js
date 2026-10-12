@@ -36,7 +36,7 @@ app.get('/api/changelog', (req, res) => {
   try {
     const limit = parseInt(req.query.limit, 10) || 100;
     const gitCommits = getGitCommits(limit);
-    const currentVersion = (releases && releases.length > 0) ? releases[0].version : '3.5.0';
+    const currentVersion = (releases && releases.length > 0) ? releases[0].version : '3.6.0';
     res.json({
       currentVersion,
       releases,
@@ -48,6 +48,27 @@ app.get('/api/changelog', (req, res) => {
 });
 
 const validateLevelDifferences = require('./src/utils/level-validator');
+
+
+const validationReports=new Map();
+function storeValidationReport(report) {
+  const now=Date.now();
+  for(const [id,item] of validationReports)if(item.expires<now)validationReports.delete(id);
+  const body=JSON.stringify(report);
+  if(Buffer.byteLength(body)>32*1024*1024)return null;
+  while(validationReports.size>=20 || [...validationReports.values()].reduce((sum,x)=>sum+Buffer.byteLength(x.body),0)+Buffer.byteLength(body)>64*1024*1024)validationReports.delete(validationReports.keys().next().value);
+  const id=require('crypto').randomUUID();
+  validationReports.set(id,{body,expires:now+10*60*1000});
+  return '/api/validation-reports/'+id;
+}
+app.get('/api/validation-reports/:id',(req,res)=>{
+  const item=validationReports.get(req.params.id);
+  if(!item || item.expires<Date.now()){validationReports.delete(req.params.id);return res.status(404).json({error:'Laporan kedaluwarsa; proses ulang file untuk mendapatkan laporan baru.'});}
+  res.setHeader('Content-Type','application/json; charset=utf-8');
+  res.setHeader('Content-Disposition','attachment; filename=validation-report.json');
+  res.setHeader('Cache-Control','no-store');
+  res.send(item.body);
+});
 
 // Helper to handle Excel processing response
 async function handleProcess(req, res) {
@@ -68,6 +89,7 @@ async function handleProcess(req, res) {
       validationReport = await validateLevelDifferences(mainFile.buffer, processedWorkbook);
     } catch (valErr) {
       console.warn('[Validation Calculation Warning]', valErr.message);
+      validationReport={overallStatus:'INCOMPLETE',validationComplete:false,totalItemsCount:0,matchCount:0,diffCount:0,totalDiff:0,totalBudgetDiff:0,programSummary:[],sourceIssues:[],sourceReconciliation:[],normalizationFindings:[],diagnostics:[{message:valErr.message}],subtotalDiscrepancies:[],discrepancyItems:[],sampleAllItems:[]};
     }
 
     const buffer = await processedWorkbook.xlsx.writeBuffer();
@@ -85,7 +107,11 @@ async function handleProcess(req, res) {
     res.setHeader('Access-Control-Expose-Headers', exposeHeaders.join(', '));
 
     if (validationReport) {
-      res.setHeader('X-Validation-Summary', encodeURIComponent(JSON.stringify(validationReport)));
+      const reportUrl=storeValidationReport(validationReport);
+      let summary={...validateLevelDifferences.compact(validationReport),completeReportAvailable:!!reportUrl,reportUrl};
+      let encoded=encodeURIComponent(JSON.stringify(summary));
+      if(encoded.length>6500){for(const key of ['sourceIssues','sourceWarnings','sourceReconciliation','normalizationFindings','diagnostics','subtotalDiscrepancies','discrepancyItems','sampleAllItems','programSummary'])summary[key]=[];summary.displayedDetailCount=0;encoded=encodeURIComponent(JSON.stringify(summary));}
+      res.setHeader('X-Validation-Summary',encoded);
     }
 
     if (processedWorkbook.faMatchingReport) {
@@ -95,7 +121,8 @@ async function handleProcess(req, res) {
     return res.status(200).send(buffer);
   } catch (error) {
     console.error('[Processor Error]', error);
-    return res.status(500).json({
+    return res.status(error.status || 500).json({
+      issues:error.issues,
       error: 'Gagal memproses file Excel',
       detail: error.message,
     });
@@ -140,7 +167,8 @@ app.post('/api/recap-hierarchy', upload.single('file'), async (req, res) => {
     return res.status(200).json(recapData);
   } catch (error) {
     console.error('[Recap Hierarchy Error]', error);
-    return res.status(500).json({
+    return res.status(error.status || 500).json({
+      issues:error.issues,
       error: 'Gagal memproses rekap hirarki file Excel',
       detail: error.message,
     });

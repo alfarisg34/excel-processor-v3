@@ -38,20 +38,7 @@ function shiftFormulaColumns(formula, colOffset) {
 /**
  * Helper to get hierarchy level of budget code
  */
-function getCodeLevel(code) {
-  if (!code) return 99;
-  if (PATTERNS.CODE_322.test(code)) return 1;
-  if (PATTERNS.DIGIT_4.test(code)) return 2;
-  if (PATTERNS.CODE_43.test(code)) return 3;
-  if (PATTERNS.CODE_433.test(code)) return 4;
-  if (PATTERNS.DIGIT_3.test(code)) return 5;
-  if (PATTERNS.SINGLE_ALPHA.test(code)) return 6;
-  if (PATTERNS.DIGIT_6.test(code)) return 7;
-  if (code === '>') return 8;
-  if (code === '>>') return 9;
-  if (code === '-') return 10;
-  return 99;
-}
+
 
 /**
  * Recalculate all formulas directly on output worksheet to guarantee 100% mathematical accuracy
@@ -104,68 +91,7 @@ function generateOutSheetFormulas(worksheet) {
     }
   }
 
-  // 2. Second pass: Bottom-up hierarchical SUM formulas for header codes
-  const codeRows = [];
-  for (let r = 4; r <= maxR; r++) {
-    const row = worksheet.getRow(r);
-    const code = getCellText(row.getCell(1)).trim();
-    if (code) {
-      codeRows.push({ rowNumber: r, code });
-    }
-  }
-
-  for (let i = codeRows.length - 1; i >= 0; i--) {
-    const curr = codeRows[i];
-    const level = getCodeLevel(curr.code);
-
-    if (level < 10) {
-      const childRows = [];
-      for (let j = i + 1; j < codeRows.length; j++) {
-        const next = codeRows[j];
-        const nextLevel = getCodeLevel(next.code);
-
-        if (nextLevel <= level) break; // Reached same or higher level sibling
-        childRows.push({ rowNumber: next.rowNumber, level: nextLevel });
-      }
-
-      if (childRows.length > 0) {
-        let directChildren = [];
-
-        if (level === 7) {
-          // Special case for 6-Digit codes: Collect direct '-' details (before any '>') AND '>' / '>>' sub-groups
-          let inSubGroup = false;
-          for (const cr of childRows) {
-            if (cr.level === 8 || cr.level === 9) {
-              directChildren.push(cr.rowNumber);
-              inSubGroup = true;
-            } else if (cr.level === 10) {
-              if (!inSubGroup) {
-                directChildren.push(cr.rowNumber);
-              }
-            }
-          }
-        } else {
-          // Standard hierarchical headers (Code 322, 4-Digit, Code 43, Code 433, 3-Digit, Single Alpha):
-          // Pick descendants with minimum child level
-          let minChildLevel = Infinity;
-          for (const cr of childRows) {
-            if (cr.level < minChildLevel) minChildLevel = cr.level;
-          }
-          directChildren = childRows
-            .filter((cr) => cr.level === minChildLevel)
-            .map((cr) => cr.rowNumber);
-        }
-
-        if (directChildren.length > 0) {
-          const formS = `SUM(${directChildren.map((r) => `S${r}`).join(',')})`;
-          const formAM = `SUM(${directChildren.map((r) => `AM${r}`).join(',')})`;
-
-          worksheet.getRow(curr.rowNumber).getCell(19).value = { formula: formS };
-          worksheet.getRow(curr.rowNumber).getCell(39).value = { formula: formAM };
-        }
-      }
-    }
-  }
+  require('../utils/budget-hierarchy').applySums(worksheet,['S','AM'],4);
 
   // 3. Third pass: SELISIH formulas in Col AO (41) = AM{r} - S{r}
   for (let r = 4; r <= maxR; r++) {
@@ -206,6 +132,7 @@ function removeBlankSamRows(worksheet) {
     }
   }
 
+  const remainingLineage=Array.from({length:maxR-3},(_,i)=>({row:i+4,sourceRows:worksheet.getRow(i+4).rkkSourceRows})).filter(x=>!rowsToDelete.includes(x.row));
   // Delete from bottom to top so indices remain consistent during deletion
   for (let i = rowsToDelete.length - 1; i >= 0; i--) {
     const r = rowsToDelete[i];
@@ -213,6 +140,7 @@ function removeBlankSamRows(worksheet) {
     worksheet.spliceRows(r, 1);
   }
 
+  remainingLineage.forEach((x,i)=>{worksheet.getRow(i+4).rkkSourceRows=x.sourceRows;});
   // Re-generate formulas with updated row numbers to ensure zero broken references
   generateOutSheetFormulas(worksheet);
 }
@@ -264,6 +192,7 @@ async function mapToRab(inWorkbook, options = {}) {
       const uraianVal = (rowData[1].v || '').toString().trim();
 
       if (hasContent && (codeVal || uraianVal)) {
+        rowData.sourceRows=row.rkkSourceRows;
         rawRows.push(rowData);
       }
     }
@@ -384,7 +313,7 @@ async function mapToRab(inWorkbook, options = {}) {
         }
       }
 
-      outSheet.addRow(targetRow);
+      outSheet.addRow(targetRow).rkkSourceRows=rowItems.sourceRows;
     });
 
     // 4. Delete all rows after bottom-most table row n

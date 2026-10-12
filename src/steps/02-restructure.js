@@ -1,3 +1,4 @@
+const {applyNormalized}=require('../utils/rkk-detail-normalizer');
 const { getCellText } = require('../utils/excel-helpers');
 const PATTERNS = require('../utils/patterns');
 
@@ -77,7 +78,7 @@ function parseMultipliers(text) {
     if (m) {
       const volNum = parseFloat(m[1]);
       const satStr = m[2].trim();
-      if (!isNaN(volNum) && volNum > 0) {
+      if (!isNaN(volNum) && volNum >= 0) {
         terms.push({ vol: volNum, sat: satStr });
       }
     }
@@ -109,6 +110,9 @@ function parseVolSat(str) {
  */
 async function restructure(workbook) {
   workbook.worksheets.forEach((worksheet) => {
+    applyNormalized(worksheet);
+    if(worksheet.rkkNormalization.issues.length){const error=new Error('Struktur sumber perlu ditinjau: '+worksheet.rkkNormalization.issues.map(x=>'baris '+x.sourceRows.join(', ')+': '+x.message).join('; '));error.status=422;error.issues=worksheet.rkkNormalization.issues;throw error;}
+    const sourceLineage=[];
     // Extract signature info before clearing raw rows
     worksheet.signatureInfo = extractSignatureInfo(worksheet);
 
@@ -120,6 +124,7 @@ async function restructure(workbook) {
       for (let c = 1; c <= 25; c++) {
         cells.push(getCellText(row.getCell(c)));
       }
+      cells.sourceRows=row.rkkSourceRows||[row.number];
       rawRows.push(cells);
     });
 
@@ -167,7 +172,7 @@ async function restructure(workbook) {
         code = '-';
         rawUraian = colE || colF || colD;
         if (rawUraian.startsWith('-')) rawUraian = rawUraian.replace(/^-\s*/, '');
-      } else if (code === '>' || colD === '>' || (!code && colE.startsWith('>'))) {
+      } else if (code === '>' || colD === '>' || (!code && colE.startsWith('>') && !colE.startsWith('>>'))) {
         code = '>';
         rawUraian = colE || colF || colD;
         if (rawUraian.startsWith('>')) rawUraian = rawUraian.replace(/^>\s*/, '');
@@ -301,6 +306,7 @@ async function restructure(workbook) {
         }
       }
 
+      sourceLineage.push(cells.sourceRows);
       rows20.push([
         code,          // Col 1 (A)
         cleanUraian,   // Col 2 (B)
@@ -330,6 +336,7 @@ async function restructure(workbook) {
     for (let r = 0; r < rows20.length; r++) {
       const row = worksheet.getRow(r + 1);
       row.values = rows20[r];
+      row.rkkSourceRows=sourceLineage[r];
     }
 
     // Clear and trim excess rows if previous count was larger

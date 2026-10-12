@@ -57,6 +57,9 @@ async function parseHierarchyRecap(buffer, options = {}) {
   }
   if (!ws) throw new Error("Workbook tidak mempunyai worksheet");
 
+  const {normalizedWorksheet}=require('./rkk-detail-normalizer');
+  ws=normalizedWorksheet(ws);
+  if(!options.canonical && (ws.rkkNormalization.issues.length || ws.rkkNormalization.reconciliation.length)){const error=new Error('Validasi struktur/subtotal sumber gagal. '+ws.rkkNormalization.issues.map(x=>'baris '+x.sourceRows.join(', ')+': '+x.message).join('; '));error.status=422;error.issues={structuralIssues:ws.rkkNormalization.issues,reconciliation:ws.rkkNormalization.reconciliation};throw error;}
   const ctx = {
     c322: '', c322Name: '',
     d4: '', d4Name: '',
@@ -156,7 +159,7 @@ async function parseHierarchyRecap(buffer, options = {}) {
       code = '-';
       uraian = colE || colF || colD;
       if (uraian.startsWith('-')) uraian = uraian.replace(/^-\s*/, '');
-    } else if (code === '>' || colD === '>' || (!code && colE.startsWith('>'))) {
+    } else if (code === '>' || colD === '>' || (!code && colE.startsWith('>') && !colE.startsWith('>>'))) {
       code = '>';
       uraian = colE || colF || colD;
       if (uraian.startsWith('>')) uraian = uraian.replace(/^>\s*/, '');
@@ -339,7 +342,7 @@ async function parseHierarchyRecap(buffer, options = {}) {
       }
 
       const rec = {
-        rowNum,
+        rowNum, sourceRows:ws.getRow(rowNum).rkkSourceRows||[rowNum],
         c322: ctx.c322, c322Name: ctx.c322Name,
         d4: ctx.d4, d4Name: ctx.d4Name,
         c43: ctx.c43, c43Name: ctx.c43Name,
@@ -375,7 +378,7 @@ async function parseHierarchyRecap(buffer, options = {}) {
   });
 
   if (options.canonical) return nodeMap;
-  return buildRecap(nodeMap);
+  return {...buildRecap(nodeMap), normalizationFindings:ws.rkkNormalization.findings, auditWarnings:ws.rkkNormalization.warnings, validationComplete:ws.rkkNormalization.validationComplete};
 }
 
 function buildRecap(nodeMap) {
@@ -461,7 +464,7 @@ function buildRecap(nodeMap) {
 
       d6Summary.details.push({
         ...Object.fromEntries(['sourceId', 'originalName', 'sheetName', 'ownerId', 'ownerName', 'responsibleUnitId', 'responsibleUnitName', 'recordId', 'fullPath'].filter(k => r[k] !== undefined).map(k => [k, r[k]])),
-        rowNum: r.rowNum,
+        rowNum: r.rowNum, sourceRows:r.sourceRows||[r.rowNum],
         uraian: r.uraian,
         val: r.val,
         tagging: r.tagging,

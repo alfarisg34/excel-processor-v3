@@ -247,6 +247,55 @@ async function run() {
   assert.equal(activeIntervals.size,0);
   assert.ok(get('statusRecap').textContent.includes('Jaringan pengujian terputus'));
   await get('recapClearFiles').fire('click');
+  context.auditPanel=new Element();
+  vm.runInContext('renderLevelValidationReport(auditPanel,{overallStatus:"DIFF",validationComplete:true,totalItemsCount:1666,matchCount:1659,diffCount:7,totalDiff:299,totalBudgetDiff:1101071299,programDiffCount:2,subtotalDiffCount:5,programSummary:[],discrepancyItems:[],normalizationFindings:[{message:"<script>bad()</script>",sourceRows:[1380,1381]}],reportUrl:"/api/validation-reports/1234-abcd"},"test")',context);
+  assert.ok(context.auditPanel.innerHTML.includes('1.101.071.299'));assert.ok(context.auditPanel.innerHTML.includes('Selisih detail bersih: Rp 299'));
+  assert.ok(context.auditPanel.innerHTML.includes('Unduh laporan validasi lengkap'));assert.ok(!context.auditPanel.innerHTML.includes('<script>bad()'));
+  assert.ok(context.auditPanel.innerHTML.includes('&lt;script&gt;bad()'));
+
+  const savedFetch=context.fetch;
+  context.fullValidation={
+    overallStatus:'DIFF',validationComplete:true,totalItemsCount:1665,matchCount:1658,diffCount:7,totalDiff:299,
+    totalBudgetDiff:299,programDiffCount:2,subtotalDiffCount:34,normalizationCount:3,
+    programSummary:[{outRowNum:4,code:'026.04.DN',uraian:'Program DN lengkap',before:1000,after:1241,diff:241,status:'DIFF'},{outRowNum:1829,code:'026.04.WA',uraian:'Program WA lengkap',before:1000,after:1058,diff:58,status:'DIFF'}],
+    discrepancyItems:Array.from({length:7},(_,i)=>({outRowNum:18+i,sourceRows:[18+i],uraian:'Perbedaan detail '+(i+1),fullCodePath:'DN > 524111',valBefore:100,valAfter:101,diff:1,status:'DIFF'})),
+    subtotalDiscrepancies:Array.from({length:34},(_,i)=>({outRowNum:100+i,sourceRows:[100+i],code:'Subtotal '+(i+1),uraian:'Hirarki lengkap '+(i+1),before:100,after:101,diff:1,leafTotal:101,formulaDifference:0})),
+    normalizationFindings:[{sourceRows:[1380,1381],uraian:'Penginapan lengkap',amount:16000000,message:'Digabung'}],
+    sourceWarnings:[{sourceRows:[18],message:'Pembulatan <script>bad()</script>',expected:100,actual:101,difference:1}],
+    sourceIssues:[],sourceReconciliation:[],diagnostics:[]
+  };
+  context.truncatedValidation={overallStatus:'DIFF',totalItemsCount:1665,matchCount:1658,diffCount:7,totalDiff:299,totalBudgetDiff:299,programDiffCount:2,subtotalDiffCount:34,displayedDetailCount:0,programSummary:[],discrepancyItems:[],reportUrl:'/api/validation-reports/1234-abcd'};
+  const fullGate=deferred();
+  context.fetch=async()=>{await fullGate.promise;return {ok:true,json:async()=>context.fullValidation};};
+  const loadingReport=vm.runInContext('loadLevelValidationReport(auditPanel,truncatedValidation,"test")',context);
+  assert.ok(context.auditPanel.innerHTML.includes('Memuat rincian validasi lengkap'));
+  assert.ok(context.auditPanel.innerHTML.includes('Sedang memuat perbandingan program'));
+  fullGate.resolve();await loadingReport;
+  for(const label of ['Program DN lengkap','Program WA lengkap','Perbedaan detail 7','Hirarki lengkap 34','Penginapan lengkap','1380, 1381','Menampilkan 7 dari 7'])
+    assert.ok(context.auditPanel.innerHTML.includes(label),'Full report must be visible: '+label);
+  assert.ok(context.auditPanel.innerHTML.includes('Perbedaan subtotal seluruh level (34)'));
+  assert.ok(context.auditPanel.innerHTML.includes('&lt;script&gt;bad()'));
+  const retry=new Element();context.auditPanel.querySelector=()=>retry;
+  context.fetch=async()=>{throw Error('Jaringan laporan terputus');};
+  await vm.runInContext('loadLevelValidationReport(auditPanel,truncatedValidation,"test")',context);
+  assert.ok(context.auditPanel.innerHTML.includes('Jaringan laporan terputus'));
+  assert.ok(context.auditPanel.innerHTML.includes('Coba lagi'));
+  assert.ok(context.auditPanel.innerHTML.includes('Rincian belum berhasil dimuat'));
+  context.fetch=async()=>({ok:true,json:async()=>context.fullValidation});
+  await retry.fire('click');assert.ok(context.auditPanel.innerHTML.includes('Perbedaan detail 7'));
+  context.fetch=async()=>({ok:false,status:404});
+  await vm.runInContext('loadLevelValidationReport(auditPanel,truncatedValidation,"test")',context);
+  assert.ok(context.auditPanel.innerHTML.includes('Laporan kedaluwarsa'));
+  const staleGate=deferred();
+  context.fetch=async()=>{await staleGate.promise;return {ok:true,json:async()=>({...context.fullValidation,programSummary:[{code:'OLD',uraian:'Laporan usang',before:0,after:1,diff:1}]})};};
+  const staleReport=vm.runInContext('loadLevelValidationReport(auditPanel,truncatedValidation,"test")',context);
+  context.fetch=async()=>({ok:true,json:async()=>context.fullValidation});
+  await vm.runInContext('loadLevelValidationReport(auditPanel,truncatedValidation,"test")',context);
+  staleGate.resolve();await staleReport;
+  assert.ok(!context.auditPanel.innerHTML.includes('Laporan usang'));
+  context.fetch=savedFetch;
+  vm.runInContext('renderLevelValidationReport(auditPanel,{overallStatus:"INCOMPLETE",validationComplete:false,totalItemsCount:0,matchCount:0,diffCount:0,totalDiff:0,diagnostics:[{message:"Evaluasi gagal"}]},"test")',context);
+  assert.ok(context.auditPanel.innerHTML.includes('Validasi tidak selesai'));
   console.log('Frontend: multiple upload, year/owner confirmation, compact hydration, escaped evidence/details, owner filter, dynamic funding/status/block-code facets, all five empty-filter buttons, loading/cancellation/retry/error recovery, uncoded blocked details, reset and four exports passed (DOM simulation; visual browser unavailable).');
 }
 if(require.main===module)run().catch(e=>{console.error(e);process.exitCode=1;});
