@@ -36,7 +36,7 @@ app.get('/api/changelog', (req, res) => {
   try {
     const limit = parseInt(req.query.limit, 10) || 100;
     const gitCommits = getGitCommits(limit);
-    const currentVersion = (releases && releases.length > 0) ? releases[0].version : '3.4.0';
+    const currentVersion = (releases && releases.length > 0) ? releases[0].version : '3.5.0';
     res.json({
       currentVersion,
       releases,
@@ -145,6 +145,40 @@ app.post('/api/recap-hierarchy', upload.single('file'), async (req, res) => {
       detail: error.message,
     });
   }
+});
+
+
+const { inspectFiles, buildBatch, packRecap } = require('./src/utils/hierarchy-recap-batch');
+const { LIMITS } = require('./src/utils/rkk-metadata');
+const recapUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: LIMITS.fileBytes, files: LIMITS.files, fields: 1, fieldSize: 128 * 1024, parts: LIMITS.files + 1 }
+}).array('files', LIMITS.files);
+function acceptRecapUpload(req, res, next) {
+  recapUpload(req, res, error => {
+    if (!error) return next();
+    const sizeError = ['LIMIT_FILE_SIZE', 'LIMIT_FILE_COUNT', 'LIMIT_PART_COUNT'].includes(error.code);
+    return res.status(sizeError ? 413 : 400).json({ error: sizeError ? 'Maksimal 10 file XLSX, 5 MiB per file, total 20 MiB.' : 'Upload multipart tidak valid.', detail: error.message });
+  });
+}
+function sendRecapError(res, error) {
+  return res.status(error.status || 500).json({ error: 'Gagal memproses rekap batch', detail: error.message, ...(error.issues ? { issues: error.issues } : {}) });
+}
+app.post('/api/recap-hierarchy/inspect', acceptRecapUpload, async (req, res) => {
+  try { res.json(await inspectFiles(req.files)); }
+  catch (error) { sendRecapError(res, error); }
+});
+app.post('/api/recap-hierarchy/batch', acceptRecapUpload, async (req, res) => {
+  let manifest;
+  try { manifest = JSON.parse(req.body.manifest); }
+  catch { return res.status(400).json({ error: 'Manifest JSON tidak valid.' }); }
+  try {
+    const packed = packRecap(await buildBatch(req.files, manifest));
+    const body = JSON.stringify(packed);
+    if (Buffer.byteLength(body) > 4 * 1024 * 1024) return res.status(413).json({ error: "Hasil rekap melebihi 4 MiB. Kurangi jumlah file atau persempit filter unit." });
+    res.type('json').send(body);
+  }
+  catch (error) { sendRecapError(res, error); }
 });
 
 app.post('/api/process', uploadFields, handleProcess);

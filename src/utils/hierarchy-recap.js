@@ -48,10 +48,14 @@ function extractTagging(cells) {
  * @param {Buffer} buffer - File buffer of RKK Satker
  * @returns {Promise<Object>} Hierarchical recap payload
  */
-async function parseHierarchyRecap(buffer) {
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(buffer);
-  const ws = workbook.worksheets[0];
+async function parseHierarchyRecap(buffer, options = {}) {
+  let ws = options.worksheet;
+  if (!ws) {
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(buffer);
+    ws = workbook.worksheets[0];
+  }
+  if (!ws) throw new Error("Workbook tidak mempunyai worksheet");
 
   const ctx = {
     c322: '', c322Name: '',
@@ -90,6 +94,7 @@ async function parseHierarchyRecap(buffer) {
   const d3BlockCodes = new Map();
   const taggingBlockCodes = new Map();
   let pass1D3 = '';
+  const pass1Path = [];
 
   ws.eachRow({ includeEmpty: false }, (row) => {
     const cells = [];
@@ -102,8 +107,13 @@ async function parseHierarchyRecap(buffer) {
     let code = colA || colB || colC;
     const lvl = getCodeLevel(code);
 
+    if (lvl >= 1 && lvl <= 5) {
+      pass1Path[lvl - 1] = code;
+      pass1Path.length = lvl;
+      pass1D3 = lvl === 5 ? JSON.stringify(pass1Path) : '';
+    }
     if (lvl === 5) {
-      pass1D3 = code;
+      // Component path was captured above.
     } else if (lvl === 7) {
       let rawColK = (cells[10] || '').trim();
       let rawColJ = (cells[9] || '').trim();
@@ -115,6 +125,7 @@ async function parseHierarchyRecap(buffer) {
       const numCand = parseFloat(rawColK.replace(/[^0-9.-]/g, ''));
       if (rawColK && (isNaN(numCand) || numCand <= 99) && rawColK !== 'RK' && rawColK !== '*' && rawColK !== 'U' && rawColK !== 'P') {
         const bCode = rawColK.toUpperCase();
+        if (!/^[A-Z0-9]{1,8}$/.test(bCode)) return;
         if (pass1D3) {
           if (!d3BlockCodes.has(pass1D3)) d3BlockCodes.set(pass1D3, new Set());
           d3BlockCodes.get(pass1D3).add(bCode);
@@ -275,18 +286,24 @@ async function parseHierarchyRecap(buffer) {
       }
       if (!blockCandidate) {
         // Fallback 1: check if this component (d3) has an explicit block code
-        if (ctx.d3 && d3BlockCodes.has(ctx.d3) && d3BlockCodes.get(ctx.d3).size === 1) {
-          blockCandidate = Array.from(d3BlockCodes.get(ctx.d3))[0];
+        if (ctx.d3 && d3BlockCodes.has(JSON.stringify([ctx.c322, ctx.d4, ctx.c43, ctx.c433, ctx.d3])) && d3BlockCodes.get(JSON.stringify([ctx.c322, ctx.d4, ctx.c43, ctx.c433, ctx.d3])).size === 1) {
+          blockCandidate = Array.from(d3BlockCodes.get(JSON.stringify([ctx.c322, ctx.d4, ctx.c43, ctx.c433, ctx.d3])))[0];
         }
         // Fallback 2: check if this tagging (e.g. PLN) has a unique block code in document
         else if (ctx.d6Tagging && taggingBlockCodes.has(ctx.d6Tagging) && taggingBlockCodes.get(ctx.d6Tagging).size === 1) {
           blockCandidate = Array.from(taggingBlockCodes.get(ctx.d6Tagging))[0];
         }
       }
-      ctx.d6BlockCode = blockCandidate || '';
+      ctx.d6BlockCode = /^[A-Z0-9]{1,8}$/.test(blockCandidate) ? blockCandidate : '';
     }
 
     if (code === '-') {
+      if (options.canonical && !colJ && /^-?\d+(?:\.\d+)?$/.test(rawColK)) colJ = rawColK;
+      if (options.canonical && (!colJ || !/^-?\d+(?:\.\d+)?$/.test(colJ))) {
+        const error = new Error("Nilai detail tidak valid pada " + ws.name + "!J/K" + rowNum);
+        error.status = 422;
+        throw error;
+      }
       // Determine value from colJ (normalized), fallback to cells[9] / cells[10] / cells[7]
       let valStr = colJ || cells[9] || cells[10] || cells[7] || '0';
       let val = parseFloat(valStr.replace(/[^0-9.-]/g, '')) || 0;
@@ -357,6 +374,11 @@ async function parseHierarchyRecap(buffer) {
     }
   });
 
+  if (options.canonical) return nodeMap;
+  return buildRecap(nodeMap);
+}
+
+function buildRecap(nodeMap) {
   // Calculate summaries for each node
   const nodeSummaries = {};
 
@@ -438,6 +460,7 @@ async function parseHierarchyRecap(buffer) {
       }
 
       d6Summary.details.push({
+        ...Object.fromEntries(['sourceId', 'originalName', 'sheetName', 'ownerId', 'ownerName', 'responsibleUnitId', 'responsibleUnitName', 'recordId', 'fullPath'].filter(k => r[k] !== undefined).map(k => [k, r[k]])),
         rowNum: r.rowNum,
         uraian: r.uraian,
         val: r.val,
@@ -449,8 +472,20 @@ async function parseHierarchyRecap(buffer) {
     });
 
     const digit6List = Array.from(d6Map.values()).map((d6) => {
+      const byCode = new Map();
+      for (const detail of d6.details) {
+        if (detail.isBlocked) {
+          const code = detail.blockCode || 'Tanpa Kode';
+          byCode.set(code, (byCode.get(code) || 0) + detail.val);
+        }
+      }
+      const codes = [...byCode.keys()].filter(code => code !== 'Tanpa Kode');
+      const tag = d6.tagging === 'RM' ? 'RM' : (d6.tagging === 'PLN' ? 'PLN' : 'PNP');
       return {
         ...d6,
+        blockCode: codes.length === 1 ? codes[0] : '',
+        blockedByCodeList: [...byCode].map(([code, val]) => ({ code, val })),
+        blockedBySourceAndCodeList: [...byCode].map(([code, val]) => ({ tag, code, val })),
         blockedPct: d6.totalVal > 0 ? ((d6.totalBlocked / d6.totalVal) * 100).toFixed(1) : '0.0'
       };
     });
@@ -489,6 +524,7 @@ async function parseHierarchyRecap(buffer) {
     });
 
     nodeSummaries[key] = {
+      ...Object.fromEntries(['ownerId', 'ownerName', 'responsibleUnitId', 'responsibleUnitName', 'sourceIds', 'unitIds'].filter(k => node[k] !== undefined).map(k => [k, node[k]])),
       key: node.key,
       code: node.code,
       name: node.name,
@@ -582,6 +618,7 @@ async function parseHierarchyRecap(buffer) {
     if (s.level === 6 && s.digit6List && s.digit6List.length > 0) {
       s.digit6List.forEach(d => {
         children.push({
+          ...Object.fromEntries(['ownerId', 'ownerName', 'responsibleUnitId', 'responsibleUnitName', 'sourceIds', 'unitIds'].filter(k => s[k] !== undefined).map(k => [k, s[k]])),
           key: `${nodeKey}__${d.code}__${d.tagging}`,
           code: d.code,
           name: d.name,
@@ -600,12 +637,8 @@ async function parseHierarchyRecap(buffer) {
           blockedPct: d.blockedPct || '0.0',
           tagging: d.tagging,
           blockCode: d.blockCode,
-          blockedByCodeList: (d.blockCode && d.blockCode !== 'RK' && d.blockCode !== '*') ? [{ code: d.blockCode, val: d.totalBlocked }] : [],
-          blockedBySourceAndCodeList: (d.totalBlocked > 0 && d.blockCode) ? [{
-            tag: (d.tagging === 'PLN' || d.tagging === 'PHLN') ? 'PLN' : (d.tagging === 'RM' ? 'RM' : 'PNP'),
-            code: d.blockCode,
-            val: d.totalBlocked
-          }] : [],
+          blockedByCodeList: d.blockedByCodeList || [],
+          blockedBySourceAndCodeList: d.blockedBySourceAndCodeList || [],
           directChildrenCount: 0,
           accountCount: 1,
           children: []
@@ -614,6 +647,7 @@ async function parseHierarchyRecap(buffer) {
     }
 
     return {
+      ...Object.fromEntries(['ownerId', 'ownerName', 'responsibleUnitId', 'responsibleUnitName', 'sourceIds', 'unitIds'].filter(k => s[k] !== undefined).map(k => [k, s[k]])),
       key: s.key,
       code: s.code,
       name: s.name,
@@ -651,3 +685,5 @@ async function parseHierarchyRecap(buffer) {
 }
 
 module.exports = parseHierarchyRecap;
+
+module.exports.buildRecap = buildRecap;

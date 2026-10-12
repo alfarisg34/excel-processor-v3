@@ -102,7 +102,7 @@
             <!-- 1. Upload RINCIAN KERTAS KERJA SATKER (Wajib) -->
             <div class="upload-zone" id="dropZoneRKK">
               <div class="upload-icon"><i class="fa-solid fa-file-excel"></i></div>
-              <div class="upload-text">Upload RINCIAN KERTAS KERJA SATKER</div>
+              <div class="upload-text">Upload beberapa RINCIAN KERTAS KERJA SATKER</div>
               <div class="upload-hint">Klik atau drag & drop file (.xlsx, .xls)</div>
               <input type="file" id="fileInputRKK" accept=".xlsx,.xls" style="display: none;">
               <div class="file-status" id="fileStatusRKK"></div>
@@ -173,15 +173,41 @@
             <div class="upload-zone" id="dropZoneRecap">
               <div class="upload-icon" style="color: #f59e0b;"><i class="fa-solid fa-sitemap"></i></div>
               <div class="upload-text">Upload RINCIAN KERTAS KERJA SATKER</div>
-              <div class="upload-hint">Klik atau drag & drop file (.xlsx, .xls)</div>
-              <input type="file" id="fileInputRecap" accept=".xlsx,.xls" style="display: none;">
+              <div class="upload-hint">Klik atau drag & drop beberapa file XLSX · maksimal 10 file, 5 MiB/file, total 20 MiB</div>
+              <input type="file" id="fileInputRecap" accept=".xlsx" multiple style="display: none;">
               <div class="file-status" id="fileStatusRecap"></div>
+            </div>
+
+            <div id="recapLoading" class="recap-loading" role="status" aria-live="polite" hidden>
+              <span class="recap-loading-spinner" aria-hidden="true"></span>
+              <div class="recap-loading-copy">
+                <strong id="recapLoadingTitle">Memeriksa file…</strong>
+                <span id="recapLoadingHelp">Tunggu sebentar. Kontrol aktif kembali setelah proses selesai.</span>
+                <span id="recapLoadingElapsed" aria-live="off">0 detik</span>
+              </div>
+              <button type="button" class="btn btn-sm" id="recapCancelRequest">Batalkan</button>
+            </div>
+
+            <div id="recapBatchReview" class="recap-batch-review" hidden>
+              <div class="recap-batch-controls">
+                <label>Tahun anggaran
+                  <input id="recapFiscalYear" type="number" min="2000" max="2100" placeholder="Contoh: 2027">
+                </label>
+                <label>Tambah unit pemilik / penanggung jawab
+                  <input id="recapNewUnitName" type="text" maxlength="150" placeholder="Nama satker atau direktorat">
+                </label>
+                <button type="button" class="btn btn-sm" id="recapAddUnit">Tambah unit</button>
+              </div>
+              <button type="button" class="btn btn-sm" id="recapInspectFiles">Periksa ulang file</button>
+              <button type="button" class="btn btn-sm" id="recapClearFiles">Bersihkan semua file</button>
+              <p class="recap-batch-help">Konfirmasi pemilik setiap file. Saran berasal dari isi workbook. Tahun footer tidak digunakan sebagai tahun anggaran. Untuk file campuran, pilih penanggung jawab per kegiatan bila diperlukan.</p>
+              <div id="recapBatchFiles" aria-live="polite"></div>
             </div>
 
             <button class="btn" id="btnProcessRecap"
               style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);"
               disabled>
-              <i class="fa-solid fa-chart-bar"></i> Analisis &amp; Tampilkan Rekap Hirarki
+              <i class="fa-solid fa-chart-bar"></i> Buat Rekap Gabungan
             </button>
 
             <div class="status-box" id="statusRecap"></div>
@@ -189,6 +215,12 @@
 
           <!-- Result Panel for Rekap Hirarki -->
           <div id="recapResultPanel" style="display: none;">
+            <div class="card recap-batch-controls">
+              <label>Unit pemilik sumber <select id="recapOwnerFilter"><option value="">Semua unit</option></select></label>
+              <label>Penanggung jawab kegiatan <select id="recapResponsibleFilter"><option value="">Semua penanggung jawab</option></select></label>
+              <div id="recapBatchSummary" aria-live="polite"></div>
+            </div>
+
             <!-- Dual-View Switcher Tabs -->
             <div class="recap-view-switcher">
               <button type="button" class="recap-view-tab-btn active" id="btnTabTreeRecap" onclick="switchRecapViewMode('tree')">
@@ -474,21 +506,7 @@
                         </div>
                       </div>
                       <div class="multiselect-list" id="listMultiSelectD6Tag">
-                        <label class="multiselect-item" data-tag="RM">
-                          <input type="checkbox" value="RM" checked onchange="handleD6TagCheckboxChange(this)">
-                          <span class="tag-badge rm" style="font-size:10.5px; padding:1px 6px;">RM</span>
-                          <span class="multiselect-item-name" style="font-size:12.5px;">RM (Rupiah Murni)</span>
-                        </label>
-                        <label class="multiselect-item" data-tag="PNP">
-                          <input type="checkbox" value="PNP" checked onchange="handleD6TagCheckboxChange(this)">
-                          <span class="tag-badge pnbp" style="font-size:10.5px; padding:1px 6px;">PNP</span>
-                          <span class="multiselect-item-name" style="font-size:12.5px;">PNP / PNBP</span>
-                        </label>
-                        <label class="multiselect-item" data-tag="PLN">
-                          <input type="checkbox" value="PLN" checked onchange="handleD6TagCheckboxChange(this)">
-                          <span class="tag-badge pln" style="font-size:10.5px; padding:1px 6px;">PLN</span>
-                          <span class="multiselect-item-name" style="font-size:12.5px;">PLN / PHLN</span>
-                        </label>
+                        <!-- Populated from active account/status/search details -->
                       </div>
                     </div>
                   </div>
@@ -513,16 +531,7 @@
                         </div>
                       </div>
                       <div class="multiselect-list" id="listMultiSelectD6Blocked">
-                        <label class="multiselect-item" data-status="BLOCKED">
-                          <input type="checkbox" value="BLOCKED" checked onchange="handleD6BlockedCheckboxChange(this)">
-                          <span style="color:#fbbf24; font-size:12px;">⭐</span>
-                          <span class="multiselect-item-name" style="font-size:12.5px;">Diblokir</span>
-                        </label>
-                        <label class="multiselect-item" data-status="NORMAL">
-                          <input type="checkbox" value="NORMAL" checked onchange="handleD6BlockedCheckboxChange(this)">
-                          <span style="color:#22c55e; font-size:12px;">✔️</span>
-                          <span class="multiselect-item-name" style="font-size:12.5px;">Normal</span>
-                        </label>
+                        <!-- Populated from active account/search details -->
                       </div>
                     </div>
                   </div>
@@ -650,7 +659,7 @@
               Center</a></span>
           <a href="/changelog" class="version-pill" id="footerVersionBadge"
             title="Buka Catatan Pembaruan &amp; Log Versi">
-            <i class="fa-solid fa-code-branch" style="font-size: 11px;"></i> v3.4.0
+            <i class="fa-solid fa-code-branch" style="font-size: 11px;"></i> v3.5.0
           </a>
         </div>
       </footer>
@@ -1440,63 +1449,97 @@
     const btnSelectAllD6BlockCodes = document.getElementById('btnSelectAllD6BlockCodes');
     const btnClearD6BlockCodes = document.getElementById('btnClearD6BlockCodes');
 
-    let fileRecap = null;
     let currentRecapData = null;
     let selectedD6Codes = new Set();
     let currentAvailableD6Codes = [];
     let selectedD6Tags = new Set(['RM', 'PNP', 'PLN']);
+    let currentAvailableD6Tags = [];
+    let currentAvailableD6Statuses = [];
+    let allD6Statuses = true;
+    let allD6Tags = true;
+    let allD6BlockCodes = true;
     let selectedD6Blocked = new Set(['BLOCKED', 'NORMAL']);
     let selectedD6BlockCodes = new Set();
     let currentAvailableBlockCodes = [];
 
-    setupDropZone(dropZoneRecap, fileInputRecap, (f) => {
-      fileRecap = f;
-      fileStatusRecap.textContent = '✅ Selected RKK: ' + f.name;
-      btnProcessRecap.disabled = false;
-    });
 
-    btnProcessRecap.addEventListener('click', async () => {
-      if (!fileRecap) return;
-      btnProcessRecap.disabled = true;
-      showStatus(statusRecap, '⏳ Menganalisis hirarki & breakdown Digit 6...', 'info');
-      recapResultPanel.style.display = 'none';
+    function recapDetailSource(det) {
+      if (!det.sourceId) return '';
+      return [det.ownerName, det.responsibleUnitName !== det.ownerName ? 'PJ: ' + det.responsibleUnitName : '',
+        det.originalName, det.sheetName + '! baris ' + det.rowNum, det.fullPath].filter(Boolean).join(' | ');
+    }
+    function recapSourceRows() {
+      if (!currentRecapData?.schemaVersion) return [];
+      const data = currentRecapData;
+      const name = id => data.unitOptions.find(u => u.id === id)?.name || id || 'Semua';
+      const rows = [
+        ['Tahun anggaran', data.fiscalYear],
+        ['Filter pemilik sumber', name(data.filters.ownerId)],
+        ['Filter penanggung jawab', name(data.filters.responsibleUnitId)],
+        ['Kode kegiatan unik', data.activityCodeCount],
+        ['Cabang kegiatan per unit', data.activityBranchCount],
+        [],
+        ['Nama file', 'Pemilik sumber', 'Worksheet', 'Pagu sumber sebelum filter', 'Disertakan', 'Fingerprint SHA-256', 'Penanggung jawab per kegiatan']
+      ];
+      data.sources.forEach(source => {
+        const assignment = data.assignments.find(a => a.sourceId === source.sourceId);
+        const mapping = source.activities.map(a => {
+          const override = assignment.activityAssignments.find(v => v.programCode === a.programCode && v.activityCode === a.code);
+          return a.programCode + '/' + a.code + ': ' + name(override?.responsibleUnitId || source.ownerId);
+        }).join('; ');
+        rows.push([source.originalName, source.ownerName, source.sheetName, source.totalVal, source.included ? 'Ya' : 'Tidak', source.sourceId, mapping]);
+      });
+      return rows;
+    }
+    function appendRecapExcelSources(wb) {
+      const rows = recapSourceRows();
+      if (!rows.length) return;
+      const sheet = XLSX.utils.aoa_to_sheet(rows);
+      sheet['!cols'] = [55, 40, 25, 24, 15, 68, 80].map(wch => ({ wch }));
+      XLSX.utils.book_append_sheet(wb, sheet, 'Sumber dan Atribusi');
+    }
+    function appendRecapPdfSources(doc) {
+      const rows = recapSourceRows();
+      if (!rows.length) return;
+      doc.addPage();
+      doc.setFontSize(11);
+      doc.text('Sumber dan atribusi rekap', 14, 14);
+      doc.autoTable({ startY: 20, body: rows, theme: 'grid',
+        styles: { font: 'helvetica', fontSize: 7, cellPadding: 2, overflow: 'linebreak' } });
+    }
 
-      const formData = new FormData();
-      formData.append('file', fileRecap);
-
-      try {
-        const response = await fetch('/api/recap-hierarchy', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!response.ok) {
-          const err = await response.json();
-          throw new Error(err.detail || err.error || 'Server error');
+    function applyBatchRecap(data) {
+      if (data.compactDetails) {
+        for (const summary of Object.values(data.nodeSummaries)) {
+          for (const account of summary.digit6List) {
+            account.details = account.detailIndexes.map(index => data.detailRecords[index]);
+            delete account.detailIndexes;
+          }
         }
-
-        currentRecapData = await response.json();
-        selectedD6Tags = new Set(['RM', 'PNP', 'PLN']);
-        syncD6TagCheckboxes();
-        updateD6TagButtonLabel();
-
-        selectedD6Blocked = new Set(['BLOCKED', 'NORMAL']);
-        syncD6BlockedCheckboxes();
-        updateD6BlockedButtonLabel();
-        showStatus(statusRecap, '✅ Berhasil menganalisis rekap hirarki!', 'success');
-
-        recapResultPanel.style.display = 'block';
-        initTreeRecapView(currentRecapData);
-        selectLevelFilter.value = '0';
-        updateParentNodeDropdown('0');
-        renderRecapForSelectedNode(true);
-        switchRecapViewMode('tree');
-      } catch (err) {
-        showStatus(statusRecap, '❌ Error: ' + err.message, 'error');
-      } finally {
-        btnProcessRecap.disabled = false;
+        data.rootSummary = data.nodeSummaries.ROOT;
+        delete data.detailRecords;
+        delete data.compactDetails;
       }
-    });
+      currentRecapData = data;
+      selectedD6Codes = new Set();
+      allD6Statuses = true;
+      allD6Tags = true;
+      allD6BlockCodes = true;
+      selectedD6BlockCodes = new Set();
+      selectedD6Tags = new Set(['RM', 'PNP', 'PLN']);
+      selectedD6Blocked = new Set(['BLOCKED', 'NORMAL']);
+      searchD6.value = '';
+      syncD6TagCheckboxes();
+      updateD6TagButtonLabel();
+      syncD6BlockedCheckboxes();
+      updateD6BlockedButtonLabel();
+      recapResultPanel.style.display = 'block';
+      initTreeRecapView(data);
+      selectLevelFilter.value = '0';
+      updateParentNodeDropdown('0');
+      renderRecapForSelectedNode(true);
+      switchRecapViewMode('tree');
+    }
 
     selectLevelFilter.addEventListener('change', () => {
       if (!currentRecapData) return;
@@ -1555,6 +1598,7 @@
     }
 
     function closeAllDropdowns() {
+      [btnMultiSelectD6Code, btnMultiSelectD6Tag, btnMultiSelectD6Blocked, btnMultiSelectD6BlockCode].forEach(button => button?.setAttribute('aria-expanded', 'false'));
       closeSearchableParentNodeDropdown();
       if (dropdownMultiSelectD6Code) dropdownMultiSelectD6Code.classList.remove('show');
       if (btnMultiSelectD6Code) btnMultiSelectD6Code.classList.remove('open');
@@ -1566,78 +1610,34 @@
       if (btnMultiSelectD6BlockCode) btnMultiSelectD6BlockCode.classList.remove('open');
     }
 
-    // Multi-Select Event Listeners for Kode Akun
-    if (btnMultiSelectD6Code && dropdownMultiSelectD6Code) {
-      btnMultiSelectD6Code.addEventListener('click', (e) => {
+    // Every filter opens, including empty filters with explanatory feedback.
+    [
+      [btnMultiSelectD6Code, dropdownMultiSelectD6Code],
+      [btnMultiSelectD6Tag, dropdownMultiSelectD6Tag],
+      [btnMultiSelectD6Blocked, dropdownMultiSelectD6Blocked],
+      [btnMultiSelectD6BlockCode, dropdownMultiSelectD6BlockCode]
+    ].forEach(([button, dropdown]) => {
+      if (!button || !dropdown) return;
+      button.setAttribute('aria-haspopup', 'true');
+      button.setAttribute('aria-controls', dropdown.id);
+      button.setAttribute('aria-expanded', 'false');
+      button.addEventListener('click', e => {
         e.stopPropagation();
-        const willOpen = !dropdownMultiSelectD6Code.classList.contains('show');
+        const willOpen = !dropdown.classList.contains('show');
         closeAllDropdowns();
         if (willOpen) {
-          dropdownMultiSelectD6Code.classList.add('show');
-          btnMultiSelectD6Code.classList.add('open');
-          if (searchMultiSelectD6Code) {
+          dropdown.classList.add('show');
+          button.classList.add('open');
+          button.setAttribute('aria-expanded', 'true');
+          if (button === btnMultiSelectD6Code && currentAvailableD6Codes.length && searchMultiSelectD6Code) {
             searchMultiSelectD6Code.value = '';
             filterD6CodeListItems('');
             searchMultiSelectD6Code.focus();
           }
         }
       });
-
-      dropdownMultiSelectD6Code.addEventListener('click', (e) => {
-        e.stopPropagation();
-      });
-    }
-
-    // Multi-Select Event Listeners for Tag Sumber Dana
-    if (btnMultiSelectD6Tag && dropdownMultiSelectD6Tag) {
-      btnMultiSelectD6Tag.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const willOpen = !dropdownMultiSelectD6Tag.classList.contains('show');
-        closeAllDropdowns();
-        if (willOpen) {
-          dropdownMultiSelectD6Tag.classList.add('show');
-          btnMultiSelectD6Tag.classList.add('open');
-        }
-      });
-
-      dropdownMultiSelectD6Tag.addEventListener('click', (e) => {
-        e.stopPropagation();
-      });
-    }
-
-    // Multi-Select Event Listeners for Status Blokir
-    if (btnMultiSelectD6Blocked && dropdownMultiSelectD6Blocked) {
-      btnMultiSelectD6Blocked.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const willOpen = !dropdownMultiSelectD6Blocked.classList.contains('show');
-        closeAllDropdowns();
-        if (willOpen) {
-          dropdownMultiSelectD6Blocked.classList.add('show');
-          btnMultiSelectD6Blocked.classList.add('open');
-        }
-      });
-
-      dropdownMultiSelectD6Blocked.addEventListener('click', (e) => {
-        e.stopPropagation();
-      });
-    }
-
-    // Multi-Select Event Listeners for Kode Blokir
-    if (btnMultiSelectD6BlockCode && dropdownMultiSelectD6BlockCode) {
-      btnMultiSelectD6BlockCode.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const willOpen = !dropdownMultiSelectD6BlockCode.classList.contains('show');
-        closeAllDropdowns();
-        if (willOpen) {
-          dropdownMultiSelectD6BlockCode.classList.add('show');
-          btnMultiSelectD6BlockCode.classList.add('open');
-        }
-      });
-
-      dropdownMultiSelectD6BlockCode.addEventListener('click', (e) => {
-        e.stopPropagation();
-      });
-    }
+      dropdown.addEventListener('click', e => e.stopPropagation());
+    });
 
     document.addEventListener('click', () => {
       closeAllDropdowns();
@@ -1686,7 +1686,8 @@
     // Tag Sumber Dana Multi-Select Actions
     if (btnSelectAllD6Tags) {
       btnSelectAllD6Tags.addEventListener('click', () => {
-        ['RM', 'PNP', 'PLN'].forEach(t => selectedD6Tags.add(t));
+        allD6Tags = true;
+        currentAvailableD6Tags.forEach(t => selectedD6Tags.add(t));
         syncD6TagCheckboxes();
         updateD6TagButtonLabel();
         renderRecapForSelectedNode(false);
@@ -1695,6 +1696,7 @@
 
     if (btnClearD6Tags) {
       btnClearD6Tags.addEventListener('click', () => {
+        allD6Tags = false;
         selectedD6Tags.clear();
         syncD6TagCheckboxes();
         updateD6TagButtonLabel();
@@ -1708,6 +1710,7 @@
       } else {
         selectedD6Tags.delete(cb.value);
       }
+      allD6Tags = currentAvailableD6Tags.length > 0 && currentAvailableD6Tags.every(tag => selectedD6Tags.has(tag));
       updateD6TagButtonLabel();
       renderRecapForSelectedNode(false);
     };
@@ -1723,9 +1726,14 @@
     function updateD6TagButtonLabel() {
       if (!labelMultiSelectD6Tag) return;
       const count = selectedD6Tags.size;
-      if (count === 3) {
+      if (currentAvailableD6Tags.length === 0) {
+        labelMultiSelectD6Tag.textContent = '🏷️ Tidak ada sumber dana';
+        btnMultiSelectD6Tag.title = 'Tidak ada sumber dana untuk akun/status/pencarian aktif';
+        return;
+      }
+      if (currentAvailableD6Tags.length > 0 && count === currentAvailableD6Tags.length) {
         labelMultiSelectD6Tag.innerHTML = `🏷️ Semua Tagging`;
-        btnMultiSelectD6Tag.title = 'Semua Tag Sumber Dana Terpilih (RM, PNP, PLN)';
+        btnMultiSelectD6Tag.title = 'Semua sumber dana yang tersedia: ' + currentAvailableD6Tags.join(', ');
       } else if (count === 0) {
         labelMultiSelectD6Tag.innerHTML = `🏷️ 0 Tag Dipilih`;
         btnMultiSelectD6Tag.title = 'Tidak ada tag sumber dana yang dipilih';
@@ -1760,6 +1768,10 @@
       const total = currentAvailableD6Codes.length;
       const count = selectedD6Codes.size;
 
+      if (total === 0) {
+        labelMultiSelectD6Code.textContent = '🔢 Tidak ada akun';
+        return;
+      }
       if (count === 0) {
         labelMultiSelectD6Code.innerHTML = `🔢 0 Akun Dipilih`;
         btnMultiSelectD6Code.title = 'Tidak ada kode akun yang dipilih';
@@ -1846,7 +1858,8 @@
     // Status Blokir Multi-Select Actions
     if (btnSelectAllD6Blocked) {
       btnSelectAllD6Blocked.addEventListener('click', () => {
-        selectedD6Blocked = new Set(['BLOCKED', 'NORMAL']);
+        allD6Statuses = true;
+        selectedD6Blocked = new Set(currentAvailableD6Statuses);
         syncD6BlockedCheckboxes();
         updateD6BlockedButtonLabel();
         renderRecapForSelectedNode(false);
@@ -1855,6 +1868,7 @@
 
     if (btnClearD6Blocked) {
       btnClearD6Blocked.addEventListener('click', () => {
+        allD6Statuses = false;
         selectedD6Blocked.clear();
         syncD6BlockedCheckboxes();
         updateD6BlockedButtonLabel();
@@ -1868,6 +1882,7 @@
       } else {
         selectedD6Blocked.delete(cb.value);
       }
+      allD6Statuses = currentAvailableD6Statuses.length > 0 && currentAvailableD6Statuses.every(status => selectedD6Blocked.has(status));
       updateD6BlockedButtonLabel();
       renderRecapForSelectedNode(false);
     };
@@ -1883,6 +1898,10 @@
     function updateD6BlockedButtonLabel() {
       if (!labelMultiSelectD6Blocked) return;
       const count = selectedD6Blocked.size;
+      if (currentAvailableD6Statuses.length === 0) {
+        labelMultiSelectD6Blocked.textContent = '⭐ Tidak ada status';
+        return;
+      }
       if (count === 2) {
         labelMultiSelectD6Blocked.innerHTML = `⭐ Semua Status Blokir`;
         btnMultiSelectD6Blocked.title = 'Semua Status Blokir (Diblokir & Normal)';
@@ -1901,6 +1920,7 @@
     // Kode Blokir Multi-Select Actions
     if (btnSelectAllD6BlockCodes) {
       btnSelectAllD6BlockCodes.addEventListener('click', () => {
+        allD6BlockCodes = true;
         currentAvailableBlockCodes.forEach(c => selectedD6BlockCodes.add(c.code));
         syncD6BlockCodeCheckboxes();
         updateD6BlockCodeButtonLabel();
@@ -1910,6 +1930,7 @@
 
     if (btnClearD6BlockCodes) {
       btnClearD6BlockCodes.addEventListener('click', () => {
+        allD6BlockCodes = false;
         selectedD6BlockCodes.clear();
         syncD6BlockCodeCheckboxes();
         updateD6BlockCodeButtonLabel();
@@ -1923,6 +1944,7 @@
       } else {
         selectedD6BlockCodes.delete(cb.value);
       }
+      allD6BlockCodes = currentAvailableBlockCodes.length > 0 && currentAvailableBlockCodes.every(item => selectedD6BlockCodes.has(item.code));
       updateD6BlockCodeButtonLabel();
       renderRecapForSelectedNode(false);
     };
@@ -1941,8 +1963,8 @@
       const count = selectedD6BlockCodes.size;
 
       if (total === 0) {
-        labelMultiSelectD6BlockCode.innerHTML = `🔒 Semua Kode Blokir`;
-        btnMultiSelectD6BlockCode.title = 'Tidak ada kode blokir di level ini';
+        labelMultiSelectD6BlockCode.innerHTML = `🔒 Tidak ada kode blokir`;
+        btnMultiSelectD6BlockCode.title = 'Akun, sumber dana, status, dan pencarian aktif tidak memiliki detail diblokir';
       } else if (count === total) {
         labelMultiSelectD6BlockCode.innerHTML = `🔒 Semua Kode Blokir`;
         btnMultiSelectD6BlockCode.title = 'Semua Kode Blokir Terpilih';
@@ -1951,10 +1973,10 @@
         btnMultiSelectD6BlockCode.title = 'Tidak ada kode blokir yang dipilih';
       } else if (count === 1) {
         const singleCode = Array.from(selectedD6BlockCodes)[0];
-        labelMultiSelectD6BlockCode.innerHTML = `🔒 Kode ${singleCode}`;
+        labelMultiSelectD6BlockCode.innerHTML = singleCode === 'Tanpa Kode' ? '🔒 Tanpa kode (diblokir)' : `🔒 Kode ${singleCode}`;
         btnMultiSelectD6BlockCode.title = `Kode Blokir: Kode ${singleCode}`;
       } else if (count <= 2) {
-        const codesStr = Array.from(selectedD6BlockCodes).map(c => `Kode ${c}`).join(', ');
+        const codesStr = Array.from(selectedD6BlockCodes).map(c => c === 'Tanpa Kode' ? 'Tanpa kode (diblokir)' : `Kode ${c}`).join(', ');
         labelMultiSelectD6BlockCode.innerHTML = `🔒 ${codesStr}`;
         btnMultiSelectD6BlockCode.title = `Kode Blokir: ${codesStr}`;
       } else {
@@ -1991,7 +2013,7 @@
             <input type="checkbox" value="${escapeHtml(item.code)}" ${isChecked ? 'checked' : ''} onchange="handleD6BlockCodeCheckboxChange(this)" style="margin-top:3px;">
             <div style="display:flex; flex-direction:column; gap:2px; flex:1;">
               <div style="display:flex; align-items:center; gap:6px;">
-                <span class="rule-badge" style="background:rgba(168,85,247,0.2); color:#c084fc; border-color:rgba(168,85,247,0.4); font-size:10.5px; font-weight:700; padding:1px 5px;">Kode ${escapeHtml(item.code)}</span>
+                <span class="rule-badge" style="background:rgba(168,85,247,0.2); color:#c084fc; border-color:rgba(168,85,247,0.4); font-size:10.5px; font-weight:700; padding:1px 5px;">${item.code === 'Tanpa Kode' ? 'Tanpa Kode (diblokir)' : 'Kode ' + escapeHtml(item.code)}</span>
                 <span style="font-size:11.5px; font-weight:600; color:#f8fafc; font-family:'JetBrains Mono',monospace;">${valText}</span>
               </div>
               ${sourcesHtml ? `<div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin-top:2px;">${sourcesHtml}</div>` : ''}
@@ -2005,7 +2027,9 @@
 
     window.setD6BlockFilter = function (code) {
       if (code) {
+        allD6Statuses = false;
         selectedD6Blocked = new Set(['BLOCKED']);
+        allD6BlockCodes = false;
         selectedD6BlockCodes = new Set([code]);
         syncD6BlockedCheckboxes();
         syncD6BlockCodeCheckboxes();
@@ -2016,8 +2040,8 @@
     };
 
     window.setD6SourceBlockFilter = function (tag, code) {
-      if (tag) selectedD6Tags = new Set([tag]);
-      if (code) selectedD6BlockCodes = new Set([code]);
+      if (tag) { allD6Tags = false; selectedD6Tags = new Set([normalizeD6Tag(tag)]); }
+      if (code) { allD6BlockCodes = false; selectedD6BlockCodes = new Set([code]); }
       selectedD6Blocked = new Set(['BLOCKED']);
       syncD6TagCheckboxes();
       syncD6BlockCodeCheckboxes();
@@ -2045,6 +2069,7 @@
       if (willOpen) {
         dropdownSearchableParentNode.classList.add('show');
         btnSearchableParentNode.classList.add('open');
+        btnSearchableParentNode.setAttribute('aria-expanded', 'true');
 
         renderSearchableParentNodeList();
         setTimeout(() => {
@@ -2057,6 +2082,7 @@
     }
 
     function closeSearchableParentNodeDropdown() {
+      btnSearchableParentNode?.setAttribute('aria-expanded', 'false');
       if (dropdownSearchableParentNode) dropdownSearchableParentNode.classList.remove('show');
       if (btnSearchableParentNode) btnSearchableParentNode.classList.remove('open');
     }
@@ -2081,6 +2107,10 @@
 
     function renderSearchableParentNodeList() {
       if (!listSearchableParentNode) return;
+      const hasOptions = currentNodeOptions.some(option => Boolean(option.key));
+      updateFilterAvailability(btnSearchableParentNode, dropdownSearchableParentNode, listSearchableParentNode, [], hasOptions,
+        'Tidak ada lingkup pada tingkat hirarki ini. Pilih tingkat lain untuk melanjutkan.');
+      if (!hasOptions) return;
       const query = (searchParentNodeInput ? searchParentNodeInput.value : '').toLowerCase().trim();
       const currentKey = selectNodeParent.value || 'ROOT';
 
@@ -2135,7 +2165,7 @@
         opt.textContent = 'Seluruh Satker (Total All Level)';
         selectNodeParent.appendChild(opt);
 
-        const totalVal = currentRecapData ? (currentRecapData.grandTotal?.val || 0) : 0;
+        const totalVal = currentRecapData ? (currentRecapData.rootSummary?.totalVal || 0) : 0;
         currentNodeOptions.push({
           key: 'ROOT',
           code: 'ALL',
@@ -2196,55 +2226,114 @@
       renderSearchableParentNodeList();
     }
 
+    function updateFilterAvailability(button, dropdown, list, actionButtons, hasOptions, message) {
+      button.disabled = false; // An empty filter still opens its explanation.
+      button.classList.toggle('filter-empty', !hasOptions);
+      button.setAttribute('aria-haspopup', 'true');
+      button.setAttribute('aria-controls', dropdown.id);
+      button.setAttribute('aria-expanded', String(dropdown.classList.contains('show')));
+      const icon = button.querySelector('.fa-chevron-down, .fa-circle-info');
+      if (icon) icon.className = hasOptions ? 'fa-solid fa-chevron-down' : 'fa-solid fa-circle-info';
+      for (const action of actionButtons) if (action) action.disabled = !hasOptions;
+      if (!hasOptions) {
+        button.title = 'Klik untuk melihat alasan filter tidak memiliki pilihan.';
+        list.innerHTML = '<div class="filter-empty-note" role="status"><i class="fa-solid fa-circle-info" aria-hidden="true"></i>' +
+          '<strong>Tidak ada pilihan untuk filter ini</strong><span>' + escapeHtml(message) + '</span></div>';
+      }
+    }
+
+    function matchesD6AccountSearch(d6, det) {
+      if (!selectedD6Codes.has(d6.code)) return false;
+      const query = (searchD6.value || '').toLowerCase().trim();
+      return !query || (d6.name || '').toLowerCase().includes(query) || (det.uraian || '').toLowerCase().includes(query);
+    }
+
+    function updateD6StatusFilterDropdown(nodeSummary) {
+      const statuses = new Set();
+      for (const account of nodeSummary.digit6List || []) {
+        for (const detail of account.details || []) {
+          if (matchesD6AccountSearch(account, detail)) statuses.add(detail.isBlocked ? 'BLOCKED' : 'NORMAL');
+        }
+      }
+      currentAvailableD6Statuses = ['BLOCKED', 'NORMAL'].filter(status => statuses.has(status));
+      selectedD6Blocked = allD6Statuses ? new Set(currentAvailableD6Statuses)
+        : new Set([...selectedD6Blocked].filter(status => statuses.has(status)));
+      listMultiSelectD6Blocked.innerHTML = currentAvailableD6Statuses.map(status =>
+        '<label class="multiselect-item" data-status="' + status + '"><input type="checkbox" value="' + status + '"' +
+        (selectedD6Blocked.has(status) ? ' checked' : '') + ' onchange="handleD6BlockedCheckboxChange(this)">' +
+        '<span class="multiselect-item-name">' + (status === 'BLOCKED' ? '⭐ Diblokir' : '✔️ Normal') + '</span></label>').join('');
+      updateD6BlockedButtonLabel();
+      updateFilterAvailability(btnMultiSelectD6Blocked, dropdownMultiSelectD6Blocked, listMultiSelectD6Blocked,
+        [btnSelectAllD6Blocked, btnClearD6Blocked], statuses.size > 0,
+        'Akun dan pencarian aktif tidak memiliki detail. Pilih akun atau hapus pencarian untuk melihat status yang tersedia.');
+    }
+
+    function updateD6FilterFeedback() {
+      updateFilterAvailability(btnMultiSelectD6Code, dropdownMultiSelectD6Code, listMultiSelectD6Code,
+        [btnSelectAllD6Codes, btnClearD6Codes], currentAvailableD6Codes.length > 0,
+        'Tidak ada akun pada lingkup ini. Pilih tingkat atau lingkup hirarki lain.');
+      updateFilterAvailability(btnMultiSelectD6Tag, dropdownMultiSelectD6Tag, listMultiSelectD6Tag,
+        [btnSelectAllD6Tags, btnClearD6Tags], currentAvailableD6Tags.length > 0,
+        'Tidak ada sumber dana untuk akun, status, dan pencarian aktif. Pilih akun/status atau hapus pencarian.');
+      updateFilterAvailability(btnMultiSelectD6BlockCode, dropdownMultiSelectD6BlockCode, listMultiSelectD6BlockCode,
+        [btnSelectAllD6BlockCodes, btnClearD6BlockCodes], currentAvailableBlockCodes.length > 0,
+        'Tidak ada detail diblokir untuk akun, sumber dana, status, dan pencarian aktif. Detail normal tetap tampil tanpa memilih kode blokir.');
+    }
+
+
+    function normalizeD6Tag(tag) {
+      if (tag === 'PNBP' || tag === 'PNP') return 'PNP';
+      if (tag === 'PHLN' || tag === 'PLN') return 'PLN';
+      return tag === 'RM' ? 'RM' : '';
+    }
+    function matchesD6FacetBase(d6, det) {
+      if (!selectedD6Codes.has(d6.code) || !isBlockedMatch(det.isBlocked)) return false;
+      const query = (searchD6.value || '').toLowerCase().trim();
+      return !query || (d6.name || '').toLowerCase().includes(query) || (det.uraian || '').toLowerCase().includes(query);
+    }
+    function updateD6TagFilterDropdown(nodeSummary) {
+      const tags = new Set();
+      for (const account of nodeSummary.digit6List || []) {
+        for (const detail of account.details || []) {
+          if (!matchesD6FacetBase(account, detail)) continue;
+          const tag = normalizeD6Tag(detail.tagging);
+          if (tag) tags.add(tag);
+        }
+      }
+      currentAvailableD6Tags = ['RM', 'PNP', 'PLN'].filter(tag => tags.has(tag));
+      selectedD6Tags = allD6Tags ? new Set(currentAvailableD6Tags) : new Set([...selectedD6Tags].filter(tag => tags.has(tag)));
+      const labels = { RM: 'RM (Rupiah Murni)', PNP: 'PNP / PNBP', PLN: 'PLN / PHLN' };
+      listMultiSelectD6Tag.innerHTML = currentAvailableD6Tags.length
+        ? currentAvailableD6Tags.map(tag => '<label class="multiselect-item" data-tag="' + tag + '">' +
+          '<input type="checkbox" value="' + tag + '"' + (selectedD6Tags.has(tag) ? ' checked' : '') + ' onchange="handleD6TagCheckboxChange(this)">' +
+          '<span class="tag-badge ' + (tag === 'RM' ? 'rm' : tag === 'PLN' ? 'pln' : 'pnbp') + '">' + tag + '</span>' +
+          '<span class="multiselect-item-name">' + labels[tag] + '</span></label>').join('')
+        : '<div style="padding:10px;color:#94a3b8;font-size:11px;">Tidak ada sumber dana untuk akun/status/pencarian ini.</div>';
+
+      updateD6TagButtonLabel();
+    }
     function updateBlockCodeFilterDropdown(nodeSummary) {
       if (!listMultiSelectD6BlockCode) return;
-
-      const codeMap = new Map();
-      const codeSourcesMap = new Map();
-
-      (nodeSummary.blockedByCodeList || []).forEach(b => {
-        if (b.code && b.code !== 'RK' && b.code !== '*') codeMap.set(b.code, b.val);
-      });
-      (nodeSummary.blockedBySourceAndCodeList || []).forEach(b => {
-        if (b.code && b.code !== 'RK' && b.code !== '*') {
-          if (!codeSourcesMap.has(b.code)) codeSourcesMap.set(b.code, []);
-          codeSourcesMap.get(b.code).push({ tag: b.tag, val: b.val });
+      const codes = new Map();
+      for (const account of nodeSummary.digit6List || []) {
+        for (const detail of account.details || []) {
+          if (!detail.isBlocked || !matchesD6FacetBase(account, detail) || !isTagMatch(detail.tagging)) continue;
+          const code = detail.blockCode || 'Tanpa Kode';
+          if (!codes.has(code)) codes.set(code, { code, val: 0, sources: new Map() });
+          const entry = codes.get(code), tag = normalizeD6Tag(detail.tagging);
+          entry.val += detail.val || 0;
+          entry.sources.set(tag, (entry.sources.get(tag) || 0) + (detail.val || 0));
         }
-      });
-      (nodeSummary.digit6List || []).forEach(d => {
-        if (d.blockCode && d.blockCode !== 'RK' && d.blockCode !== '*' && !codeMap.has(d.blockCode)) {
-          codeMap.set(d.blockCode, 0);
-        }
-      });
-
-      const sortedCodes = Array.from(codeMap.keys()).sort();
-      currentAvailableBlockCodes = sortedCodes.map(code => ({
-        code,
-        val: codeMap.get(code) || 0,
-        sources: codeSourcesMap.get(code) || []
-      }));
-
-      // By default awal, seluruh kode blokir tercentang semua!
-      selectedD6BlockCodes = new Set(sortedCodes);
+      }
+      currentAvailableBlockCodes = [...codes.values()].sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }))
+        .map(entry => ({ ...entry, sources: [...entry.sources].map(([tag, val]) => ({ tag, val })) }));
+      selectedD6BlockCodes = allD6BlockCodes ? new Set(codes.keys()) : new Set([...selectedD6BlockCodes].filter(code => codes.has(code)));
 
       renderD6BlockCodeDropdownList();
       updateD6BlockCodeButtonLabel();
     }
-
     function isTagMatch(tag) {
-      if (!selectedD6Tags || selectedD6Tags.size === 0) return false;
-      if (selectedD6Tags.size === 3) return true;
-      if (!tag) return false;
-
-      const isRM = tag === 'RM' || tag.includes('RM');
-      const isPNP = tag === 'PNP' || tag === 'PNBP' || tag.includes('PNP') || tag.includes('PNBP');
-      const isPLN = tag === 'PLN' || tag === 'PHLN' || tag.includes('PLN') || tag.includes('PHLN');
-
-      if (isRM && selectedD6Tags.has('RM')) return true;
-      if (isPNP && selectedD6Tags.has('PNP')) return true;
-      if (isPLN && selectedD6Tags.has('PLN')) return true;
-
-      return false;
+      return selectedD6Tags.has(normalizeD6Tag(tag));
     }
 
     function isBlockedMatch(isBlocked) {
@@ -2256,13 +2345,9 @@
     }
 
     function isBlockCodeMatch(d6, det) {
-      if (currentAvailableBlockCodes.length === 0) return true;
-      if (selectedD6BlockCodes.size === 0) return false;
-      if (selectedD6BlockCodes.size === currentAvailableBlockCodes.length) return true;
-
-      const codeToMatch = d6.blockCode || det.blockCode;
-      if (!codeToMatch) return false;
-      return selectedD6BlockCodes.has(codeToMatch);
+      // Normal details have no block-code category; use the status filter to hide them.
+      if (!det.isBlocked || currentAvailableBlockCodes.length === 0) return true;
+      return selectedD6BlockCodes.has(det.blockCode || 'Tanpa Kode');
     }
 
     function isDetailMatching(d6, det, query) {
@@ -2285,15 +2370,16 @@
       const selectedKey = selectNodeParent.value || 'ROOT';
       const nodeSummary = currentRecapData.nodeSummaries[selectedKey] || currentRecapData.rootSummary;
 
-      // Dynamic dropdown options for Block Code filter
-      if (rebuildCodeFilter) {
-        updateBlockCodeFilterDropdown(nodeSummary);
-      }
-
-      // Dynamic dropdown options for D6 Code Multi-Select filter
       if (rebuildCodeFilter) {
         updateD6CodeFilterDropdown(nodeSummary);
+        allD6Statuses = true;
+        allD6Tags = true;
+        allD6BlockCodes = true;
       }
+      updateD6StatusFilterDropdown(nodeSummary);
+      updateD6TagFilterDropdown(nodeSummary);
+      updateBlockCodeFilterDropdown(nodeSummary);
+      updateD6FilterFeedback();
 
       // Update KPI Cards
       document.getElementById('kpiTotalPagu').textContent = formatRp(nodeSummary.totalVal);
@@ -2445,7 +2531,7 @@
             : '<span class="tag-badge pnbp">PNP</span>');
 
         const blockCodeBadge = (d6.blockCode && d6.blockCode !== 'RK' && d6.blockCode !== '*')
-          ? `<span class="rule-badge" style="background:rgba(168,85,247,0.2); color:#c084fc; border-color:rgba(168,85,247,0.4); font-size:11px; font-weight:600;">Kode ${d6.blockCode}</span>`
+          ? `<span class="rule-badge" style="background:rgba(168,85,247,0.2); color:#c084fc; border-color:rgba(168,85,247,0.4); font-size:11px; font-weight:600;">Kode ${escapeHtml(d6.blockCode)}</span>`
           : '<span style="color:#64748b; font-size:12px;">-</span>';
 
         // Filter sub-details according to active filters
@@ -2480,7 +2566,7 @@
             const isPLNBlocked = det.isBlocked && (det.tagging === 'PLN' || det.blockMarker === 'RK');
             const markerText = isPLNBlocked ? 'RK' : '*';
             const bCodeBadge = (det.blockCode && det.blockCode !== 'RK' && det.blockCode !== '*')
-              ? `<span class="rule-badge" style="background:rgba(168,85,247,0.2); color:#c084fc; border-color:rgba(168,85,247,0.4); font-size:10px; font-weight:600; margin-left:4px;">Kode ${det.blockCode}</span>`
+              ? `<span class="rule-badge" style="background:rgba(168,85,247,0.2); color:#c084fc; border-color:rgba(168,85,247,0.4); font-size:10px; font-weight:600; margin-left:4px;">Kode ${escapeHtml(det.blockCode)}</span>`
               : '';
             const blockStatusHtml = det.isBlocked
               ? `<span class="star-badge" style="${isPLNBlocked ? 'color:#fbbf24;' : ''}">⭐ DIBLOKIR [${markerText}] (${formatRp(det.val)})</span> ${bCodeBadge}`
@@ -2488,7 +2574,7 @@
             return `
               <tr>
                 <td><span class="row-num-badge">Baris ${det.rowNum}</span></td>
-                <td><strong>${det.uraian}</strong></td>
+                <td><strong>${escapeHtml(det.uraian)}</strong><span class="recap-detail-source">${escapeHtml(recapDetailSource(det))}</span></td>
                 <td><span class="tag-badge ${detTagClass}">${det.tagging}</span></td>
                 <td>${formatRp(det.val)}</td>
                 <td>${blockStatusHtml}</td>
@@ -2538,7 +2624,7 @@
         html += `
           <tr>
             <td><code style="font-size:13px; font-weight:700; color:#38bdf8;">${d6.code}</code></td>
-            <td><strong>${d6.name}</strong></td>
+            <td><strong>${escapeHtml(d6.name)}</strong></td>
             <td>${tagBadge}</td>
             <td>${blockCodeBadge}</td>
             <td style="font-weight:700; font-family:'JetBrains Mono',monospace;">${formatRp(d6FilteredVal)}</td>
@@ -2679,7 +2765,7 @@
         ? Array.from(selectedD6Codes)
         : [];
 
-      const tagFilterStr = selectedD6Tags.size === 3
+      const tagFilterStr = currentAvailableD6Tags.length > 0 && selectedD6Tags.size === currentAvailableD6Tags.length
         ? 'Semua Tagging'
         : (selectedD6Tags.size === 0 ? 'Tidak Ada' : Array.from(selectedD6Tags).join(', '));
 
@@ -2689,7 +2775,9 @@
           ? 'Tidak Ada'
           : (selectedD6Blocked.has('BLOCKED') ? 'Diblokir' : 'Normal'));
 
-      const blockCodeFilterStr = (currentAvailableBlockCodes.length === 0 || selectedD6BlockCodes.size === currentAvailableBlockCodes.length)
+      const blockCodeFilterStr = currentAvailableBlockCodes.length === 0
+        ? 'Tidak ada kode blokir pada filter aktif'
+        : selectedD6BlockCodes.size === currentAvailableBlockCodes.length
         ? 'Semua Kode Blokir'
         : (selectedD6BlockCodes.size === 0
           ? 'Tidak Ada'
@@ -2764,7 +2852,7 @@
             const bCode = (det.blockCode && det.blockCode !== 'RK' && det.blockCode !== '*') ? det.blockCode : '';
             rows.push([
               `Baris ${det.rowNum}`,
-              `   - ${det.uraian}`,
+              `   - ${det.uraian}${recapDetailSource(det) ? " | " + recapDetailSource(det) : ""}`,
               det.tagging,
               bCode || '-',
               det.val,
@@ -2810,6 +2898,7 @@
 
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Rekap Digit 6');
+        appendRecapExcelSources(wb);
 
         const safeCode = (nodeSummary.code || 'Satker').replace(/[^a-zA-Z0-9_-]/g, '_');
         XLSX.writeFile(wb, `Rekap_Digit6_${safeCode}_${Date.now()}.xlsx`);
@@ -2874,7 +2963,7 @@
           d6.details.forEach(det => {
             tableBody.push([
               { content: `Baris ${det.rowNum}`, styles: { fontSize: 8, textColor: [100, 116, 139] } },
-              { content: `   - ${det.uraian}`, styles: { fontSize: 8 } },
+              { content: `   - ${det.uraian}${recapDetailSource(det) ? " | " + recapDetailSource(det) : ""}`, styles: { fontSize: 8 } },
               { content: det.tagging, styles: { fontSize: 8 } },
               { content: det.blockCode || '-', styles: { fontSize: 8 } },
               { content: formatRp(det.val), styles: { fontSize: 8, halign: 'right' } },
@@ -2912,6 +3001,7 @@
         });
 
         const safeCode = (nodeSummary.code || 'Satker').replace(/[^a-zA-Z0-9_-]/g, '_');
+        appendRecapPdfSources(doc);
         doc.save(`Rekap_Digit6_${safeCode}_${Date.now()}.pdf`);
       } catch (err) {
         console.error('Export PDF Error:', err);
@@ -3584,6 +3674,32 @@
       renderTreeGridTable();
     };
 
+
+    function getTreeExportItems() {
+      const query = treeSearchQuery.toLowerCase().trim();
+      const belongs = item => {
+        if (treeActiveScopeKey === 'ROOT') return true;
+        let cursor = item.key;
+        while (cursor && cursor !== 'ROOT') {
+          if (cursor === treeActiveScopeKey) return true;
+          cursor = currentRecapData.nodeSummaries[cursor]?.parentKey || treePreorderList.find(n => n.key === cursor)?.parentKey;
+        }
+        return false;
+      };
+      const scoped = treePreorderList.filter(belongs);
+      if (!query) return scoped;
+      const matches = new Set();
+      for (const item of scoped) {
+        if (!((item.code || '').toLowerCase().includes(query) || (item.name || '').toLowerCase().includes(query))) continue;
+        let cursor = item;
+        while (cursor) {
+          matches.add(cursor.key);
+          cursor = scoped.find(n => n.key === cursor.parentKey);
+        }
+      }
+      return scoped.filter(item => matches.has(item.key));
+    }
+
     window.downloadTreeExcel = function () {
       try {
         if (!currentRecapData || treePreorderList.length === 0) {
@@ -3600,7 +3716,7 @@
         const rows = [];
 
         rows.push(['REKAPITULASI POHON STRUKTUR HIRARKI ANGGARAN - KEMNAKER']);
-        rows.push(['Lingkup Aktif:', scopeNode.key === 'ROOT' ? 'Seluruh Satker (Total All Level)' : `[${scopeNode.code}] ${scopeNode.name}`]);
+        rows.push(['Lingkup Aktif:', scopeNode.key === 'ROOT' ? scopeNode.name : `[${scopeNode.code}] ${scopeNode.name}`]);
         rows.push(['Path Lingkup:', scopeNode.fullPath || 'SATKER']);
         rows.push(['Total Pagu Lingkup:', scopeNode.totalVal]);
         rows.push(['Total RM Lingkup:', scopeNode.totalRM || 0]);
@@ -3625,7 +3741,7 @@
           'Rincian Blokir (Sumber Dana & Kode)'
         ]);
 
-        treePreorderList.forEach(item => {
+        getTreeExportItems().forEach(item => {
           const indentStr = '  '.repeat(item.level - 1);
           const comboStr = (item.blockedBySourceAndCodeList || [])
             .filter(b => b.val > 0)
@@ -3667,12 +3783,13 @@
 
         if (!ws['!rows']) ws['!rows'] = [];
         const startRowIdx = 10;
-        treePreorderList.forEach((item, idx) => {
+        getTreeExportItems().forEach((item, idx) => {
           ws['!rows'][startRowIdx + idx] = { level: Math.max(0, item.level - 1) };
         });
 
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Pohon Hirarki');
+        appendRecapExcelSources(wb);
 
         const fileName = `Rekap_Struktur_Hirarki_${scopeNode.code || 'SATKER'}_${new Date().toISOString().slice(0, 10)}.xlsx`;
         XLSX.writeFile(wb, fileName);
@@ -3704,10 +3821,10 @@
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(71, 85, 105);
-        const scopeTitle = scopeNode.key === 'ROOT' ? 'Seluruh Satker (Total All Level)' : `[${scopeNode.code}] ${scopeNode.name}`;
+        const scopeTitle = scopeNode.key === 'ROOT' ? scopeNode.name : `[${scopeNode.code}] ${scopeNode.name}`;
         doc.text(`Lingkup: ${scopeTitle} | Pagu: ${formatRp(scopeNode.totalVal)} | Blokir: ${formatRp(scopeNode.totalBlocked)} (${scopeNode.blockedPct}%) | Export: ${new Date().toLocaleString('id-ID')}`, 14, 18);
 
-        const tableBody = treePreorderList.map(item => {
+        const tableBody = getTreeExportItems().map(item => {
           const indentStr = '  '.repeat(item.level - 1);
           return [
             item.levelName,
@@ -3753,7 +3870,7 @@
           },
           didParseCell: function (data) {
             if (data.section === 'body') {
-              const rowItem = treePreorderList[data.row.index];
+              const rowItem = getTreeExportItems()[data.row.index];
               if (rowItem) {
                 if (rowItem.level === 1) {
                   data.cell.styles.fillColor = [238, 242, 255];
@@ -3768,12 +3885,14 @@
         });
 
         const fileName = `Rekap_Struktur_Hirarki_${scopeNode.code || 'SATKER'}_${new Date().toISOString().slice(0, 10)}.pdf`;
+        appendRecapPdfSources(doc);
         doc.save(fileName);
       } catch (err) {
         alert('Gagal export PDF: ' + err.message);
       }
     };
   </script>
+  <script src="/recap-batch.js"></script>
 </body>
 
 </html>

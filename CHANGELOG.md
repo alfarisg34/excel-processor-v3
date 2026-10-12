@@ -7,6 +7,22 @@ dan proyek ini menganut standar [Semantic Versioning (SemVer 2.0.0)](https://sem
 
 ---
 
+## [3.5.0] - 2026-10-12
+
+### Added
+- Multiple upload XLSX pada Rekap Hirarki Satker, pemeriksaan bukti isi, konfirmasi pemilik/tahun, serta penanggung jawab per kegiatan.
+- Rekap gabungan dengan kegiatan terpisah per unit, termasuk 2175 dan 6621, filter pemilik/penanggung jawab, serta sumber file/sheet/baris pada detail dan Excel/PDF.
+- Endpoint inspect/batch, validasi manifest berbasis hash isi, penolakan duplikat/revisi satu unit/tahun, rekonsiliasi subtotal, serta respons detail yang dikirim sekali.
+- Suite integrasi lima workbook, API, dan simulasi DOM frontend melalui npm run test:recap.
+
+### Fixed
+- Upload/pemeriksaan dan pembuatan rekap menampilkan panel loading sticky, spinner, durasi, alasan kontrol terkunci, pembatalan, dan pemeriksaan ulang; respons usang serta error tidak meninggalkan loading aktif.
+- Status Blokir mengikuti akun/pencarian aktif; lima dropdown filter kosong tetap merespons klik dengan penjelasan, indikator informasi, dan state aksesibilitas.
+- Filter sumber dana/kode blokir mengikuti akun, status, dan pencarian aktif; detail normal tidak hilang saat kode blokir dibersihkan, dan blokir tanpa kode dikenali per detail.
+- Key hirarki pada respons batch dipadatkan agar UUID unit dari UI tidak menyebabkan lima file kecil melewati batas hasil JSON 4 MiB; ditambahkan regresi API lima file dengan UUID.
+- Konteks fallback kode blokir komponen memakai full path, dan akun dengan beberapa kode blokir mempertahankan rincian per kode.
+- Export struktur mengikuti cabang dan pencarian aktif; perubahan upload/atribusi membersihkan hasil lama.
+
 ## [3.4.0] - 2026-09-23
 
 ### Added (FEAT)

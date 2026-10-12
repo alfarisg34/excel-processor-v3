@@ -165,3 +165,53 @@ Run the automated test suites:
 ## 📄 License
 
 MIT License. Developed for Kemnaker Budget & RAB Excel Processing.
+
+### Multiple Upload Rekap Hirarki Satker
+
+Alur 3 mendukung sampai 10 file XLSX, maksimal 5 MiB per file dan total 20 MiB. Sheet pertama harus berisi tabel RKK, maksimal 30.000 baris dan 100 kolom; workbook maksimal 10 sheet. XLS biner tidak didukung. Batas hasil JSON batch adalah 4 MiB; jika hasil terlalu besar, kurangi sumber atau persempit filter. Target hosting dapat mempunyai batas request/waktu/memory lebih kecil; verifikasi sebelum deployment.
+
+1. Pilih/drop beberapa XLSX. Sistem memeriksa struktur, subtotal dan identitas dari isi workbook.
+2. Pilih tahun anggaran dan konfirmasi unit pemilik tiap file. Tahun footer tidak dipakai. Saran awal tersedia untuk BBPKK Bandung Barat, BPKK Bekasi dan BPKK Kendari; direktorat/unit lain dapat ditambahkan lewat UI.
+3. Untuk file campuran, buka bukti/mapping dan pilih penanggung jawab per kegiatan jika berbeda dari pemilik sumber. Unit tambahan berlaku pada sesi halaman tersebut.
+4. Buat rekap gabungan, lalu gunakan filter pemilik/penanggung jawab. Kode 2175 maupun 6621 tetap mempunyai cabang terpisah per unit.
+5. Excel/PDF membawa sumber dan atribusi; detail menampilkan file, sheet, baris, pemilik dan penanggung jawab.
+
+Hash isi file mendeteksi salinan walaupun namanya berbeda. Satu unit/tahun hanya menerima satu versi aktif; hapus revisi/salinan yang tidak dipakai. Pembagian 6621 dalam satu file ke beberapa direktorat belum otomatis: perlu mapping yang lebih rinci dan aturan alokasi.
+
+API baru:
+
+- POST /api/recap-hierarchy/inspect: multipart dengan field files berulang. Respons sources memuat sourceId SHA-256, metadata, evidence, ownerSuggestion, validation, reconciliation, dan valid.
+- POST /api/recap-hierarchy/batch: field files berulang serta manifest JSON. Semua owner wajib confirmed; manifest dicocokkan berdasarkan SHA-256 isi, sehingga urutan/nama file tidak menjadi identitas.
+- Endpoint POST /api/recap-hierarchy dengan field file tetap tersedia.
+
+Contoh manifest:
+
+~~~json
+{
+  "fiscalYear": 2027,
+  "customUnits": [{"id": "custom-direktorat-pkk", "name": "Direktorat PKK"}],
+  "sources": [{
+    "sourceId": "<SHA-256 dari inspect>",
+    "ownerId": "custom-direktorat-pkk",
+    "confirmed": true,
+    "activityAssignments": [{
+      "programCode": "026.04.DN",
+      "activityCode": "2175",
+      "responsibleUnitId": "custom-direktorat-pkk"
+    }]
+  }],
+  "filters": {"ownerId": "", "responsibleUnitId": ""}
+}
+~~~
+
+Respons batch schemaVersion 2 mempertahankan rootSummary/nodeSummaries/childrenMap/hierarchyTree, menambahkan sources/assignments/fiscalYear/unitOptions serta jumlah kode/cabang kegiatan. Untuk menghindari duplikasi payload, compactDetails=true menyimpan detail sekali pada detailRecords; setiap akun mempunyai detailIndexes. Frontend mengembangkan indeks menjadi referensi detail sebelum rendering/export. Key node pada respons memakai ID pendek dan bersifat opaque; jangan mengurai key untuk membaca unit atau kode hirarki. sourceId, ownerId, responsibleUnitId, dan fullPath tetap menyediakan identitas serta konteks asli.
+
+Inspect melaporkan masalah per file untuk review. Batch tidak menghasilkan sukses parsial. Kesalahan multipart/manifest memakai 400, batas ukuran 413, serta workbook/identitas/tahun/duplikat/rekonsiliasi invalid 422.
+
+Pengujian rekap (Node.js 20+):
+
+~~~bash
+npm run test:recap
+~~~
+
+Suite menjalankan fixture sintetis untuk metadata, provenance, filter/mapping, duplikat/revisi, tahun, API lama/baru, loading serta empat export dalam simulasi DOM. Integrasi lima workbook context (13 cabang kegiatan dan lima cabang 6621) dijalankan bila semua sampel lokal tersedia; jika tidak, suite melaporkan bahwa integrasi lokal dilewati. Lokasi sampel dapat diatur melalui RECAP_SAMPLE_DIR. Simulasi DOM memverifikasi logika; pemeriksaan visual browser tetap diperlukan sebelum rilis.

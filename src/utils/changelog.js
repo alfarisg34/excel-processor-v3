@@ -3,6 +3,54 @@ const path = require('path');
 
 const releases = [
   {
+    "version": "3.5.0",
+    "date": "2026-10-12",
+    "type": "MINOR",
+    "title": "Multiple Upload Rekap Hirarki Satker, Filter Dinamis & Indikator Loading",
+    "changes": [
+      {
+        "type": "FEAT",
+        "title": "Rekap Gabungan dari Beberapa File Satker",
+        "desc": "Upload beberapa XLSX dengan saran identitas dari isi workbook, konfirmasi unit pemilik dan tahun anggaran, serta mapping penanggung jawab per kegiatan. Kegiatan 2175 dan 6621 tetap terpisah per unit."
+      },
+      {
+        "type": "FEAT",
+        "title": "Penelusuran Sumber dan Validasi Batch",
+        "desc": "Detail menyimpan file, sheet dan baris sumber. Inspect/batch memvalidasi hash, duplikat atau revisi satu unit/tahun, struktur hirarki dan subtotal; Excel/PDF membawa atribusi sumber."
+      },
+      {
+        "type": "FIX",
+        "title": "Ukuran Respons untuk Unit dengan UUID",
+        "desc": "Detail dikirim satu kali dan key node memakai ID pendek agar UUID unit tidak membesarkan respons secara berulang. Lima workbook diuji melalui API dengan UUID seperti yang dibuat UI."
+      },
+      {
+        "type": "FIX",
+        "title": "Filter Sumber Dana, Status dan Kode Blokir",
+        "desc": "Pilihan mengikuti akun dan konteks filter aktif. Detail normal tetap tampil saat kode blokir dibersihkan; pencocokan blokir memakai kode detail dan mengenali detail diblokir tanpa kode."
+      },
+      {
+        "type": "UI",
+        "title": "Penjelasan pada Dropdown Filter Kosong",
+        "desc": "Dropdown lingkup, akun, sumber dana, status dan kode blokir tetap merespons klik saat kosong dengan alasan dan petunjuk. Pilih Semua/Bersihkan mengikuti ketersediaan opsi."
+      },
+      {
+        "type": "UI",
+        "title": "Loading, Pembatalan dan Pemeriksaan Ulang",
+        "desc": "Panel loading sticky menampilkan spinner, tahap dan durasi proses serta alasan kontrol sementara terkunci. User dapat membatalkan request dan memeriksa ulang; respons usang dan error tidak meninggalkan loading aktif."
+      },
+      {
+        "type": "FIX",
+        "title": "Rincian Blokir dan Lingkup Export",
+        "desc": "Fallback kode blokir komponen memakai full path, rincian beberapa kode blokir dipertahankan, dan export struktur mengikuti cabang serta pencarian aktif."
+      },
+      {
+        "type": "IMPROVE",
+        "title": "Pengujian Rekap dan Regresi Frontend",
+        "desc": "Suite test:recap mencakup metadata, batch, API dan simulasi DOM untuk atribusi, filter, loading, pembatalan, pemulihan error dan empat jalur export."
+      }
+    ]
+  },
+  {
     version: '3.4.0',
     date: '2026-09-23',
     type: 'MINOR',

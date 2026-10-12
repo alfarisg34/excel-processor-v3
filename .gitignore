@@ -9,3 +9,4 @@ test_output/
 scratch*.js
 scratch/
 data/
+context/
