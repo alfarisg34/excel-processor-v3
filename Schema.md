@@ -1,6 +1,6 @@
 # Schema
 
-Tanggal pembaruan: 13 Oktober 2026. Kontrak berdasarkan implementasi package 3.6.1 dan perubahan Unreleased. Dokumen ini mencakup workbook, objek runtime, serta API; proyek tidak memiliki schema database. Gambaran sistem ada di [Architecture.md](Architecture.md).
+Tanggal pembaruan: 13 Oktober 2026. Kontrak berdasarkan implementasi package 3.7.0. Dokumen ini mencakup workbook, objek runtime, serta API; proyek tidak memiliki schema database. Gambaran sistem ada di [Architecture.md](Architecture.md).
 
 ## 1. Konvensi
 

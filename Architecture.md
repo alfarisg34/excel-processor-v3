@@ -1,6 +1,6 @@
 # Architecture
 
-Tanggal pembaruan: 13 Oktober 2026. Versi package: 3.6.1, termasuk perubahan lokal yang belum dirilis pada bagian Unreleased di [CHANGELOG.md](CHANGELOG.md).
+Tanggal pembaruan: 13 Oktober 2026. Versi package: 3.7.0, sesuai rilis pada [CHANGELOG.md](CHANGELOG.md).
 
 Dokumen ini menjelaskan implementasi saat ini. Kebutuhan produk ada di [PRD.md](PRD.md), kontrak data di [Schema.md](Schema.md), dan perilaku antarmuka serta ekspor di [Design.md](Design.md).
 

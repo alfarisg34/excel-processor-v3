@@ -9,11 +9,14 @@ dan proyek ini menganut standar [Semantic Versioning (SemVer 2.0.0)](https://sem
 
 ## [Unreleased]
 
+## [3.7.0] - 2026-10-13
+
 ### Added
 - Architecture.md, Schema.md, dan Design.md berdasarkan kode saat ini, dilengkapi diagram alur, kontrak workbook/API, batas operasional, perilaku antarmuka dan ekspor, serta indeks dokumentasi di README.md.
 - Aturan proyek di AGENTS.md: setiap git push wajib didahului pembaruan changelog, peninjauan dan pembaruan dokumen terdampak, serta pemeriksaan perubahan yang akan dikirim.
 
 ### Changed
+- Rilis 3.7.0 menyelaraskan package.json, package-lock.json, changelog aplikasi, label versi UI dan dokumen sistem.
 - Excel struktur memakai satu template SATIG Kegiatan-KRO-RO: baris awal kosong, grand total, blok per satker dan header berulang, rincian sampai Subkomponen, serta profil font/border/warna/accounting/lebar kolom dari file contoh. Format sebelumnya dengan metadata, Program/Akun, outline dan sheet tambahan diganti.
 - Target/satuan KRO dan RO menggunakan volume RKK; Unit Cost memakai target positif dan menjaga nilai pecahan. Subtotal menggunakan formula anak langsung hasil fokus/pencarian dengan cached result, termasuk dana nol.
 - Excel struktur dibuat oleh ExcelJS backend melalui POST /api/recap-hierarchy/export; tombol unduh memiliki loading, pencegahan klik ganda, timeout, penolakan hasil usang dan pemulihan error. Format template disertakan di repository tanpa ketergantungan pada file context saat deployment.
@@ -25,7 +28,8 @@ dan proyek ini menganut standar [Semantic Versioning (SemVer 2.0.0)](https://sem
 ### Validation
 - Suite npm run test:recap lulus, mencakup API unduhan XLSX dan simulasi DOM alur export. Pengujian SATIG menulis/membaca XLSX untuk memeriksa satu sheet, lima blok/header, funding, formula anak langsung, target kosong/nol/pecahan, fokus/pencarian, freeze dan style. Lebar kolom, font, border dan format angka dibandingkan dengan file contoh lokal.
 - Pemeriksaan sintaks server.js dan satig-hierarchy-export.js serta git diff --check lulus sebelum push.
-- Integrasi lima workbook operasional dilewati karena sampel tidak lengkap. Pemeriksaan visual browser/Microsoft Excel belum dilakukan. Tidak ada perubahan versi rilis.
+- Sinkronisasi versi package/lockfile, catatan rilis bertanggal, label UI, dokumen dan API changelog aktif diverifikasi untuk 3.7.0.
+- Integrasi lima workbook operasional dilewati karena sampel tidak lengkap. Pemeriksaan visual browser/Microsoft Excel belum dilakukan.
 
 ## [3.6.1] - 2026-10-12
 

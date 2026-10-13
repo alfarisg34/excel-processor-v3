@@ -2,9 +2,9 @@
 
 Tanggal pembaruan: 13 Oktober 2026
 
-Versi aplikasi pada `package.json`: 3.6.1
+Versi aplikasi pada `package.json`: 3.7.0
 
-Status: dokumentasi sistem yang tersedia, termasuk perbaikan ekspor hirarki dalam perubahan ini.
+Status: dokumentasi sistem yang tersedia pada rilis 3.7.0.
 
 Dokumen pendamping: [Architecture.md](Architecture.md) untuk komponen dan alur sistem, [Schema.md](Schema.md) untuk kontrak data/workbook/API, dan [Design.md](Design.md) untuk perilaku UI serta format ekspor.
 

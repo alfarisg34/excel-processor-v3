@@ -1,6 +1,6 @@
 # Design
 
-Tanggal pembaruan: 13 Oktober 2026. Desain berdasarkan antarmuka dan ekspor yang tersedia pada package 3.6.1 beserta perubahan Unreleased. Dokumen ini memuat perilaku UI, keputusan implementasi, dan format artefak. Kebutuhan bisnis ada di [PRD.md](PRD.md); struktur sistem dan data ada di [Architecture.md](Architecture.md) dan [Schema.md](Schema.md).
+Tanggal pembaruan: 13 Oktober 2026. Desain berdasarkan antarmuka dan ekspor yang tersedia pada package 3.7.0. Dokumen ini memuat perilaku UI, keputusan implementasi, dan format artefak. Kebutuhan bisnis ada di [PRD.md](PRD.md); struktur sistem dan data ada di [Architecture.md](Architecture.md) dan [Schema.md](Schema.md).
 
 ## 1. Tujuan desain
 

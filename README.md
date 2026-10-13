@@ -4,6 +4,8 @@ A high-performance Node.js & Express application designed for processing, restru
 
 It transforms raw RKK Satker input files into a **20-column side-by-side comparison layout (SEMULA vs. MENJADI vs. SELISIH)** matching the **RAB Format Baru** specification, calculates hierarchical budget formulas dynamically, cleans SAKTI metadata rows (such as KPPN and Lokasi info), provides pre-upload hierarchy validation, matches Sisa Anggaran from Laporan FA Detail (16 Segmen), and provides an interactive hierarchical tree recap.
 
+Versi saat ini: **3.7.0**. Catatan rilis tersedia pada [CHANGELOG.md](CHANGELOG.md).
+
 ---
 
 ## ✨ Features & Three Core Workflows (Alur)

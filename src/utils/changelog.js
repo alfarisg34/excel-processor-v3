@@ -3,6 +3,44 @@ const path = require('path');
 
 const releases = [
   {
+    version: '3.7.0',
+    date: '2026-10-13',
+    type: 'MINOR',
+    title: 'Ekspor Excel Hirarki dengan Template SATIG per Satker',
+    changes: [
+      {
+        type: 'FEAT',
+        title: 'Format SATIG Kegiatan-KRO-RO',
+        desc: 'Satu sheet dengan baris awal kosong, grand total, blok per satker dan header berulang. Rincian sampai Subkomponen memakai profil font, border, warna, accounting dan lebar kolom dari template; format sebelumnya dengan metadata, Program/Akun, outline dan sheet tambahan diganti.'
+      },
+      {
+        type: 'FEAT',
+        title: 'Target Renja dari Volume RKK dan Subtotal Anak Langsung',
+        desc: 'Target dan satuan KRO/RO menggunakan volume RKK. Unit Cost memakai target positif dan mempertahankan nilai pecahan. Subtotal menjumlahkan anak langsung hasil fokus/pencarian; formula menyimpan hasil perhitungan termasuk dana nol.'
+      },
+      {
+        type: 'FEAT',
+        title: 'Unduhan ExcelJS dari Backend',
+        desc: 'Endpoint POST /api/recap-hierarchy/export menghasilkan XLSX. Tombol unduh menampilkan loading, mencegah klik ganda, memakai timeout, menolak hasil usang dan pulih setelah error. Profil template disertakan dalam repository sehingga deployment tidak membutuhkan file context.'
+      },
+      {
+        type: 'DOCS',
+        title: 'Dokumentasi Sistem dan Aturan Sebelum Push',
+        desc: 'Architecture.md, Schema.md dan Design.md mendokumentasikan sistem; README.md dan PRD.md diselaraskan dengan ekspor SATIG. Package, lockfile, changelog aplikasi dan label UI memakai versi 3.7.0. AGENTS.md menetapkan pemeriksaan sebelum push; summary.md dihapus dan digantikan rujukan dokumentasi tersebut.'
+      },
+      {
+        type: 'TEST',
+        title: 'Verifikasi Ekspor SATIG dan Rilis',
+        desc: 'Suite rekap memeriksa API unduhan, simulasi DOM, audit RKK serta XLSX: satu sheet, lima blok/header, sumber dana, formula, target kosong/nol/pecahan, fokus/pencarian, freeze dan style. Format dibandingkan dengan template lokal; sinkronisasi versi package/lockfile, label UI, dokumen dan API changelog aktif, sintaks serta git diff --check diperiksa.'
+      },
+      {
+        type: 'TEST',
+        title: 'Batas Pemeriksaan',
+        desc: 'Integrasi lima workbook operasional dilewati karena sampel tidak lengkap. Pemeriksaan visual browser dan Microsoft Excel belum dilakukan.'
+      }
+    ]
+  },
+  {
     version: '3.6.1',
     date: '2026-10-12',
     type: 'PATCH',
