@@ -19,7 +19,9 @@ flowchart LR
   P -->|XLSX| UI
   B -->|JSON schemaVersion 2| UI
   C -->|JSON laporan lengkap| UI
-  UI --> E[Ekspor rekap XLSX dan PDF di browser]
+  UI --> E[Excel akun dan PDF di browser]
+  UI --> X[Export SATIG JSON]
+  X --> API
 ```
 
 Workbook diunggah sebagai buffer, diproses di memori, lalu dikembalikan ke browser. Tidak ada database, penyimpanan upload permanen, antrean pekerjaan, atau autentikasi aplikasi. Penyimpanan browser yang teridentifikasi adalah preferensi sidebar melalui localStorage; data batch berada pada state halaman.
@@ -75,6 +77,8 @@ sequenceDiagram
 Identitas sumber adalah SHA-256 isi file. Nama file tidak menentukan unit atau tahun. Saran pemilik memakai header dan bukti isi; pengguna tetap wajib mengonfirmasi. Registry bawaan berisi BBPKK Bandung Barat, BPKK Bekasi, dan BPKK Kendari; unit tambahan dikirim dalam manifest.
 
 Program yang sama digabung lintas sumber pada tahun batch. Cabang mulai Kegiatan dipisahkan menurut tahun, pemilik, penanggung jawab, dan path kode. Kode kegiatan unik dan jumlah cabang kegiatan adalah dua metrik berbeda. Filter pemilik/PJ dijalankan di backend dengan upload ulang sumber, sedangkan filter akun/sumber dana/blokir dan pencarian dijalankan di browser.
+
+Parser meneruskan target/satuan KRO dan RO dari volume kolom G RKK ke summary/tree tanpa agregasi lintas cabang. Frontend mengirim node hasil fokus/pencarian level 2–6 ke POST /api/recap-hierarchy/export. Backend ExcelJS menulis satu sheet Kegiatan-KRO-RO, memakai profil format template SATIG yang disertakan dalam src/config/satig-export-template.json. Blok satker mengikuti pemilik dan urutan sumber terpilih, subtotal menjumlahkan anak langsung yang diekspor, Unit Cost RO menggunakan target positif. Endpoint memvalidasi bentuk/relasi node (maksimal 30.000 node dan 4 MiB JSON) tanpa mengunggah ulang sumber; respons binary XLSX tidak disimpan permanen. Format ini tidak mempunyai metadata tambahan atau outline.
 
 Inspect dapat mengembalikan file invalid bersama file valid untuk review. Batch menolak keseluruhan permintaan jika satu sumber atau manifest gagal; tidak ada hasil sukses parsial. Detail JSON disimpan sekali, lalu referensinya dipakai pada banyak ringkasan node untuk mengurangi ukuran payload.
 

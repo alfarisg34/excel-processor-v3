@@ -209,6 +209,19 @@ app.post('/api/recap-hierarchy/batch', acceptRecapUpload, async (req, res) => {
   catch (error) { sendRecapError(res, error); }
 });
 
+app.post('/api/recap-hierarchy/export', async (req, res) => {
+  try {
+    const workbook = require('./src/utils/satig-hierarchy-export').buildSatigWorkbook(req.body);
+    const buffer = await workbook.xlsx.writeBuffer();
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=Rekap_Kegiatan-KRO-RO.xlsx');
+    res.setHeader('Cache-Control', 'no-store');
+    res.send(Buffer.from(buffer));
+  } catch (error) {
+    res.status(error.status || 500).json({ error: 'Gagal mengekspor Excel hirarki', detail: error.message });
+  }
+});
+
 app.post('/api/process', uploadFields, handleProcess);
 app.post('/api/process-with-fa', uploadFields, handleProcess);
 app.post('/', uploadFields, handleProcess);

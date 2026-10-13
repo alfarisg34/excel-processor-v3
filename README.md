@@ -59,7 +59,7 @@ It transforms raw RKK Satker input files into a **20-column side-by-side compari
 - **Runtime**: Node.js
 - **Server Framework**: Express.js
 - **Excel Processing Engine**: ExcelJS
-- **Frontend Excel Export**: xlsx-js-style 1.2.0; ekspor berjenjang menempatkan metadata di B1:C9, tabel mulai A11, border empat sisi pada seluruh sel tabel, dan header biru tua dengan teks putih tebal.
+- **Excel Export**: Excel struktur memakai ExcelJS backend melalui `/api/recap-hierarchy/export`, satu sheet `Kegiatan-KRO-RO` sesuai SATIG: blok per satker dengan header berulang, rincian sampai Subkomponen, volume RKK sebagai Target Renja, subtotal anak langsung, format accounting dan freeze tujuh baris. Excel akun tetap memakai xlsx-js-style 1.2.0 di browser.
 - **Middleware**: Multer, CORS
 - **Styling & UI**: Modern Dark Glassmorphism Web Application (HTML5, Vanilla CSS3, FontAwesome, jsPDF)
 
@@ -191,7 +191,7 @@ Alur 3 mendukung sampai 10 file XLSX, maksimal 5 MiB per file dan total 20 MiB. 
 2. Pilih tahun anggaran dan konfirmasi unit pemilik tiap file. Tahun footer tidak dipakai. Saran awal tersedia untuk BBPKK Bandung Barat, BPKK Bekasi dan BPKK Kendari; direktorat/unit lain dapat ditambahkan lewat UI.
 3. Untuk file campuran, buka bukti/mapping dan pilih penanggung jawab per kegiatan jika berbeda dari pemilik sumber. Unit tambahan berlaku pada sesi halaman tersebut.
 4. Buat rekap gabungan, lalu gunakan filter pemilik/penanggung jawab. Kode 2175 maupun 6621 tetap mempunyai cabang terpisah per unit.
-5. Excel/PDF membawa sumber dan atribusi; detail menampilkan file, sheet, baris, pemilik dan penanggung jawab.
+5. PDF/Excel akun membawa sumber dan atribusi; detail menampilkan file, sheet, baris, pemilik dan penanggung jawab. Excel struktur SATIG mengelompokkan rincian dalam blok pemilik satker.
 
 Hash isi file mendeteksi salinan walaupun namanya berbeda. Satu unit/tahun hanya menerima satu versi aktif; hapus revisi/salinan yang tidak dipakai. Pembagian 6621 dalam satu file ke beberapa direktorat belum otomatis: perlu mapping yang lebih rinci dan aturan alokasi.
 
@@ -199,6 +199,7 @@ API baru:
 
 - POST /api/recap-hierarchy/inspect: multipart dengan field files berulang. Respons sources memuat sourceId SHA-256, metadata, evidence, ownerSuggestion, validation, reconciliation, dan valid.
 - POST /api/recap-hierarchy/batch: field files berulang serta manifest JSON. Semua owner wajib confirmed; manifest dicocokkan berdasarkan SHA-256 isi, sehingga urutan/nama file tidak menjadi identitas.
+- POST /api/recap-hierarchy/export: JSON items level 2–6 dan ownerOrder opsional; maksimal 30.000 node/4 MiB; menghasilkan XLSX SATIG satu sheet.
 - Endpoint POST /api/recap-hierarchy dengan field file tetap tersedia.
 
 Contoh manifest:

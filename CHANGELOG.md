@@ -14,15 +14,18 @@ dan proyek ini menganut standar [Semantic Versioning (SemVer 2.0.0)](https://sem
 - Aturan proyek di AGENTS.md: setiap git push wajib didahului pembaruan changelog, peninjauan dan pembaruan dokumen terdampak, serta pemeriksaan perubahan yang akan dikirim.
 
 ### Changed
-- Metadata ekspor Excel berjenjang bergeser dari A1:B9 ke B1:C9; tabel tetap mulai A11, seluruh sel tabel memiliki border empat sisi, dan header berwarna biru tua dengan teks putih tebal.
-- Ekspor frontend memakai xlsx-js-style 1.2.0 untuk menyimpan format sel; angka pagu dan persentase memakai format Excel, dengan outline hirarki tetap dipertahankan.
+- Excel struktur memakai satu template SATIG Kegiatan-KRO-RO: baris awal kosong, grand total, blok per satker dan header berulang, rincian sampai Subkomponen, serta profil font/border/warna/accounting/lebar kolom dari file contoh. Format sebelumnya dengan metadata, Program/Akun, outline dan sheet tambahan diganti.
+- Target/satuan KRO dan RO menggunakan volume RKK; Unit Cost memakai target positif dan menjaga nilai pecahan. Subtotal menggunakan formula anak langsung hasil fokus/pencarian dengan cached result, termasuk dana nol.
+- Excel struktur dibuat oleh ExcelJS backend melalui POST /api/recap-hierarchy/export; tombol unduh memiliki loading, pencegahan klik ganda, timeout, penolakan hasil usang dan pemulihan error. Format template disertakan di repository tanpa ketergantungan pada file context saat deployment.
+- README.md, PRD.md, Architecture.md, Schema.md dan Design.md diselaraskan dengan format dan endpoint baru.
 
 ### Removed
 - summary.md dihapus; dokumentasi sistem saat ini dirujuk melalui README.md, PRD.md, Architecture.md, Schema.md, dan Design.md.
 
 ### Validation
-- npm run test:recap lulus; integrasi lima workbook lokal dilewati karena sampel tidak tersedia. Pemeriksaan frontend memakai simulasi DOM, tanpa pemeriksaan visual browser/Microsoft Excel.
-- Serialisasi XLSX pada sampel 569 baris hirarki memverifikasi metadata B1:C9, border pada 6.840 sel tabel, warna header, nilai, format angka/persen, dan outline. Tautan dokumen serta cakupan endpoint diperiksa.
+- Suite npm run test:recap lulus, mencakup API unduhan XLSX dan simulasi DOM alur export. Pengujian SATIG menulis/membaca XLSX untuk memeriksa satu sheet, lima blok/header, funding, formula anak langsung, target kosong/nol/pecahan, fokus/pencarian, freeze dan style. Lebar kolom, font, border dan format angka dibandingkan dengan file contoh lokal.
+- Pemeriksaan sintaks server.js dan satig-hierarchy-export.js serta git diff --check lulus sebelum push.
+- Integrasi lima workbook operasional dilewati karena sampel tidak lengkap. Pemeriksaan visual browser/Microsoft Excel belum dilakukan. Tidak ada perubahan versi rilis.
 
 ## [3.6.1] - 2026-10-12
 

@@ -128,20 +128,16 @@ Filter pemilik/penanggung jawab tersedia untuk batch. Detail mempertahankan atri
 
 ### FR-07 — Ekspor rekap
 
-Produk menyediakan empat jalur unduhan: rekap akun Excel/PDF dan pohon struktur Excel/PDF. Ekspor akun mengikuti filter detail aktif. Ekspor struktur mengikuti fokus cabang dan pencarian struktur; hasil pencarian menyertakan induk yang diperlukan. Ekspor struktur mencakup semua node yang memenuhi kriteria, terlepas dari keadaan buka/tutup tabel web. Ekspor batch menyertakan bagian Sumber dan Atribusi.
+Empat jalur unduhan tersedia: rekap akun Excel/PDF dan struktur Excel/PDF. Ekspor akun mengikuti filter detail aktif. PDF struktur mempertahankan pohon dan atribusi sumber. Excel struktur menggunakan template SATIG Kegiatan-KRO-RO sebagai acuan tunggal.
 
-Ketentuan Excel berjenjang setelah perbaikan:
-
-- Judul dan metadata lingkup berada di B1:C9, dengan kolom A kosong pada sembilan baris pertama; tabel tetap mulai A11.
-- Semua sel tabel memiliki border pada keempat sisi, termasuk sel kosong. Header biru tua dengan teks putih tebal dan teks terbungkus; pagu memakai format angka Excel dan persentase blokir memakai format persen.
-- Judul, metadata, dan header tabel berada di luar kelompok outline.
-- Induk berada di atas anak; kontrol lipat menggunakan ringkasan di atas rincian (`summaryBelow=false`).
-- Level outline dimulai dari nol; ekspor penuh menggunakan Program=0 sampai Akun=6.
-- Tombol Excel 1 menampilkan Program, 2 sampai Kegiatan, 3 sampai KRO, 4 sampai RO, 5 sampai Komponen, 6 sampai Subkomponen, dan 7 sampai Akun.
-- Melipat satu induk menyembunyikan keturunannya dan mempertahankan induk tersebut serta cabang saudara.
-- Ekspor fokus memakai kedalaman relatif: level 1 menampilkan induk fokus. Contoh fokus Komponen memakai Komponen=0, Subkomponen=1, Akun=2, sementara kolom Level tetap menyimpan level bisnis 5/6/7.
-- Semua baris data, termasuk Akun terakhir, memperoleh outline yang sesuai. Workbook awalnya terbuka penuh.
-- Pencarian tanpa hasil tidak menghasilkan unduhan Excel struktur kosong.
+- Workbook satu sheet, kolom A tersembunyi, baris 1–3 kosong, grand total baris 4. Setiap satker memiliki total, header dua baris dan rincian Kegiatan → KRO → RO → Komponen → Subkomponen.
+- Kolom B:I adalah kode pendek dan uraian, Target Renja, Satuan, ANGGARAN, PNBP, PHLN, RM dan Unit Cost. Header diulang per satker, termasuk variasi merge template.
+- Warna/font/border/format accounting mengikuti profil file contoh. Total satker biru dengan teks putih; Kegiatan kuning, KRO hitam, RO ke bawah biru. Sorotan jingga BBPKK Bandung Barat untuk cabang 2175.QDC/QEA dipertahankan.
+- Target/satuan berasal dari volume KRO/RO RKK; target tidak tersedia tetap kosong. Unit Cost hanya untuk RO dengan target positif. Tampilan angka bulat mengikuti template, nilai pecahan tetap disimpan.
+- Subtotal menjumlahkan anak langsung dalam hasil ekspor; grand total menjumlahkan satker. Fokus/pencarian tetap berlaku dan subtotal mengikuti rincian yang diekspor; kondisi buka/tutup tabel web tidak membatasi ekspor.
+- Format SATIG tidak memuat baris Program/Akun, metadata ekspor, sheet tambahan atau outline. Freeze tujuh baris, zoom 68%, cetak portrait skala 100%.
+- Pencarian tanpa rincian yang dapat diekspor tidak mengunduh workbook kosong. Tombol menampilkan loading, mencegah klik ganda, dan pulih setelah gagal. Permintaan mempunyai timeout browser 60 detik.
+- Backend ExcelJS menghasilkan file; layout tidak bergantung pada CDN SheetJS atau keberadaan file context dalam deployment.
 
 ## 6. Antarmuka API
 
@@ -156,6 +152,7 @@ Ketentuan Excel berjenjang setelah perbaikan:
 | POST | `/api/recap-hierarchy` | Multipart satu `file`; rekap JSON kompatibilitas lama |
 | POST | `/api/recap-hierarchy/inspect` | Multipart `files` berulang; sumber dan pilihan unit |
 | POST | `/api/recap-hierarchy/batch` | Multipart `files` dan `manifest` JSON; rekap schemaVersion 2 |
+| POST | `/api/recap-hierarchy/export` | JSON node Kegiatan–Subkomponen; XLSX SATIG |
 | GET | `/api/changelog` | Rilis dan riwayat commit yang tersedia |
 
 Respons batch menyertakan rootSummary, nodeSummaries, childrenMap, hierarchyTree, tahun, sources, assignments, unitOptions, serta jumlah kode/cabang kegiatan. Detail dipadatkan ke `detailRecords` dan direferensikan akun melalui `detailIndexes`; frontend mengembangkan referensi sebelum rendering/ekspor.
@@ -165,7 +162,7 @@ Kesalahan batch: 400 untuk multipart/manifest tidak valid, 413 untuk batas ukura
 ## 7. Kebutuhan nonfungsional dan operasi
 
 - Backend Node.js, Express, Multer memory storage, CORS, dan ExcelJS; frontend HTML/CSS/JavaScript tanpa framework.
-- SheetJS 0.18.5 menghasilkan Excel rekap di browser; jsPDF dan AutoTable menghasilkan PDF. Library ekspor dan ikon dimuat dari CDN sehingga bergantung pada akses jaringan browser.
+- ExcelJS menghasilkan Excel struktur SATIG di backend; xlsx-js-style 1.2.0 menghasilkan Excel rekap akun di browser; jsPDF dan AutoTable menghasilkan PDF. Library ekspor dan ikon dimuat dari CDN sehingga bergantung pada akses jaringan browser.
 - Workbook upload dan rekap diproses di memori. Tidak ada database atau penyimpanan riwayat workbook permanen pada kode saat ini.
 - UI menampilkan loading, mengunci kontrol terkait selama permintaan, dan menyediakan pembatalan/pemulihan. Pembatalan permintaan browser tidak menjamin pekerjaan server telah berhenti.
 - Inspect dan batch memeriksa deadline 60 detik antartahap/file; ini bukan penghentian paksa parser yang sedang berjalan.
@@ -179,10 +176,10 @@ Kesalahan batch: 400 untuk multipart/manifest tidak valid, 413 untuk batas ukura
 | RAB standar | Layout A–AO terbentuk; formula subtotal mengikuti anak langsung; audit menunjukkan kecocokan atau selisih secara eksplisit |
 | FA | AP/AQ terisi sesuai pemadanan; item tidak cocok/blokir dilaporkan; subtotal mengikuti hirarki |
 | Batch | Sumber wajib dikonfirmasi; salinan hash, revisi pemilik/tahun, tahun berbeda, dan rekonsiliasi gagal ditolak |
-| Atribusi | Cabang kode sama lintas unit tetap terpisah; detail dan ekspor memuat asal data |
+| Atribusi | Cabang kode sama lintas unit tetap terpisah; detail/PDF/Excel akun memuat asal data, Excel SATIG memiliki blok pemilik satker |
 | Filter | Rincian dan total sesuai filter aktif; filter kosong menjelaskan kondisi; loading/pembatalan/error memulihkan UI |
-| Outline penuh | Header tetap terlihat; tombol 1–7 mengikuti tujuh tingkat bisnis; Akun terakhir termasuk kelompok yang benar |
-| Outline fokus/pencarian | Induk fokus berkedalaman nol; pencarian mempertahankan induk; kelompok sesuai baris data |
+| Excel SATIG | Satu sheet, blok per satker, header berulang, rincian sampai Subkomponen, style/freeze mengikuti template |
+| Rumus/target ekspor | Volume RKK, Unit Cost untuk target positif, subtotal anak langsung dan total hasil fokus/pencarian |
 
 Verifikasi tersedia melalui `npm run test:recap` (metadata, batch, API, simulasi DOM frontend, dan audit RKK), `node test/test-flows.js` (alur RAB/FA), dan `node test/test-validate.js` (aturan validasi). Integrasi sampel lokal rekap berjalan hanya ketika sampel yang diperlukan tersedia. Simulasi DOM tidak menggantikan pemeriksaan visual di browser atau Microsoft Excel.
 
@@ -193,7 +190,7 @@ Verifikasi tersedia melalui `npm run test:recap` (metadata, batch, API, simulasi
 - Format `.xls` ditawarkan pada UI pemrosesan tetapi dukungan XLS biner tidak tersedia pada pembaca XLSX.
 - Pembagian satu kegiatan di dalam satu file ke beberapa penanggung jawab belum didukung; mapping tersedia per kegiatan, bukan alokasi rincian.
 - Tidak ada login, persetujuan berjenjang, versioning workbook permanen, kolaborasi simultan, atau integrasi langsung SAKTI pada sistem saat ini.
-- Pemeriksaan visual tombol outline pada Microsoft Excel tetap diperlukan sebelum rilis untuk memastikan perilaku aplikasi desktop sesuai hasil metadata/serialisasi.
+- Pemeriksaan visual format SATIG di Microsoft Excel belum dilakukan; serialisasi XLSX dan pengujian DOM tidak menggantikan pemeriksaan clipping/cetak desktop.
 
 ## 10. Sumber implementasi
 

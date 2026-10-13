@@ -24,6 +24,18 @@ async function run() {
     assert.equal(batch.status,200); assert.equal(batch.body.rootSummary.totalVal,20000);
     assert.equal(batch.body.compactDetails,true);
     assert.equal(batch.body.detailRecords.length,2);
+
+    const exportPayload={items:require('./test-satig-export').exportItems(batch.body.hierarchyTree)};
+    const exported=await fetch(base+'/api/recap-hierarchy/export',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(exportPayload)});
+    assert.equal(exported.status,200);
+    assert.match(exported.headers.get('content-type'),/spreadsheetml/);
+    assert.match(exported.headers.get('content-disposition'),/Rekap_Kegiatan-KRO-RO.xlsx/);
+    const exportedWorkbook=new (require('exceljs').Workbook)();
+    await exportedWorkbook.xlsx.load(Buffer.from(await exported.arrayBuffer()));
+    assert.deepEqual(exportedWorkbook.worksheets.map(s=>s.name),['Kegiatan-KRO-RO']);
+    assert.equal(exportedWorkbook.worksheets[0].getCell('E4').result,20000);
+    const badExport=await fetch(base+'/api/recap-hierarchy/export',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:[]})});
+    assert.equal(badExport.status,400);assert.match((await badExport.json()).detail,/Tidak ada rincian/);
     assert.deepEqual(batch.body.nodeSummaries.ROOT.digit6List.flatMap(a=>a.detailIndexes).sort(),[0,1]);
     assert.equal((await post('/api/recap-hierarchy',[file],undefined,'file')).body.rootSummary.totalVal,20000);
     assert.equal((await post('/api/validate',[file],undefined,'file')).status,200);

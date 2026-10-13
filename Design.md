@@ -90,23 +90,30 @@ Workbook memakai dua blok SEMULA dan MENJADI masing-masing 20 kolom, dilanjutkan
 
 ### Excel rekap berjenjang
 
+Template tunggal adalah sheet Kegiatan-KRO-RO pada contoh SATIG. Profil format sel diekstrak ke src/config/satig-export-template.json, sehingga file context tidak dibutuhkan saat aplikasi berjalan.
+
 | Elemen | Format saat ini |
 | --- | --- |
-| Judul | B1, Calibri 14 pt, tebal, `#1E3A5F` |
-| Metadata | Label B2:B9 tebal; nilai C2:C9; kolom A kosong pada baris 1–9 |
-| Pemisah | Baris 10 kosong |
-| Header tabel | A11:L11, tinggi 42 pt, biru tua `#1E3A5F`, teks putih tebal, rata tengah, wrap |
-| Sel tabel | Calibri 11 pt, border tipis empat sisi `#94A3B8`, vertical center, wrap; termasuk sel kosong |
-| Pagu | Angka dengan format `#,##0` |
-| Persentase | Rasio dengan format `0.0%` |
-| Lebar kolom | A:L: 8, 24, 25, 55, 16, 18, 16, 16, 16, 18, 12, 45 karakter |
-| Outline | Induk di atas anak; Program=0 sampai Akun=6 pada ekspor penuh |
+| Sheet | Satu sheet Kegiatan-KRO-RO; baris 1–3 kosong; A tersembunyi |
+| Grand total | B4 kuning, Calibri 14 tebal; E4:H4 abu-abu, Arial 12 tebal |
+| Blok satker | Baris total biru #4472C4, teks putih tebal 14; diikuti dua baris header dan rincian satker |
+| Header | Biru muda #D9E2F3; sumber dana F:H digabung; header diulang per satker |
+| Variasi header | Blok pertama menggabungkan B/C/D/E/I secara vertikal dan mencantumkan Unit Cost; blok berikutnya C/D vertikal, tanpa judul Unit Cost; blok ketiga juga E vertikal |
+| Kolom B:I | Kode pendek dan uraian, Target Renja, Satuan, ANGGARAN, PNBP, PHLN, RM, Unit Cost |
+| Tingkat | Kegiatan kuning dan tebal 12; KRO hitam tebal 11; RO/Komponen/Subkomponen biru #0070C0 tebal 11 |
+| Sorotan template | Cabang 2175.QDC dan 2175.QEA milik BBPKK Bandung Barat jingga #FFC000 sampai Subkomponen |
+| Sel | Border, font, alignment dan accounting mengikuti profil template; wrap uraian, tinggi menyesuaikan panjang teks |
+| Angka | Nilai numeric; accounting tanpa desimal, nol berupa strip; Unit Cost tetap menyimpan presisi hasil pembagian |
+| Lebar B:I | 67, 13.1796875, 18, 21.1796875, 19.7265625, 19.7265625, 19.7265625, 13.81640625 |
+| Tampilan/cetak | Freeze tujuh baris, zoom 68%, gridlines, portrait skala 100%; tanpa outline |
 
-Pada fokus cabang, induk fokus berada pada depth 0. Header dan metadata tidak termasuk outline. Sheet `Sumber dan Atribusi` menyertakan sumber batch; styling tabel di atas berlaku pada sheet `Pohon Hirarki`. Penulis browser adalah xlsx-js-style 1.2.0 agar warna/border tersimpan di file.
+Rincian berhenti pada Subkomponen. Tidak ada baris Program/Akun, metadata ekspor, indentasi, atau sheet tambahan. Satker dikelompokkan berdasarkan ownerId, memakai urutan sumber terpilih. Nama kegiatan tidak diberi suffix pemilik/PJ dalam laporan; identitas pemilik tampil pada blok satker. Fokus dan pencarian menentukan node ekspor, tanpa dipengaruhi keadaan buka/tutup pohon web. Subtotal menjumlahkan anak langsung yang diekspor; terminal cabang memakai jumlah sumber dana, sehingga total laporan mengikuti rincian yang tersedia dalam ekspor.
+
+Target/satuan KRO dan RO berasal dari volume kolom G RKK. Target kosong tetap kosong; target nol tetap numeric. Unit Cost hanya dihitung pada RO dengan target positif. Formula subtotal dan Unit Cost disimpan bersama cached result dan dihitung ulang saat workbook dibuka. ExcelJS backend menulis XLSX melalui POST /api/recap-hierarchy/export. Tombol unduh menampilkan loading, mencegah klik ganda, pulih saat gagal dan menolak hasil jika data rekap berubah selama permintaan.
 
 ### PDF dan ekspor akun
 
-PDF struktur menggunakan landscape A4, ringkasan lingkup, tabel hirarki, dan atribusi sumber. Ekspor akun menghasilkan rincian berdasarkan filter detail aktif. Empat jalur rekap memakai xlsx-js-style atau jsPDF/AutoTable di browser; RAB memakai ExcelJS di backend. Format dan nomor kolom RAB berbeda dari rekap berjenjang.
+PDF struktur menggunakan landscape A4, ringkasan lingkup, tabel hirarki, dan atribusi sumber. Ekspor akun menghasilkan rincian berdasarkan filter detail aktif. Rekap akun Excel memakai xlsx-js-style; PDF memakai jsPDF/AutoTable di browser. Excel struktur SATIG dan RAB memakai ExcelJS backend. Format dan nomor kolom RAB berbeda dari rekap berjenjang.
 
 ## 9. Ketergantungan dan batas desain
 
@@ -118,8 +125,8 @@ Tidak ada pemaksaan hasil cocok melalui penghapusan detail identik atau pengabai
 
 ## 10. Verifikasi dan pemeliharaan
 
-`npm run test:recap` memeriksa loading, pembatalan, retry, respons usang, escaping, filter kosong, hidrasi detail, empat jalur ekspor, dan outline melalui simulasi DOM. Pada perubahan ekspor 13 Oktober, serialisasi penulis browser dan pembacaan kembali ExcelJS memverifikasi metadata, border pada 6.840 sel, warna header, nilai, format angka/persen, serta outline untuk sampel 569 baris hirarki.
+`npm run test:recap` memeriksa metadata, batch, API, audit RKK, dan simulasi DOM frontend. Pengujian SATIG menyimpan dan membaca kembali XLSX untuk memeriksa satu sheet, pengelompokan satker, header berulang, formula anak langsung, target kosong/nol/pecahan, sumber dana, style, freeze dan fokus/pencarian. Profil font, border, format angka dan lebar kolom dibandingkan dengan file contoh lokal bila tersedia.
 
-Pemeriksaan visual browser dan Microsoft Excel belum dilakukan pada sesi ini. Pemeriksaan tersebut masih diperlukan untuk clipping metadata, tinggi baris otomatis, cetak, responsive layout, dan interaksi keyboard. Jangan menyatakan audit visual lulus berdasarkan tes DOM atau pembacaan XLSX saja.
+Pemeriksaan visual browser dan Microsoft Excel belum dilakukan untuk format SATIG. Pemeriksaan tersebut masih diperlukan untuk clipping uraian/angka, tinggi baris, cetak, responsive layout, dan interaksi keyboard. Jangan menyatakan audit visual lulus berdasarkan tes DOM atau pembacaan XLSX saja.
 
 Saat mengubah UI/ekspor, selaraskan dokumen ini, [Schema.md](Schema.md), [PRD.md](PRD.md), dan changelog sesuai dampak perubahan. Saat mengubah alur sistem, perbarui [Architecture.md](Architecture.md). Ikuti aturan sebelum push di [AGENTS.md](AGENTS.md).

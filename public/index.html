@@ -310,7 +310,7 @@
 
                     <!-- Export Buttons -->
                     <div class="tree-export-group">
-                      <button type="button" class="btn btn-sm btn-export-excel" onclick="downloadTreeExcel()" title="Download Excel Struktur Berjenjang">
+                      <button id="btnDownloadTreeExcel" type="button" class="btn btn-sm btn-export-excel" onclick="downloadTreeExcel()" title="Download format SATIG Kegiatan-KRO-RO per satker sampai Subkomponen">
                         <i class="fa-solid fa-file-excel"></i> Excel (Berjenjang)
                       </button>
                       <button type="button" class="btn btn-sm btn-export-pdf" onclick="downloadTreePdf()" title="Download PDF Rekap Struktur">
@@ -3111,6 +3111,10 @@
           levelName: node.levelName || `Level ${node.level}`,
           parentKey: node.parentKey,
           fullPath: node.fullPath || '',
+          targetRenja: node.targetRenja,
+          targetUnit: node.targetUnit,
+          ownerId: node.ownerId,
+          ownerName: node.ownerName,
           totalVal: node.totalVal || 0,
           totalRM: node.totalRM || 0,
           totalPNBP: node.totalPNBP || 0,
@@ -3746,143 +3750,61 @@
       return scoped.filter(item => matches.has(item.key));
     }
 
-    window.downloadTreeExcel = function () {
+    function getSatigExportPayload() {
+      const fields = ['key', 'parentKey', 'level', 'code', 'name', 'ownerId', 'ownerName',
+        'totalVal', 'totalRM', 'totalPNBP', 'totalPLN', 'targetRenja', 'targetUnit'];
+      return {
+        items: getTreeExportItems().filter(item => item.level >= 2 && item.level <= 6)
+          .map(item => Object.fromEntries(fields.filter(field => item[field] !== undefined).map(field => [field, item[field]]))),
+        ownerOrder: (currentRecapData.sources || []).filter(source => source.included !== false).map(source => source.ownerId)
+      };
+    }
+
+    window.downloadTreeExcel = async function () {
+      const button = document.getElementById('btnDownloadTreeExcel');
+      if (button?.disabled) return;
+      if (!currentRecapData || !treePreorderList.length) {
+        alert('Tidak ada data struktur hirarki untuk di-export!');
+        return;
+      }
+      const payload = getSatigExportPayload();
+      if (!payload.items.length) {
+        alert('Tidak ada rincian Kegiatan sampai Subkomponen untuk di-export!');
+        return;
+      }
+      const originalLabel = button?.innerHTML;
+      const snapshot = currentRecapData;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 60000);
+      if (button) {
+        button.disabled = true;
+        button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyiapkan Excel...';
+      }
       try {
-        if (!currentRecapData || treePreorderList.length === 0) {
-          alert('Tidak ada data struktur hirarki untuk di-export!');
-          return;
-        }
-
-        if (typeof XLSX === 'undefined') {
-          alert('Library Excel (SheetJS) belum siap. Silakan refresh halaman.');
-          return;
-        }
-
-        const scopeNode = currentRecapData.nodeSummaries[treeActiveScopeKey] || currentRecapData.rootSummary;
-        const exportItems = getTreeExportItems();
-        if (exportItems.length === 0) {
-          alert('Tidak ada data struktur hirarki untuk di-export!');
-          return;
-        }
-        const rows = [];
-
-        rows.push(['REKAPITULASI POHON STRUKTUR HIRARKI ANGGARAN - KEMNAKER']);
-        rows.push(['Lingkup Aktif:', scopeNode.key === 'ROOT' ? scopeNode.name : `[${scopeNode.code}] ${scopeNode.name}`]);
-        rows.push(['Path Lingkup:', scopeNode.fullPath || 'SATKER']);
-        rows.push(['Total Pagu Lingkup:', scopeNode.totalVal]);
-        rows.push(['Total RM Lingkup:', scopeNode.totalRM || 0]);
-        rows.push(['Total PNP Lingkup:', scopeNode.totalPNBP || 0]);
-        rows.push(['Total PLN Lingkup:', scopeNode.totalPLN || 0]);
-        rows.push(['Total Blokir Lingkup:', scopeNode.totalBlocked || 0]);
-        rows.push(['Tanggal Export:', new Date().toLocaleString('id-ID')]);
-        // Leave column A empty for the title and scope metadata (B1:C9).
-        rows.forEach(row => row.unshift(null));
-        rows.push([]);
-
-        rows.push([
-          'Level',
-          'Tingkat',
-          'Kode Hirarki',
-          'Uraian / Nomenklatur',
-          'Jumlah Sub-Item',
-          'Total Pagu (Rp)',
-          'Pagu RM (Rp)',
-          'Pagu PNP (Rp)',
-          'Pagu PLN (Rp)',
-          'Total Diblokir (Rp)',
-          '% Diblokir',
-          'Rincian Blokir (Sumber Dana & Kode)'
-        ]);
-
-        const startRowIdx = rows.length;
-        exportItems.forEach(item => {
-          const indentStr = '  '.repeat(item.level - 1);
-          const comboStr = (item.blockedBySourceAndCodeList || [])
-            .filter(b => b.val > 0)
-            .map(b => `${b.tag} Kode ${b.code}: Rp ${b.val.toLocaleString('id-ID')}`)
-            .join(' | ');
-
-          rows.push([
-            item.level,
-            item.levelName,
-            indentStr + item.code,
-            item.name,
-            item.hasChildren ? item.directChildrenCount : 0,
-            item.totalVal,
-            item.totalRM,
-            item.totalPNBP,
-            item.totalPLN,
-            item.totalBlocked,
-            parseFloat(item.blockedPct) / 100,
-            comboStr || '-'
-          ]);
+        const response = await fetch('/api/recap-hierarchy/export', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload), signal: controller.signal
         });
-
-        const ws = XLSX.utils.aoa_to_sheet(rows);
-
-        const tableBorder = {
-          top: { style: 'thin', color: { rgb: '94A3B8' } },
-          bottom: { style: 'thin', color: { rgb: '94A3B8' } },
-          left: { style: 'thin', color: { rgb: '94A3B8' } },
-          right: { style: 'thin', color: { rgb: '94A3B8' } }
-        };
-        for (let row = startRowIdx - 1; row < rows.length; row++) {
-          const isHeader = row === startRowIdx - 1;
-          for (let col = 0; col < 12; col++) {
-            const address = XLSX.utils.encode_cell({ r: row, c: col });
-            // Empty cells still need borders to complete the table grid.
-            const cell = ws[address] || (ws[address] = { t: 's', v: '' });
-            cell.s = {
-              border: tableBorder,
-              font: { name: 'Calibri', sz: 11, ...(isHeader ? { bold: true, color: { rgb: 'FFFFFF' } } : {}) },
-              alignment: { vertical: 'center', wrapText: true, ...(isHeader ? { horizontal: 'center' } : {}) },
-              ...(isHeader ? { fill: { patternType: 'solid', fgColor: { rgb: '1E3A5F' } } } : {})
-            };
-            if (!isHeader && col >= 5 && col <= 9) cell.z = '#,##0';
-            if (!isHeader && col === 10) cell.z = '0.0%';
-          }
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.detail || error.error || 'Unduhan Excel gagal.');
         }
-        ws.B1.s = { font: { name: 'Calibri', sz: 14, bold: true, color: { rgb: '1E3A5F' } } };
-        for (let row = 2; row <= 9; row++) {
-          ws[`B${row}`].s = { font: { name: 'Calibri', sz: 11, bold: true } };
-          if (row >= 4 && row <= 8) ws[`C${row}`].z = '#,##0';
-        }
-
-        ws['!cols'] = [
-          { wch: 8 },
-          { wch: 24 },
-          { wch: 25 },
-          { wch: 55 },
-          { wch: 16 },
-          { wch: 18 },
-          { wch: 16 },
-          { wch: 16 },
-          { wch: 16 },
-          { wch: 18 },
-          { wch: 12 },
-          { wch: 45 }
-        ];
-
-        // Excel uses zero-based outline depths. Parents precede their children;
-        // keep the header outside groups and start focused branches at depth 0.
-        ws['!outline'] = { above: true };
-        ws['!rows'] = [];
-        ws['!rows'][startRowIdx - 1] = { hpt: 42 };
-        const baseLevel = Math.min(...exportItems.map(item => item.level));
-        exportItems.forEach((item, idx) => {
-          ws['!rows'][startRowIdx + idx] = { level: Math.max(0, item.level - baseLevel) };
-        });
-
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Pohon Hirarki');
-        appendRecapExcelSources(wb);
-
-        const fileName = `Rekap_Struktur_Hirarki_${scopeNode.code || 'SATKER'}_${new Date().toISOString().slice(0, 10)}.xlsx`;
-        XLSX.writeFile(wb, fileName, { cellStyles: true });
+        const blob = await response.blob();
+        if (currentRecapData !== snapshot) throw new Error('Data rekap berubah. Unduh kembali dari hasil rekap terbaru.');
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Rekap_Kegiatan-KRO-RO_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        document.body.appendChild(link);
+        try { link.click(); } finally { link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
       } catch (err) {
-        alert('Gagal export Excel: ' + err.message);
+        alert('Gagal export Excel: ' + (err.name === 'AbortError' ? 'Waktu unduhan melebihi 60 detik. Silakan coba kembali.' : err.message));
+      } finally {
+        clearTimeout(timeout);
+        if (button) { button.disabled = false; button.innerHTML = originalLabel; }
       }
     };
+
 
     window.downloadTreePdf = function () {
       try {

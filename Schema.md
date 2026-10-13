@@ -4,7 +4,7 @@ Tanggal pembaruan: 13 Oktober 2026. Kontrak berdasarkan implementasi package 3.6
 
 ## 1. Konvensi
 
-- Nomor baris/kolom Excel dan `rowNum` dimulai dari 1. Indeks array JSON, `detailIndexes`, dan outline SheetJS dimulai dari 0.
+- Nomor baris/kolom Excel dan `rowNum` dimulai dari 1. Indeks array JSON dan `detailIndexes` dimulai dari 0.
 - Kode program, kegiatan, akun, komponen, dan KPPN adalah string agar nol awal tetap terjaga.
 - Nilai anggaran berupa number dalam rupiah. `blockedPct` dan `matchPercentage` pada JSON berupa string hasil `toFixed(1)` dalam skala 0–100; nilai Excel persen memakai rasio 0–1.
 - `sourceId` adalah SHA-256 buffer upload, bukan hash nama file. `ownerId` adalah identitas aplikasi, bukan kode Satker resmi.
@@ -162,12 +162,19 @@ Respons proses menyertakan `X-Validation-Summary`, berisi URI-encoded JSON ringk
 | POST `/api/recap-hierarchy` | `file` | JSON rekap legacy |
 | POST `/api/recap-hierarchy/inspect` | `files` | JSON metadata per file |
 | POST `/api/recap-hierarchy/batch` | `files`, `manifest` | JSON rekap batch dipadatkan |
+| POST `/api/recap-hierarchy/export` | JSON `items`, `ownerOrder` opsional | XLSX SATIG satu sheet |
 | GET `/api/validation-reports/:id` | ID URL laporan | JSON attachment; `Cache-Control: no-store` |
 
 Error JSON umumnya memiliki `error`, opsional `detail` dan `issues`. Batch menggunakan 400 untuk multipart/manifest malformed, 413 untuk batas ukuran/waktu/hasil, 422 untuk sumber atau atribusi invalid, dan 500 untuk kegagalan tak tertangani. Laporan hilang/kedaluwarsa memakai 404. Route legacy tidak memakai wrapper error upload batch; jangan mengasumsikan semua error Multer legacy berbentuk JSON atau memakai pemetaan status yang sama.
 
 ## 10. Ekspor rekap berjenjang
 
-Sheet `Pohon Hirarki`: metadata B1:C9, baris 10 kosong, header A11:L11, data mulai A12. Kolom: Level, Tingkat, Kode Hirarki, Uraian/Nomenklatur, Jumlah Sub-Item, Total Pagu, Pagu RM, Pagu PNP, Pagu PLN, Total Diblokir, % Diblokir, Rincian Blokir. Metadata jumlah adalah number; persentase tabel adalah rasio number dengan format `0.0%`.
+POST /api/recap-hierarchy/export menerima JSON items (array wajib, maksimal 30.000 node) dan ownerOrder (array ID pemilik opsional). Payload maksimal 4 MiB. Setiap item memuat key unik, parentKey, level 2–6, code, name, totalVal, totalRM, totalPNBP, totalPLN, serta ownerId/ownerName dan targetRenja/targetUnit opsional. Nilai uang dan target harus finite; target tidak negatif. Relasi induk yang hadir harus satu tingkat di atas anak dan mempunyai pemilik yang sama. Input tidak valid menghasilkan 400; batas ukuran 413. Respons sukses berupa XLSX dengan Content-Disposition attachment, bukan JSON.
 
-Outline penuh: Program=0 sampai Akun=6, induk di atas anak. Pada fokus cabang, kedalaman dikurangi level induk fokus. Header berada di luar kelompok. Sheet `Sumber dan Atribusi` melengkapi ekspor batch dengan tahun/filter, kode/cabang kegiatan, identitas sumber, unit, hash, dan PJ kegiatan. Detail styling ada di [Design.md](Design.md).
+Frontend mengirim node hasil fokus/pencarian yang berada pada Kegiatan sampai Subkomponen. Payload berisi hasil rekap di browser; endpoint tidak mengunggah ulang atau memvalidasi sumber RKK. Program dan Akun tetap tersedia di pohon web/PDF, tetapi tidak masuk format Excel SATIG.
+
+Workbook hanya mempunyai sheet Kegiatan-KRO-RO. A tersembunyi, baris 1–3 kosong, label grand total pada B4 dan angka E4:H4, blok pertama mulai baris 5 dengan total satker, header dua baris 6–7, data mulai 8. Blok berikutnya mengulang total satker dan header. Kolom B:I: kode pendek dan uraian, Target Renja, Satuan, ANGGARAN, PNBP, PHLN, RM, Unit Cost. Tidak ada metadata, indentasi, outline atau sheet rincian/atribusi tambahan.
+
+PHLN mengambil totalPLN; PNBP mengambil totalPNBP. Target KRO/RO berasal dari volume kolom G RKK berbentuk angka dan satuan (misalnya 1198000.0 Orang), diteruskan melalui targetRenja (number opsional) dan targetUnit (string opsional) pada node, summary dan tree. Target tidak terbaca tetap kosong; target antar RO/unit tidak dijumlahkan. Unit Cost hanya untuk RO dengan target positif, menggunakan E<baris>/C<baris>.
+
+Subtotal E:H menggunakan referensi anak langsung dalam ekspor. Pada terminal cabang, F/G/H berasal dari nilai rekap dan E menjumlahkan F/G/H. Nilai dana nol terminal dibiarkan kosong seperti template. Grand total menjumlahkan total satker. Formula menyimpan cached result termasuk nol. Total ekspor mengikuti rincian hasil fokus/pencarian. Format accounting mempertahankan nilai asli; tampilan umumnya bulat. Profil format ada pada src/config/satig-export-template.json; detail tampilan di [Design.md](Design.md).

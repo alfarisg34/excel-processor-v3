@@ -72,7 +72,7 @@ async function parseHierarchyRecap(buffer, options = {}) {
 
   const nodeMap = new Map(); // key -> { key, code, name, level, levelName, parentKey, fullPath, records: [] }
 
-  function getOrCreateNode(key, code, name, level, levelName, parentKey, fullPath) {
+  function getOrCreateNode(key, code, name, level, levelName, parentKey, fullPath, outputTarget) {
     if (!nodeMap.has(key)) {
       nodeMap.set(key, {
         key,
@@ -87,6 +87,7 @@ async function parseHierarchyRecap(buffer, options = {}) {
     }
     const node = nodeMap.get(key);
     if (name && !node.name) node.name = name;
+    if (outputTarget && node.targetRenja === undefined) Object.assign(node, outputTarget);
     return node;
   }
 
@@ -188,6 +189,9 @@ async function parseHierarchyRecap(buffer, options = {}) {
     }
 
     const lvl = getCodeLevel(code);
+    // KRO/RO volume in RKK column G is an output target, not detail volume.
+    const targetMatch = (cells[6] || '').trim().match(/^(\d+(?:\.\d+)?)\s+(.+)$/);
+    const outputTarget = targetMatch ? { targetRenja: Number(targetMatch[1]), targetUnit: targetMatch[2].trim() } : undefined;
 
     if (lvl === 1) {
       if (ctx.c322 === code && ctx.c322Name && uraian) {
@@ -233,7 +237,7 @@ async function parseHierarchyRecap(buffer, options = {}) {
         ctx.d6 = ''; ctx.d6Name = ''; ctx.d6Tagging = ''; ctx.d6BlockCode = '';
         const pKey = ctx.d4 ? `L2_${ctx.c322}_${ctx.d4}` : (ctx.c322 ? `L1_${ctx.c322}` : 'ROOT');
         const path = [ctx.c322, ctx.d4, code].filter(Boolean).join(' > ');
-        getOrCreateNode(`L3_${ctx.c322}_${ctx.d4}_${code}`, code, uraian, 3, 'KRO', pKey, path);
+        getOrCreateNode(`L3_${ctx.c322}_${ctx.d4}_${code}`, code, uraian, 3, 'KRO', pKey, path, outputTarget);
       }
     } else if (lvl === 4) {
       if (ctx.c433 === code && ctx.c433Name && uraian) {
@@ -247,7 +251,7 @@ async function parseHierarchyRecap(buffer, options = {}) {
         ctx.d6 = ''; ctx.d6Name = ''; ctx.d6Tagging = ''; ctx.d6BlockCode = '';
         const pKey = ctx.c43 ? `L3_${ctx.c322}_${ctx.d4}_${ctx.c43}` : (ctx.d4 ? `L2_${ctx.c322}_${ctx.d4}` : 'ROOT');
         const path = [ctx.c322, ctx.d4, ctx.c43, code].filter(Boolean).join(' > ');
-        getOrCreateNode(`L4_${ctx.c322}_${ctx.d4}_${ctx.c43}_${code}`, code, uraian, 4, 'RO', pKey, path);
+        getOrCreateNode(`L4_${ctx.c322}_${ctx.d4}_${ctx.c43}_${code}`, code, uraian, 4, 'RO', pKey, path, outputTarget);
       }
     } else if (lvl === 5) {
       if (ctx.d3 === code && ctx.d3Name && uraian) {
@@ -535,6 +539,8 @@ function buildRecap(nodeMap) {
       levelName: node.levelName,
       parentKey: node.parentKey,
       fullPath: node.fullPath,
+      targetRenja: node.targetRenja,
+      targetUnit: node.targetUnit,
       totalVal,
       totalRM,
       totalPNBP,
@@ -658,6 +664,8 @@ function buildRecap(nodeMap) {
       levelName: s.levelName,
       parentKey: s.parentKey,
       fullPath: s.fullPath,
+      targetRenja: s.targetRenja,
+      targetUnit: s.targetUnit,
       totalVal: s.totalVal,
       totalRM: s.totalRM,
       totalPNBP: s.totalPNBP,
