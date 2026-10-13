@@ -30,7 +30,14 @@ async function run() {
   const alerts=[], exports=[], exportOptions=[], pdfs=[], activeIntervals=new Set();
   const deferred=()=>{let resolve;const promise=new Promise(r=>{resolve=r;});return {promise,resolve};};
   const XLSX={utils:{
-    aoa_to_sheet:rows=>({rows}),
+    encode_cell:({r,c})=>String.fromCharCode(65+c)+(r+1),
+    aoa_to_sheet:rows=>{
+      const sheet={rows};
+      rows.forEach((row,r)=>row.forEach((v,c)=>{
+        if(v!==null && v!==undefined) sheet[String.fromCharCode(65+c)+(r+1)]={v,t:typeof v==='number'?'n':'s'};
+      }));
+      return sheet;
+    },
     book_new:()=>({sheets:[]}),
     book_append_sheet:(wb,sheet,name)=>wb.sheets.push({sheet,name})
   },writeFile:(wb,filename,options)=>{exports.push(wb);exportOptions.push(options);}};
@@ -132,7 +139,7 @@ async function run() {
   assert.equal(treeSheet['!outline'].above,true);
   assert.equal(exportOptions[1].cellStyles,true);
   assert.equal(treeSheet.rows[10][0],'Level');
-  assert.equal(treeSheet['!rows'][10],undefined,'Header must stay outside outline groups');
+  assert.equal(treeSheet['!rows'][10].level,undefined,'Header must stay outside outline groups');
   treeItems.forEach((item,index)=>{
     assert.equal(treeSheet.rows[11+index][0],item.level);
     assert.equal(treeSheet['!rows'][11+index].level,item.level-1,'Outline must align with the data row');

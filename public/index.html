@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <!-- SheetJS & jsPDF CDN Libraries for Export -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 </head>
@@ -3775,6 +3775,8 @@
         rows.push(['Total PLN Lingkup:', scopeNode.totalPLN || 0]);
         rows.push(['Total Blokir Lingkup:', scopeNode.totalBlocked || 0]);
         rows.push(['Tanggal Export:', new Date().toLocaleString('id-ID')]);
+        // Leave column A empty for the title and scope metadata (B1:C9).
+        rows.forEach(row => row.unshift(null));
         rows.push([]);
 
         rows.push([
@@ -3818,9 +3820,37 @@
 
         const ws = XLSX.utils.aoa_to_sheet(rows);
 
+        const tableBorder = {
+          top: { style: 'thin', color: { rgb: '94A3B8' } },
+          bottom: { style: 'thin', color: { rgb: '94A3B8' } },
+          left: { style: 'thin', color: { rgb: '94A3B8' } },
+          right: { style: 'thin', color: { rgb: '94A3B8' } }
+        };
+        for (let row = startRowIdx - 1; row < rows.length; row++) {
+          const isHeader = row === startRowIdx - 1;
+          for (let col = 0; col < 12; col++) {
+            const address = XLSX.utils.encode_cell({ r: row, c: col });
+            // Empty cells still need borders to complete the table grid.
+            const cell = ws[address] || (ws[address] = { t: 's', v: '' });
+            cell.s = {
+              border: tableBorder,
+              font: { name: 'Calibri', sz: 11, ...(isHeader ? { bold: true, color: { rgb: 'FFFFFF' } } : {}) },
+              alignment: { vertical: 'center', wrapText: true, ...(isHeader ? { horizontal: 'center' } : {}) },
+              ...(isHeader ? { fill: { patternType: 'solid', fgColor: { rgb: '1E3A5F' } } } : {})
+            };
+            if (!isHeader && col >= 5 && col <= 9) cell.z = '#,##0';
+            if (!isHeader && col === 10) cell.z = '0.0%';
+          }
+        }
+        ws.B1.s = { font: { name: 'Calibri', sz: 14, bold: true, color: { rgb: '1E3A5F' } } };
+        for (let row = 2; row <= 9; row++) {
+          ws[`B${row}`].s = { font: { name: 'Calibri', sz: 11, bold: true } };
+          if (row >= 4 && row <= 8) ws[`C${row}`].z = '#,##0';
+        }
+
         ws['!cols'] = [
           { wch: 8 },
-          { wch: 14 },
+          { wch: 24 },
           { wch: 25 },
           { wch: 55 },
           { wch: 16 },
@@ -3837,6 +3867,7 @@
         // keep the header outside groups and start focused branches at depth 0.
         ws['!outline'] = { above: true };
         ws['!rows'] = [];
+        ws['!rows'][startRowIdx - 1] = { hpt: 42 };
         const baseLevel = Math.min(...exportItems.map(item => item.level));
         exportItems.forEach((item, idx) => {
           ws['!rows'][startRowIdx + idx] = { level: Math.max(0, item.level - baseLevel) };

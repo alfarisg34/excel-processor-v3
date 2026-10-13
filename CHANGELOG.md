@@ -7,6 +7,23 @@ dan proyek ini menganut standar [Semantic Versioning (SemVer 2.0.0)](https://sem
 
 ---
 
+## [Unreleased]
+
+### Added
+- Architecture.md, Schema.md, dan Design.md berdasarkan kode saat ini, dilengkapi diagram alur, kontrak workbook/API, batas operasional, perilaku antarmuka dan ekspor, serta indeks dokumentasi di README.md.
+- Aturan proyek di AGENTS.md: setiap git push wajib didahului pembaruan changelog, peninjauan dan pembaruan dokumen terdampak, serta pemeriksaan perubahan yang akan dikirim.
+
+### Changed
+- Metadata ekspor Excel berjenjang bergeser dari A1:B9 ke B1:C9; tabel tetap mulai A11, seluruh sel tabel memiliki border empat sisi, dan header berwarna biru tua dengan teks putih tebal.
+- Ekspor frontend memakai xlsx-js-style 1.2.0 untuk menyimpan format sel; angka pagu dan persentase memakai format Excel, dengan outline hirarki tetap dipertahankan.
+
+### Removed
+- summary.md dihapus; dokumentasi sistem saat ini dirujuk melalui README.md, PRD.md, Architecture.md, Schema.md, dan Design.md.
+
+### Validation
+- npm run test:recap lulus; integrasi lima workbook lokal dilewati karena sampel tidak tersedia. Pemeriksaan frontend memakai simulasi DOM, tanpa pemeriksaan visual browser/Microsoft Excel.
+- Serialisasi XLSX pada sampel 569 baris hirarki memverifikasi metadata B1:C9, border pada 6.840 sel tabel, warna header, nilai, format angka/persen, dan outline. Tautan dokumen serta cakupan endpoint diperiksa.
+
 ## [3.6.1] - 2026-10-12
 
 ### Added

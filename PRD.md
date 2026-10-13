@@ -1,10 +1,12 @@
 # PRD — Excel Processor V3 Kemnaker
 
-Tanggal: 12 Oktober 2026
+Tanggal pembaruan: 13 Oktober 2026
 
 Versi aplikasi pada `package.json`: 3.6.1
 
 Status: dokumentasi sistem yang tersedia, termasuk perbaikan ekspor hirarki dalam perubahan ini.
+
+Dokumen pendamping: [Architecture.md](Architecture.md) untuk komponen dan alur sistem, [Schema.md](Schema.md) untuk kontrak data/workbook/API, dan [Design.md](Design.md) untuk perilaku UI serta format ekspor.
 
 ## 1. Ringkasan produk
 
@@ -130,6 +132,8 @@ Produk menyediakan empat jalur unduhan: rekap akun Excel/PDF dan pohon struktur 
 
 Ketentuan Excel berjenjang setelah perbaikan:
 
+- Judul dan metadata lingkup berada di B1:C9, dengan kolom A kosong pada sembilan baris pertama; tabel tetap mulai A11.
+- Semua sel tabel memiliki border pada keempat sisi, termasuk sel kosong. Header biru tua dengan teks putih tebal dan teks terbungkus; pagu memakai format angka Excel dan persentase blokir memakai format persen.
 - Judul, metadata, dan header tabel berada di luar kelompok outline.
 - Induk berada di atas anak; kontrol lipat menggunakan ringkasan di atas rincian (`summaryBelow=false`).
 - Level outline dimulai dari nol; ekspor penuh menggunakan Program=0 sampai Akun=6.

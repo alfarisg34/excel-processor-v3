@@ -59,8 +59,25 @@ It transforms raw RKK Satker input files into a **20-column side-by-side compari
 - **Runtime**: Node.js
 - **Server Framework**: Express.js
 - **Excel Processing Engine**: ExcelJS
+- **Frontend Excel Export**: xlsx-js-style 1.2.0; ekspor berjenjang menempatkan metadata di B1:C9, tabel mulai A11, border empat sisi pada seluruh sel tabel, dan header biru tua dengan teks putih tebal.
 - **Middleware**: Multer, CORS
 - **Styling & UI**: Modern Dark Glassmorphism Web Application (HTML5, Vanilla CSS3, FontAwesome, jsPDF)
+
+## Aturan sebelum push
+
+Setiap `git push` wajib didahului pembaruan `CHANGELOG.md` dan peninjauan seluruh dokumen yang terdampak, termasuk `README.md`, `PRD.md`, `Architecture.md`, `Schema.md`, dan `Design.md`. Sertakan pembaruan tersebut dalam commit yang dikirim, jalankan pemeriksaan yang sesuai, dan pastikan catatan pengujian mencerminkan hasil sebenarnya. Aturan lengkap ada di [AGENTS.md](AGENTS.md).
+
+## Dokumentasi proyek
+
+| Dokumen | Isi |
+| --- | --- |
+| [PRD.md](PRD.md) | Tujuan produk, kebutuhan, kriteria penerimaan, dan batas implementasi |
+| [Architecture.md](Architecture.md) | Komponen sistem, pipeline RAB/FA, rekap batch, deployment, dan batas operasional |
+| [Schema.md](Schema.md) | Layout workbook, hirarki, manifest, payload API, identitas sumber, dan laporan audit |
+| [Design.md](Design.md) | Alur UI, status pekerjaan, filter/drilldown, token visual, dan format unduhan |
+| [CHANGELOG.md](CHANGELOG.md) | Riwayat perubahan dan catatan Unreleased |
+| [AGENTS.md](AGENTS.md) | Aturan kerja serta kewajiban sebelum push |
+
 
 ---
 
