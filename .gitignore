@@ -10,3 +10,4 @@ scratch*.js
 scratch/
 data/
 context/
+.playwright-mcp/

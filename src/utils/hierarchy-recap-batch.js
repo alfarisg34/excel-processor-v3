@@ -113,9 +113,9 @@ function projectSources(parsed, registry, year, filters = {}) {
 async function buildBatch(files, manifest) {
   checkFiles(files);
   const deadline = Date.now() + 60000;
-  if (!manifest || !Number.isInteger(manifest.fiscalYear) || manifest.fiscalYear < 2000 || manifest.fiscalYear > 2100 ||
+  if (!manifest || (manifest.fiscalYear != null && (!Number.isInteger(manifest.fiscalYear) || manifest.fiscalYear < 2000 || manifest.fiscalYear > 2100)) ||
       !Array.isArray(manifest.sources) || manifest.sources.length !== files.length)
-    throw inputError('Manifest harus memuat tahun anggaran 2000–2100 dan pilihan pemilik untuk setiap file.', 400);
+    throw inputError('Manifest harus memuat pilihan pemilik untuk setiap file; tahun anggaran opsional harus berupa integer 2000–2100.', 400);
   const registry = resolveUnits(manifest.customUnits);
   const ids = new Set(), owners = new Set(), assignments = new Map();
   for (const a of manifest.sources) {
@@ -140,7 +140,7 @@ async function buildBatch(files, manifest) {
       error.issues = source.metadata;
       throw error;
     }
-    if (source.metadata.fiscalYears.some(y => y !== manifest.fiscalYear)) throw inputError('Tahun anggaran file tidak sesuai tahun batch: ' + file.originalname);
+    if (manifest.fiscalYear != null && source.metadata.fiscalYears.some(y => y !== manifest.fiscalYear)) throw inputError('Tahun anggaran file tidak sesuai tahun batch: ' + file.originalname);
     const mapped = new Set();
     for (const a of assignment.activityAssignments) {
       if (!a || !registry.has(a.responsibleUnitId) || !source.metadata.activities.some(v => v.programCode === a.programCode && v.code === a.activityCode) ||
@@ -149,11 +149,14 @@ async function buildBatch(files, manifest) {
     }
     parsed.push({ ...source, assignment });
   }
+  const detectedYears = [...new Set(parsed.flatMap(s => s.metadata.fiscalYears))];
+  if (detectedYears.length > 1) throw inputError('Tahun anggaran yang terdeteksi berbeda; file dari tahun berbeda tidak dapat digabung.');
+  const year = manifest.fiscalYear ?? detectedYears[0] ?? null;
   if (Date.now() > deadline) throw inputError('Pemrosesan melewati 60 detik. Kurangi jumlah file.', 413);
   const filters = manifest.filters || {};
   if (typeof filters !== 'object' || (filters.ownerId && !registry.has(filters.ownerId)) || (filters.responsibleUnitId && !registry.has(filters.responsibleUnitId)))
     throw inputError('Filter unit tidak dikenal.', 400);
-  return projectSources(parsed, registry, manifest.fiscalYear, { ownerId: filters.ownerId || '', responsibleUnitId: filters.responsibleUnitId || '' });
+  return projectSources(parsed, registry, year, { ownerId: filters.ownerId || '', responsibleUnitId: filters.responsibleUnitId || '' });
 }
 module.exports = { inspectFiles, inspectSource, buildBatch, projectSources };
 

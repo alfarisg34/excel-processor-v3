@@ -1,6 +1,6 @@
 # Design
 
-Tanggal pembaruan: 13 Oktober 2026. Desain berdasarkan antarmuka dan ekspor yang tersedia pada package 3.7.0. Dokumen ini memuat perilaku UI, keputusan implementasi, dan format artefak. Kebutuhan bisnis ada di [PRD.md](PRD.md); struktur sistem dan data ada di [Architecture.md](Architecture.md) dan [Schema.md](Schema.md).
+Tanggal pembaruan: 22 Oktober 2026. Desain berdasarkan antarmuka dan ekspor yang tersedia pada package 3.8.0. Dokumen ini memuat perilaku UI, keputusan implementasi, dan format artefak. Kebutuhan bisnis ada di [PRD.md](PRD.md); struktur sistem dan data ada di [Architecture.md](Architecture.md) dan [Schema.md](Schema.md).
 
 ## 1. Tujuan desain
 
@@ -27,7 +27,7 @@ flowchart TD
   DETAIL --> EXPORT
 ```
 
-Sidebar dapat dilipat, dengan preferensi tersimpan melalui localStorage. Pada layar sempit tersedia overlay navigasi dan tabel yang dapat digulir. Footer/badge versi menghubungkan pengguna ke halaman changelog. Halaman utama masih memuat banyak handler inline; pengaturan batch berada dalam `public/recap-batch.js` dan styling utama dalam `public/style.css`.
+Sidebar dapat dilipat, dengan preferensi tersimpan melalui localStorage. Pada layar sempit tombol hamburger membuka/menutup overlay navigasi; tombol di sidebar, backdrop, dan pemilihan menu menutupnya. Status buka dilaporkan melalui aria-expanded tombol mobile. Tabel dapat digulir. Footer/badge versi menghubungkan pengguna ke halaman changelog. Halaman utama masih memuat banyak handler inline; pengaturan batch berada dalam `public/recap-batch.js` dan styling utama dalam `public/style.css`.
 
 ## 3. Bahasa visual
 
@@ -58,9 +58,9 @@ Pencocokan FA membedakan detail normal yang cocok, tidak ditemukan, dan diblokir
 
 ## 5. Review batch dan status pekerjaan
 
-Setiap sumber memiliki kartu yang menampilkan nama file, kelayakan, saran unit dari isi, lokasi/KPPN, bukti sel, pilihan pemilik, konfirmasi, dan mapping PJ per kegiatan. Tahun anggaran merupakan pilihan eksplisit. Unit baru dapat ditambahkan jika registry bawaan tidak mencukupi.
+Setiap sumber memiliki kartu yang menampilkan nama file, kelayakan, saran unit dari isi, lokasi/KPPN, bukti sel, pilihan pemilik, konfirmasi, dan mapping PJ per kegiatan. Tahun anggaran opsional dan otomatis terisi jika satu tahun terdeteksi. Jika tahun input kosong, backend memakai tahun terdeteksi atau null jika tidak diketahui; ringkasan/ekspor menampilkan tahun tidak ditentukan. Unit baru ditambahkan melalui opsi “+ Tambah unit baru…” dalam dropdown pemilik atau PJ, lalu dialog nama unit. Unit langsung dipilih pada dropdown asal; perubahan pemilik memerlukan konfirmasi ulang. Batal/Escape mempertahankan pilihan sebelumnya, sedangkan nama kosong/duplikat ditolak di dialog.
 
-Tombol pembuatan rekap hanya aktif jika sumber valid, pemilik sudah dipilih/dikonfirmasi, tahun sesuai, dan tidak ada pemilik duplikat. Mengubah pemilik membatalkan konfirmasi. Kegiatan tanpa mapping PJ mengikuti pemilik file; kode kegiatan yang sama pada dua unit tetap menjadi dua cabang.
+Tombol pembuatan rekap hanya aktif jika sumber valid, pemilik sudah dipilih/dikonfirmasi, tahun input sesuai jika diisi, tahun terdeteksi tidak berbeda antar file, dan tidak ada pemilik duplikat. Tahun kosong tidak menghalangi proses. Petunjuk di dekat tombol menjelaskan syarat yang belum terpenuhi; petunjuk disembunyikan selama pemrosesan dan saat semua syarat terpenuhi. Mengubah pemilik membatalkan konfirmasi. Kegiatan tanpa mapping PJ mengikuti pemilik file; kode kegiatan yang sama pada dua unit tetap menjadi dua cabang.
 
 Saat inspect atau batch berjalan, panel loading sticky menampilkan tahap, spinner, durasi, dan penjelasan kontrol terkunci. Kontrol yang mengubah permintaan dinonaktifkan. Pembatalan menghentikan fetch dan mencegah respons lama dipakai melalui nomor generasi. Setelah batal/error, pengguna dapat memeriksa ulang. Perubahan upload atau atribusi membersihkan hasil lama agar tidak diekspor sebagai hasil sumber baru.
 

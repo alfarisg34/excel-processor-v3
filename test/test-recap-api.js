@@ -24,6 +24,22 @@ async function run() {
     assert.equal(batch.status,200); assert.equal(batch.body.rootSummary.totalVal,20000);
     assert.equal(batch.body.compactDetails,true);
     assert.equal(batch.body.detailRecords.length,2);
+    for (const fiscalYear of [undefined,null]) {
+      const optional = await post('/api/recap-hierarchy/batch',[file],{...manifest,fiscalYear});
+      assert.equal(optional.status,200);
+      assert.equal(optional.body.fiscalYear,null);
+      assert.equal(optional.body.rootSummary.totalVal,20000);
+    }
+    assert.equal((await post('/api/recap-hierarchy/batch',[file],{...manifest,fiscalYear:0})).status,400);
+    const dated=await fixture({year:2026});
+    const datedSource={...manifest.sources[0],sourceId:fingerprint(dated.buffer)};
+    const inferred=await post('/api/recap-hierarchy/batch',[dated],{sources:[datedSource]});
+    assert.equal(inferred.status,200);
+    assert.equal(inferred.body.fiscalYear,2026);
+    const nextYear=await fixture({year:2027,unit:'BPKK Kendari'});
+    const mixed=await post('/api/recap-hierarchy/batch',[dated,nextYear],{sources:[datedSource,{sourceId:fingerprint(nextYear.buffer),ownerId:'bpkk-kendari',confirmed:true}]});
+    assert.equal(mixed.status,422);
+    assert.match(mixed.body.detail,/tahun berbeda/);
 
     const exportPayload={items:require('./test-satig-export').exportItems(batch.body.hierarchyTree)};
     const exported=await fetch(base+'/api/recap-hierarchy/export',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(exportPayload)});

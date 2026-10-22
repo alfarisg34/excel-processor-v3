@@ -4,7 +4,7 @@ A high-performance Node.js & Express application designed for processing, restru
 
 It transforms raw RKK Satker input files into a **20-column side-by-side comparison layout (SEMULA vs. MENJADI vs. SELISIH)** matching the **RAB Format Baru** specification, calculates hierarchical budget formulas dynamically, cleans SAKTI metadata rows (such as KPPN and Lokasi info), provides pre-upload hierarchy validation, matches Sisa Anggaran from Laporan FA Detail (16 Segmen), and provides an interactive hierarchical tree recap.
 
-Versi saat ini: **3.7.0**. Catatan rilis tersedia pada [CHANGELOG.md](CHANGELOG.md).
+Versi saat ini: **3.8.0**. Catatan rilis tersedia pada [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -190,12 +190,14 @@ MIT License. Developed for Kemnaker Budget & RAB Excel Processing.
 Alur 3 mendukung sampai 10 file XLSX, maksimal 5 MiB per file dan total 20 MiB. Sheet pertama harus berisi tabel RKK, maksimal 30.000 baris dan 100 kolom; workbook maksimal 10 sheet. XLS biner tidak didukung. Batas hasil JSON batch adalah 4 MiB; jika hasil terlalu besar, kurangi sumber atau persempit filter. Target hosting dapat mempunyai batas request/waktu/memory lebih kecil; verifikasi sebelum deployment.
 
 1. Pilih/drop beberapa XLSX. Sistem memeriksa struktur, subtotal dan identitas dari isi workbook.
-2. Pilih tahun anggaran dan konfirmasi unit pemilik tiap file. Tahun footer tidak dipakai. Saran awal tersedia untuk BBPKK Bandung Barat, BPKK Bekasi dan BPKK Kendari; direktorat/unit lain dapat ditambahkan lewat UI.
+2. Konfirmasi unit pemilik tiap file. Tahun anggaran opsional dan otomatis terisi jika terdeteksi; tahun footer dan nama file tidak dipakai. Tanpa tahun input maupun tahun terdeteksi, rekap tetap berjalan dengan keterangan tahun tidak ditentukan. File yang diketahui berbeda tahun tidak dapat digabung. Petunjuk di dekat tombol Buat Rekap Gabungan menampilkan syarat yang belum terpenuhi. Saran awal tersedia untuk BBPKK Bandung Barat, BPKK Bekasi dan BPKK Kendari; pilih opsi **+ Tambah unit baru…** pada dropdown pemilik atau penanggung jawab untuk membuat unit dan langsung memilihnya. Dialog dapat dibatalkan tanpa mengubah pilihan sebelumnya.
 3. Untuk file campuran, buka bukti/mapping dan pilih penanggung jawab per kegiatan jika berbeda dari pemilik sumber. Unit tambahan berlaku pada sesi halaman tersebut.
 4. Buat rekap gabungan, lalu gunakan filter pemilik/penanggung jawab. Kode 2175 maupun 6621 tetap mempunyai cabang terpisah per unit.
 5. PDF/Excel akun membawa sumber dan atribusi; detail menampilkan file, sheet, baris, pemilik dan penanggung jawab. Excel struktur SATIG mengelompokkan rincian dalam blok pemilik satker.
 
 Hash isi file mendeteksi salinan walaupun namanya berbeda. Satu unit/tahun hanya menerima satu versi aktif; hapus revisi/salinan yang tidak dipakai. Pembagian 6621 dalam satu file ke beberapa direktorat belum otomatis: perlu mapping yang lebih rinci dan aturan alokasi.
+
+Pembaca RKK masih memakai posisi kolom yang didukung (volume G, harga H, jumlah J/K). Varian dengan volume L, harga N dan jumlah Q seperti RKK (10) belum didukung dan dapat memunculkan pesan jumlah detail kosong. Pemetaan otomatis berdasarkan header belum termasuk rilis 3.8.0.
 
 API baru:
 

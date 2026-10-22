@@ -3,6 +3,44 @@ const path = require('path');
 
 const releases = [
   {
+    version: '3.8.0',
+    date: '2026-10-22',
+    type: 'MINOR',
+    title: 'Tahun Rekap Opsional, Tambah Unit dari Dropdown dan Sidebar Mobile',
+    changes: [
+      {
+        type: 'FEAT',
+        title: 'Tahun Anggaran Rekap Opsional',
+        desc: 'Tahun boleh kosong pada UI; manifest API boleh menghilangkan fiscalYear atau mengirim null. Backend memakai input atau satu tahun terdeteksi, lalu null jika tidak diketahui. Ringkasan dan metadata ekspor menjelaskan tahun tidak ditentukan. Tahun terdeteksi yang berbeda antar sumber tetap ditolak sebelum filter unit diterapkan.'
+      },
+      {
+        type: 'UI',
+        title: 'Tambah Unit dari Dropdown Pemilik dan Penanggung Jawab',
+        desc: 'Opsi + Tambah unit baru membuka dialog nama dan langsung memilih unit pada dropdown asal. Nama kosong/duplikat ditolak; Batal/Escape mempertahankan pilihan sebelumnya. Perubahan pemilik tetap membutuhkan konfirmasi ulang.'
+      },
+      {
+        type: 'FIX',
+        title: 'Sidebar Mobile dan Petunjuk Kesiapan Rekap',
+        desc: 'Hamburger mobile memakai handler sidebar yang benar dan memperbarui aria-expanded. Petunjuk dekat tombol rekap menjelaskan pemilik belum dipilih/dikonfirmasi, duplikat pemilik, dan tahun tidak sesuai.'
+      },
+      {
+        type: 'DOCS',
+        title: 'Dokumentasi dan Versi Rilis Diselaraskan',
+        desc: 'README.md, PRD.md, Architecture.md, Schema.md dan Design.md menjelaskan perilaku terbaru. Package, lockfile dan label UI diselaraskan ke 3.8.0; AGENTS.md ditinjau tanpa perubahan. Artefak browser .playwright-mcp/ diabaikan oleh Git. Keterbatasan pemetaan kolom RKK tetap didokumentasikan; format volume L, harga N dan jumlah Q belum didukung.'
+      },
+      {
+        type: 'TEST',
+        title: 'Regresi API, Batch, DOM dan Browser',
+        desc: 'Suite rekap mencakup tahun kosong/null/tidak dikirim, inferensi dan validasi tahun, penolakan lintas tahun, serta tambah unit dari dropdown. Browser memverifikasi rekap tanpa tahun senilai Rp 38.544.975.000, tambah/pilih pemilik dan PJ, duplikat nama, Batal/Escape dialog, navigasi mobile 390 × 844 dan lipat/perluas sidebar desktop 1280 × 900. Sinkronisasi versi, API changelog aktif, sintaks script dan git diff --check diperiksa.'
+      },
+      {
+        type: 'TEST',
+        title: 'Batas Pemeriksaan',
+        desc: 'Integrasi opsional lima workbook dilewati karena sampel lokal tidak lengkap. Pemeriksaan visual Microsoft Excel belum dilakukan. RKK (10) masih ditolak karena posisi kolom berbeda; masalah ini hanya didiagnosis dan tidak diperbaiki pada rilis ini.'
+      }
+    ]
+  },
+  {
     version: '3.7.0',
     date: '2026-10-13',
     type: 'MINOR',

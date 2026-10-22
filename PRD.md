@@ -1,10 +1,10 @@
 # PRD — Excel Processor V3 Kemnaker
 
-Tanggal pembaruan: 13 Oktober 2026
+Tanggal pembaruan: 22 Oktober 2026
 
-Versi aplikasi pada `package.json`: 3.7.0
+Versi aplikasi pada `package.json`: 3.8.0
 
-Status: dokumentasi sistem yang tersedia pada rilis 3.7.0.
+Status: dokumentasi sistem yang tersedia pada rilis 3.8.0.
 
 Dokumen pendamping: [Architecture.md](Architecture.md) untuk komponen dan alur sistem, [Schema.md](Schema.md) untuk kontrak data/workbook/API, dan [Design.md](Design.md) untuk perilaku UI serta format ekspor.
 
@@ -66,7 +66,7 @@ Sumber dana mencakup RM, PNBP (ditampilkan sebagai PNP pada sebagian UI), dan PL
 
 ### 4.3 Identitas dan asal data batch
 
-Setiap sumber mempunyai fingerprint SHA-256, nama file, sheet, metadata, bukti identifikasi, hasil validasi, dan rekonsiliasi. Pengguna menetapkan tahun anggaran, mengonfirmasi pemilik, dan dapat menentukan penanggung jawab per kegiatan. Detail mempertahankan sumber, sheet, baris, pemilik, penanggung jawab, dan path hirarki.
+Setiap sumber mempunyai fingerprint SHA-256, nama file, sheet, metadata, bukti identifikasi, hasil validasi, dan rekonsiliasi. Pengguna dapat menetapkan tahun anggaran secara opsional, wajib mengonfirmasi pemilik, dan dapat menentukan penanggung jawab per kegiatan. Unit tambahan dibuat melalui opsi tambah pada dropdown pemilik/PJ dan langsung dipilih. Detail mempertahankan sumber, sheet, baris, pemilik, penanggung jawab, dan path hirarki.
 
 Key node adalah ID opaque. Konsumen API harus memakai atribut eksplisit untuk membaca kode/unit, bukan mengurai key.
 
@@ -110,11 +110,11 @@ Laporan lengkap dapat diunduh jika tersedia. Penyimpanannya sementara di memori 
 
 1. Pengguna memilih/drop beberapa XLSX; UI menjalankan inspect.
 2. Sistem menampilkan metadata, bukti identifikasi unit, validasi, dan rekonsiliasi per file.
-3. Pengguna memilih tahun 2000–2100 dan mengonfirmasi pemilik setiap sumber.
+3. Pengguna mengonfirmasi pemilik setiap sumber; tahun opsional, jika diisi harus integer 2000–2100.
 4. Pengguna dapat menambah unit sesi dan memetakan penanggung jawab tiap kegiatan.
 5. Sistem membentuk manifest berdasarkan fingerprint isi dan menghasilkan rekap bila seluruh sumber memenuhi aturan.
 
-Saran unit bawaan meliputi BBPKK Bandung Barat, BPKK Bekasi, dan BPKK Kendari. Saran bukan konfirmasi. Tahun footer tanda tangan bukan tahun anggaran. Tahun yang ditemukan di isi harus sesuai tahun batch.
+Saran unit bawaan meliputi BBPKK Bandung Barat, BPKK Bekasi, dan BPKK Kendari. Saran bukan konfirmasi. Tahun footer tanda tangan bukan tahun anggaran. Tahun yang ditemukan di isi harus sama antar sumber dan cocok dengan input jika diisi. Tanpa input, tahun batch diambil dari isi; jika tidak terdeteksi, rekap tetap berjalan dengan tahun null dan keterangan tahun tidak ditentukan.
 
 File identik ditolak walaupun namanya berbeda. Satu pemilik/tahun hanya menerima satu sumber aktif; pengguna perlu menghapus salinan/revisi yang tidak dipakai. Pemilik dan penanggung jawab yang berbeda menjaga cabang kegiatan tetap terpisah walaupun kode sama. Batch tidak menghasilkan sukses parsial.
 
@@ -185,6 +185,7 @@ Verifikasi tersedia melalui `npm run test:recap` (metadata, batch, API, simulasi
 
 ## 9. Keterbatasan dan tindak lanjut
 
+- Pemetaan kolom RKK belum dinamis berdasarkan header. Varian volume L, harga N dan jumlah Q seperti RKK (10) masih ditolak sebagai jumlah detail kosong; rilis 3.8.0 hanya mendokumentasikan diagnosis ini.
 - UI pemrosesan menulis “beberapa” RKK tetapi input/handler pemrosesan menerima satu RKK. Dukungan multi-file tersedia pada rekap batch.
 - Teks bantuan FA masih menyebut kolom AV; implementasi aktual memakai AP/AQ. Beberapa dokumentasi lama menyebut 42 kolom, sedangkan output FA mencapai kolom 43.
 - Format `.xls` ditawarkan pada UI pemrosesan tetapi dukungan XLS biner tidak tersedia pada pembaca XLSX.

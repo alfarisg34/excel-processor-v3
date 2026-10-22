@@ -51,6 +51,26 @@ async function run() {
   const other = await fixture({ amount:20000 });
   await assert.rejects(buildBatch([file,other], { ...small, sources:[small.sources[0], { ...small.sources[0],sourceId:fingerprint(other.buffer) }] }), /versi aktif/);
   const dated = await fixture({ year:2026 });
+  for (const fiscalYear of [undefined, null]) {
+    const undatedBatch = await buildBatch([file], { ...small, fiscalYear });
+    assert.equal(undatedBatch.fiscalYear,null);
+    assert.equal(undatedBatch.rootSummary.totalVal,20000);
+    const datedBatch = await buildBatch([dated], { ...small, fiscalYear, sources:[{...small.sources[0],sourceId:fingerprint(dated.buffer)}] });
+    assert.equal(datedBatch.fiscalYear,2026);
+  }
+  for (const fiscalYear of [0,1999,2101,2026.5,'2026','']) {
+    await assert.rejects(buildBatch([file], {...small,fiscalYear}), /opsional/);
+  }
+  const nextYear = await fixture({year:2027,unit:'BPKK Kendari'});
+  const mixedSources = [
+    {...small.sources[0],sourceId:fingerprint(dated.buffer)},
+    {sourceId:fingerprint(nextYear.buffer),ownerId:'bpkk-kendari',confirmed:true}
+  ];
+  await assert.rejects(buildBatch([dated,nextYear], {sources:mixedSources}), /tahun berbeda/);
+  await assert.rejects(buildBatch([dated,nextYear], {fiscalYear:null,sources:mixedSources,filters:{ownerId:'bpkk-bekasi'}}), /tahun berbeda/);
+  const inferred = await buildBatch([dated,other], {sources:[mixedSources[0],{...mixedSources[1],sourceId:fingerprint(other.buffer)}]});
+  assert.equal(inferred.fiscalYear,2026);
+  assert.equal(inferred.rootSummary.totalVal,60000);
   await assert.rejects(buildBatch([dated], { ...small, sources:[{ ...small.sources[0],sourceId:fingerprint(dated.buffer) }] }), /Tahun anggaran/);
   const mismatched = await inspectFiles([await fixture({ mismatch:true })]);
   assert.equal(mismatched.sources[0].valid,false);

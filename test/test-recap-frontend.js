@@ -20,6 +20,8 @@ async function run() {
     closest(){return null;}
     click(){}
     focus(){}
+    showModal(){this.open=true;}
+    close(){this.open=false;}
     setAttribute(key,value){this.attributes[key]=String(value);}
     getAttribute(key){return this.attributes[key]??null;}
     select(){}
@@ -85,7 +87,7 @@ async function run() {
     }
     throw Error('UI request did not finish');
   }
-  const a=await fixture({outputTargets:true}), b=await fixture({unit:'BPKK Kendari',location:'KOTA KENDARI',kppn:'060',amount:20000});
+  const a=await fixture({outputTargets:true,year:2027}), b=await fixture({unit:'BPKK Kendari',location:'KOTA KENDARI',kppn:'060',amount:20000,year:2027});
   const uploads=[new File([a.buffer], '<img src=x onerror=bad()>.xlsx'),new File([b.buffer], 'renamed.xlsx')];
   const inspectGate=deferred();inspectGate.finished=deferred();context.fetchGate=inspectGate;
   await get('fileInputRecap').fire('change',{files:uploads});
@@ -113,10 +115,18 @@ async function run() {
   assert.equal(activeIntervals.size,0);
   assert.equal(get('btnProcessRecap').disabled,true);
   assert.ok(get('recapBatchFiles').innerHTML.includes('&lt;img'));
+  get('recapFiscalYear').value='2026';
+  await get('recapFiscalYear').fire('input');
+  assert.equal(get('recapReadiness').hidden,false);
+  assert.match(get('recapReadiness').textContent,/sesuai.*2027/);
   get('recapFiscalYear').value='2027';
   await get('recapFiscalYear').fire('input');
   for (const index of [0,1]) await get('recapBatchFiles').fire('change',{dataset:{action:'confirm',index:String(index)},checked:true});
   assert.equal(get('btnProcessRecap').disabled,false, get('recapBatchFiles').innerHTML + ' STATUS: ' + get('statusRecap').innerHTML);
+  assert.equal(get('recapReadiness').hidden,true);
+  get('recapFiscalYear').value='';
+  await get('recapFiscalYear').fire('input');
+  assert.equal(get('btnProcessRecap').disabled,false,'Detected year should be inferred even when input is cleared');
   const batchGate=deferred();batchGate.finished=deferred();context.fetchGate=batchGate;
   const batchClick=get('btnProcessRecap').fire('click');
   assert.equal(get('recapLoading').hidden,false);
@@ -127,6 +137,7 @@ async function run() {
   assert.equal(get('recapFiscalYear').disabled,false);
   assert.equal(activeIntervals.size,0);
   const total=vm.runInContext('currentRecapData.rootSummary.totalVal',context);
+  assert.equal(vm.runInContext('currentRecapData.fiscalYear',context),2027);
   assert.equal(total,60000);
   assert.equal(vm.runInContext('currentRecapData.rootSummary.digit6List.flatMap(a=>a.details).length',context),4);
   assert.equal(vm.runInContext('currentRecapData.detailRecords',context),undefined);
@@ -278,14 +289,66 @@ async function run() {
   await get('recapBatchFiles').fire('change',{dataset:{action:'owner',index:'1'},value:'bpkk-bekasi'});
   assert.equal(get('btnProcessRecap').disabled,true);
   assert.equal(get('recapResultPanel').style.display,'none');
+  assert.match(get('recapReadiness').textContent,/beberapa file untuk unit\/tahun yang sama/);
+  assert.match(get('recapReadiness').textContent,/Centang konfirmasi/);
   assert.equal(vm.runInContext('currentRecapData',context),null);
+  const addOwner={dataset:{action:'owner',index:'1'},value:'__add_unit__'};
+  await get('recapBatchFiles').fire('change',addOwner);
+  assert.equal(get('recapUnitDialog').open,true);
+  assert.equal(addOwner.value,'bpkk-bekasi');
+  get('recapNewUnitName').value='BPKK Bekasi';
+  await get('recapAddUnit').fire('click');
+  assert.match(get('recapUnitError').textContent,/belum terdaftar/);
+  assert.equal(get('recapUnitDialog').open,true);
   get('recapNewUnitName').value='Unit Baru <b>test</b>';
   await get('recapAddUnit').fire('click');
+  assert.equal(get('recapUnitDialog').open,false);
   assert.ok(get('recapBatchFiles').innerHTML.includes('Unit Baru &lt;b&gt;test&lt;/b&gt;'));
+  assert.ok(get('recapBatchFiles').innerHTML.includes('Tambah unit baru'));
+  const addActivity={dataset:{action:'activity',index:'1',program:'026.04.WA',activity:'6621'},value:'__add_unit__'};
+  await get('recapBatchFiles').fire('change',addActivity);
+  await get('recapCancelUnit').fire('click');
+  assert.equal(get('recapUnitDialog').open,false);
+  await get('recapBatchFiles').fire('change',{...addActivity,value:'__add_unit__'});
+  get('recapNewUnitName').value='PJ Baru';
+  await get('recapAddUnit').fire('click');
+  assert.ok(get('recapBatchFiles').innerHTML.includes('PJ Baru</option>'));
   await get('recapClearFiles').fire('click');
   assert.equal(get('recapBatchReview').hidden,true);
   assert.equal(get('recapFiscalYear').value,'');
   assert.equal(get('btnProcessRecap').disabled,true);
+  assert.equal(get('recapReadiness').hidden,true);
+  // A valid workbook without a detected year can be processed with a blank year.
+  const undated=await fixture();
+  await get('fileInputRecap').fire('change',{files:[new File([undated.buffer],'undated.xlsx')]});
+  await idle();
+  await get('recapBatchFiles').fire('change',{dataset:{action:'confirm',index:'0'},checked:true});
+  assert.equal(get('recapFiscalYear').value,'');
+  assert.equal(get('btnProcessRecap').disabled,false);
+  assert.equal(get('recapReadiness').hidden,true);
+  await get('btnProcessRecap').fire('click');
+  await idle();
+  assert.equal(vm.runInContext('currentRecapData.fiscalYear',context),null);
+  assert.equal(vm.runInContext('currentRecapData.rootSummary.totalVal',context),20000);
+  assert.match(get('recapBatchSummary').textContent,/Tahun anggaran tidak ditentukan/);
+  assert.equal(vm.runInContext('recapSourceRows()[0][1]',context),'Tidak ditentukan');
+  get('recapFiscalYear').value='2101';
+  await get('recapFiscalYear').fire('input');
+  assert.equal(get('btnProcessRecap').disabled,true);
+  get('recapFiscalYear').value='2027';
+  await get('recapFiscalYear').fire('input');
+  assert.equal(get('btnProcessRecap').disabled,false);
+  assert.equal(get('recapReadiness').hidden,true);
+  await get('recapClearFiles').fire('click');
+  const conflicting=await fixture({unit:'BPKK Kendari',year:2026});
+  await get('fileInputRecap').fire('change',{files:[uploads[0],new File([conflicting.buffer],'different-year.xlsx')]});
+  await idle();
+  get('recapFiscalYear').value='';
+  await get('recapFiscalYear').fire('input');
+  for (const index of [0,1]) await get('recapBatchFiles').fire('change',{dataset:{action:'confirm',index:String(index)},checked:true});
+  assert.equal(get('btnProcessRecap').disabled,true);
+  assert.match(get('recapReadiness').textContent,/tahun berbeda/);
+  await get('recapClearFiles').fire('click');
   context.nextFailure=new Error('Jaringan pengujian terputus');
   await get('fileInputRecap').fire('change',{files:[uploads[0]]});
   await idle();

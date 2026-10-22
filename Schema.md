@@ -1,6 +1,6 @@
 # Schema
 
-Tanggal pembaruan: 13 Oktober 2026. Kontrak berdasarkan implementasi package 3.7.0. Dokumen ini mencakup workbook, objek runtime, serta API; proyek tidak memiliki schema database. Gambaran sistem ada di [Architecture.md](Architecture.md).
+Tanggal pembaruan: 22 Oktober 2026. Kontrak berdasarkan implementasi package 3.8.0. Dokumen ini mencakup workbook, objek runtime, serta API; proyek tidak memiliki schema database. Gambaran sistem ada di [Architecture.md](Architecture.md).
 
 ## 1. Konvensi
 
@@ -29,6 +29,8 @@ Audit/formula juga mengenali grup `>` dan subgrup `>>`, lalu detail `-`. Level a
 ## 3. Workbook RKK dan FA
 
 Parser sumber menggunakan konteks hirarki dari baris sebelumnya. Pada RKK, kode biasanya berada di A–C, uraian di D/E, jumlah di J dengan penanganan pergeseran K, dan tagging di L atau kolom sekitar. Detail dapat memakai penanda `-` pada D dengan uraian di E. Normalisasi menangani format sumber yang didukung; posisi ini bukan kontrak untuk semua workbook Excel.
+
+Volume/harga detail dibaca dari G/H. Varian dengan volume di L, harga di N dan jumlah di Q belum dipetakan otomatis: pada sampel RKK (10), baris 19, 20 dan 30 ditolak sebagai jumlah kosong meskipun nilai Q tersedia. Ini merupakan batas parser yang masih terbuka, bukan dukungan format baru pada rilis 3.8.0.
 
 Entitas normalisasi mempertahankan `rowNum` dan `sourceRows`, kode, uraian, jumlah, volume/harga, tagging, serta penanda blokir. Audit menghasilkan `rows`, `findings`, `warnings`, `issues`, `reconciliation`, dan `validationComplete`. Properti `rkkSourceRows` pada row ExcelJS dipakai sebagai provenance runtime; jangan menganggapnya tersimpan sebagai field standar XLSX.
 
@@ -108,10 +110,10 @@ Unit bawaan berasal dari [unit-registry.js](src/config/unit-registry.js). Regist
 
 Aturan manifest:
 
-- `fiscalYear` wajib integer 2000–2100; jumlah sources harus sama dengan jumlah file.
+- `fiscalYear` opsional (boleh dihilangkan atau null); jika diisi wajib integer 2000–2100. Jumlah sources harus sama dengan jumlah file.
 - Setiap hash harus cocok dengan isi upload, unik, dan pemilik wajib dikenal serta `confirmed === true`.
 - Satu pemilik hanya boleh memiliki satu file aktif dalam batch. File identik ditolak meski namanya berbeda.
-- Tahun eksplisit sumber harus cocok. Sumber tanpa tahun eksplisit memakai tahun batch yang dipilih pengguna.
+- Tahun eksplisit sumber harus sama antar file dan cocok dengan tahun input jika diisi. Tanpa input, tahun batch memakai satu tahun yang terdeteksi; jika tidak ada tahun terdeteksi, tahun batch null. File dengan tahun tidak diketahui tetap dapat direkap.
 - Mapping PJ memakai pasangan program/kegiatan yang benar-benar ada; satu pasangan tidak boleh dipetakan dua kali. Default PJ adalah pemilik sumber.
 - `customUnits` opsional, maksimal 50. ID cocok dengan `^custom-[a-z0-9-]{1,64}$`; nama tidak kosong, maksimal 150 karakter, tanpa karakter kontrol, dan tidak duplikat setelah trim/penyeragaman huruf.
 - Filter kosong berarti semua. Nilai terisi harus merujuk unit yang dikenal.
@@ -120,7 +122,7 @@ Aturan manifest:
 
 | Field | Isi |
 | --- | --- |
-| `schemaVersion`, `fiscalYear`, `filters` | Versi 2, tahun batch, filter server |
+| `schemaVersion`, `fiscalYear`, `filters` | Versi 2, tahun batch (number atau null), filter server |
 | `rootSummary`, `nodeSummaries` | Ringkasan root dan dictionary node keyed by key |
 | `levelOptions`, `nodesByLevel`, `childrenMap` | Navigasi tingkat 0–6 dan relasi node ringkasan |
 | `hierarchyTree` | Pohon rekursif termasuk akun level 7 |

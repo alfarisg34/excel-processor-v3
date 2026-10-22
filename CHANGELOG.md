@@ -9,6 +9,29 @@ dan proyek ini menganut standar [Semantic Versioning (SemVer 2.0.0)](https://sem
 
 ## [Unreleased]
 
+## [3.8.0] - 2026-10-22
+
+### Fixed
+- Tombol hamburger mobile memanggil handler sidebar yang benar, sehingga menu dapat dibuka/ditutup. Status aria-expanded diselaraskan dengan sidebar.
+- Rekap menampilkan syarat yang belum terpenuhi di dekat tombol Buat Rekap Gabungan; pemilik belum dipilih/dikonfirmasi, duplikat pemilik, dan tahun tidak sesuai dijelaskan.
+
+### Changed
+- Tahun anggaran rekap opsional pada UI dan API: input boleh kosong, manifest boleh menghilangkan fiscalYear atau mengirim null. Tahun batch memakai input atau satu tahun terdeteksi; jika tidak diketahui, respons berisi null dan ringkasan/metadata ekspor menampilkan tahun tidak ditentukan. Tahun terdeteksi yang berbeda antar sumber tetap ditolak, termasuk sebelum filter unit diterapkan.
+- Form tambah unit dipindahkan ke opsi “+ Tambah unit baru…” dalam dropdown pemilik dan penanggung jawab kegiatan. Dialog nama langsung memilih unit baru pada dropdown asal, menolak nama kosong/duplikat, serta mendukung Batal/Escape tanpa mengganti pilihan sebelumnya.
+- README.md, PRD.md, Architecture.md, Schema.md dan Design.md diselaraskan dengan tahun opsional, penambahan unit dari dropdown dan navigasi mobile.
+- Rilis 3.8.0 menyelaraskan package.json, package-lock.json, changelog aplikasi dan label versi UI. AGENTS.md ditinjau; aturan sebelum push tetap berlaku tanpa perubahan.
+- Folder artefak browser .playwright-mcp/ diabaikan oleh Git agar tangkapan layar dan log sesi tidak masuk rilis.
+
+### Validation
+- npm run test:recap, pemeriksaan sintaks public/recap-batch.js dan src/utils/hierarchy-recap-batch.js, serta git diff --check lulus. Regresi API/batch/DOM mencakup tahun kosong/null/tidak dikirim, inferensi tahun, rentang/tipe input, penolakan lintas tahun, konfirmasi/duplikat pemilik, serta tambah unit melalui dropdown dan pembatalan dialog.
+- Alur browser localhost:3000 diuji dengan RINCIAN KERTAS KERJA SATKER - 2026-10-19T090127.268.xlsx: tahun kosong berhasil menghasilkan rekap Rp 38.544.975.000 dengan dua cabang kegiatan. Tambah/pilih pemilik dan PJ, penolakan nama duplikat, Batal/Escape dialog, buka/tutup sidebar mobile (390 × 844), backdrop/pemilihan menu, serta lipat/perluas sidebar desktop (1280 × 900) diperiksa.
+- Integrasi opsional lima workbook dilewati oleh suite karena sampel lokal tidak lengkap.
+- Sinkronisasi versi/tanggal pada package, lockfile, label UI, dokumen dan changelog diverifikasi; API changelog aktif melaporkan 3.8.0. Sintaks changelog aplikasi serta seluruh script inline pada halaman utama/changelog diperiksa.
+
+### Known limitations
+- Pemetaan kolom RKK masih memakai volume G, harga H dan jumlah J/K. Varian volume L, harga N dan jumlah Q pada RKK (10) masih ditolak di baris 19, 20 dan 30, meskipun nilai sumber tersedia. Masalah hanya didiagnosis sesuai permintaan; belum diperbaiki pada rilis ini.
+- Pemeriksaan visual Microsoft Excel belum dilakukan. Aktivitas input pada situs Pandu SAKTI terpisah dari aplikasi ini dan bukan integrasi atau fitur rilis.
+
 ## [3.7.0] - 2026-10-13
 
 ### Added

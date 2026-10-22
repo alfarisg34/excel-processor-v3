@@ -72,8 +72,8 @@
       <header class="topbar">
         <div class="topbar-left">
           <!-- Mobile Drawer Toggle (Only shown on screens <= 900px) -->
-          <button class="btn-sidebar-toggle mobile-only-toggle" id="btnToggleSidebarMobile" onclick="toggleSidebar()"
-            title="Buka Menu Sidebar">
+          <button class="btn-sidebar-toggle mobile-only-toggle" id="btnToggleSidebarMobile" onclick="handleSidebarToggle()"
+            title="Buka Menu Sidebar" aria-label="Buka menu sidebar" aria-controls="appSidebar" aria-expanded="false">
             <i class="fa-solid fa-bars"></i>
           </button>
           <div class="topbar-breadcrumb">
@@ -190,21 +190,28 @@
 
             <div id="recapBatchReview" class="recap-batch-review" hidden>
               <div class="recap-batch-controls">
-                <label>Tahun anggaran
-                  <input id="recapFiscalYear" type="number" min="2000" max="2100" placeholder="Contoh: 2027">
+                <label>Tahun anggaran (opsional)
+                  <input id="recapFiscalYear" type="number" min="2000" max="2100" step="1" placeholder="Boleh dikosongkan">
                 </label>
-                <label>Tambah unit pemilik / penanggung jawab
-                  <input id="recapNewUnitName" type="text" maxlength="150" placeholder="Nama satker atau direktorat">
-                </label>
-                <button type="button" class="btn btn-sm" id="recapAddUnit">Tambah unit</button>
               </div>
               <button type="button" class="btn btn-sm" id="recapInspectFiles">Periksa ulang file</button>
               <button type="button" class="btn btn-sm" id="recapClearFiles">Bersihkan semua file</button>
-              <p class="recap-batch-help">Konfirmasi pemilik setiap file. Saran berasal dari isi workbook. Tahun footer tidak digunakan sebagai tahun anggaran. Untuk file campuran, pilih penanggung jawab per kegiatan bila diperlukan.</p>
+              <p class="recap-batch-help">Konfirmasi pemilik setiap file. Saran berasal dari isi workbook. Tahun anggaran otomatis terisi jika terdeteksi dan boleh dikosongkan; file yang diketahui berbeda tahun tidak dapat digabung. Tahun footer tidak digunakan sebagai tahun anggaran. Untuk file campuran, pilih penanggung jawab per kegiatan bila diperlukan.</p>
               <div id="recapBatchFiles" aria-live="polite"></div>
+              <dialog id="recapUnitDialog" aria-labelledby="recapUnitDialogTitle">
+                <h3 id="recapUnitDialogTitle">Tambah unit baru</h3>
+                <label for="recapNewUnitName">Nama satker atau direktorat</label>
+                <input id="recapNewUnitName" type="text" maxlength="150" placeholder="Nama satker atau direktorat" aria-describedby="recapUnitError">
+                <p id="recapUnitError" class="recap-source-error" role="alert"></p>
+                <div class="recap-batch-controls">
+                  <button type="button" class="btn btn-sm" id="recapCancelUnit">Batal</button>
+                  <button type="button" class="btn btn-sm" id="recapAddUnit">Tambah &amp; pilih unit</button>
+                </div>
+              </dialog>
             </div>
 
-            <button class="btn" id="btnProcessRecap"
+            <p id="recapReadiness" class="recap-batch-help" role="status" aria-live="polite" hidden></p>
+            <button class="btn" id="btnProcessRecap" aria-describedby="recapReadiness"
               style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);"
               disabled>
               <i class="fa-solid fa-chart-bar"></i> Buat Rekap Gabungan
@@ -659,7 +666,7 @@
               Center</a></span>
           <a href="/changelog" class="version-pill" id="footerVersionBadge"
             title="Buka Catatan Pembaruan &amp; Log Versi">
-            <i class="fa-solid fa-code-branch" style="font-size: 11px;"></i> v3.7.0
+            <i class="fa-solid fa-code-branch" style="font-size: 11px;"></i> v3.8.0
           </a>
         </div>
       </footer>
@@ -1392,6 +1399,7 @@
         if (!sidebar) return;
         const isOpen = sidebar.classList.toggle('open');
         if (backdrop) backdrop.classList.toggle('show', isOpen);
+        document.getElementById('btnToggleSidebarMobile').setAttribute('aria-expanded', String(isOpen));
       } else {
         toggleSidebarCollapse();
       }
@@ -1402,6 +1410,7 @@
       const backdrop = document.getElementById('sidebarBackdrop');
       if (sidebar) sidebar.classList.remove('open');
       if (backdrop) backdrop.classList.remove('show');
+      document.getElementById('btnToggleSidebarMobile').setAttribute('aria-expanded', 'false');
     }
 
     // Restore sidebar collapse state on load
@@ -1519,7 +1528,7 @@
       const data = currentRecapData;
       const name = id => data.unitOptions.find(u => u.id === id)?.name || id || 'Semua';
       const rows = [
-        ['Tahun anggaran', data.fiscalYear],
+        ['Tahun anggaran', data.fiscalYear ?? 'Tidak ditentukan'],
         ['Filter pemilik sumber', name(data.filters.ownerId)],
         ['Filter penanggung jawab', name(data.filters.responsibleUnitId)],
         ['Kode kegiatan unik', data.activityCodeCount],
