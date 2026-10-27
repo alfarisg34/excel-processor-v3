@@ -1,6 +1,6 @@
 # Architecture
 
-Tanggal pembaruan: 22 Oktober 2026. Versi package: 3.8.0, sesuai rilis pada [CHANGELOG.md](CHANGELOG.md).
+Tanggal pembaruan: 27 Oktober 2026. Versi package: 3.9.0, sesuai rilis pada [CHANGELOG.md](CHANGELOG.md).
 
 Dokumen ini menjelaskan implementasi saat ini. Kebutuhan produk ada di [PRD.md](PRD.md), kontrak data di [Schema.md](Schema.md), dan perilaku antarmuka serta ekspor di [Design.md](Design.md).
 
@@ -78,9 +78,11 @@ Identitas sumber adalah SHA-256 isi file. Nama file tidak menentukan unit atau t
 
 Program yang sama digabung lintas sumber pada tahun batch. Tahun input opsional: backend menggunakan tahun input, satu tahun terdeteksi, atau null jika tidak diketahui. Tahun terdeteksi yang berbeda antar sumber selalu ditolak sebelum filter diterapkan; input yang tidak cocok juga ditolak. Cabang mulai Kegiatan dipisahkan menurut tahun (termasuk null), pemilik, penanggung jawab, dan path kode. Kode kegiatan unik dan jumlah cabang kegiatan adalah dua metrik berbeda. Filter pemilik/PJ dijalankan di backend dengan upload ulang sumber, sedangkan filter akun/sumber dana/blokir dan pencarian dijalankan di browser.
 
-Parser meneruskan target/satuan KRO dan RO dari volume kolom G RKK ke summary/tree tanpa agregasi lintas cabang. Frontend mengirim node hasil fokus/pencarian level 2–6 ke POST /api/recap-hierarchy/export. Backend ExcelJS menulis satu sheet Kegiatan-KRO-RO, memakai profil format template SATIG yang disertakan dalam src/config/satig-export-template.json. Blok satker mengikuti pemilik dan urutan sumber terpilih, subtotal menjumlahkan anak langsung yang diekspor, Unit Cost RO menggunakan target positif. Endpoint memvalidasi bentuk/relasi node (maksimal 30.000 node dan 4 MiB JSON) tanpa mengunggah ulang sumber; respons binary XLSX tidak disimpan permanen. Format ini tidak mempunyai metadata tambahan atau outline.
+Parser meneruskan target/satuan KRO dan RO dari volume kolom G RKK ke summary/tree tanpa agregasi lintas cabang. Frontend mengirim node hasil fokus/pencarian level 2–6 ke POST /api/recap-hierarchy/export. Backend ExcelJS menulis satu sheet Kegiatan-KRO-RO, memakai profil format template SATIG yang disertakan dalam src/config/satig-export-template.json. Blok satker mengikuti pemilik dan urutan sumber terpilih, subtotal menjumlahkan anak langsung yang diekspor, Unit Cost RO menggunakan target positif. Endpoint memvalidasi bentuk/relasi node (maksimal 30.000 node dan 4 MiB JSON) tanpa mengunggah ulang sumber; respons binary XLSX tidak disimpan permanen. Kolom A menampilkan label tingkat; B:I tetap mengikuti template. Outline dibangun saat traversal induk–anak per satker, dengan induk di atas rincian dan seluruh grup terbuka. Ekspor penuh menyediakan tombol 1–7 dari Grand Total sampai Subkomponen; fokus tanpa leluhur merapatkan kedalaman dari akar rincian. Header termasuk grup rincian satker. ExcelJS menurunkan flag collapsed dari kedalaman maksimum; eksportir mengesetnya false pada baris agar terminal tetap terbuka tanpa menambah tingkat kosong. Tidak ada metadata tambahan.
 
 Inspect dapat mengembalikan file invalid bersama file valid untuk review. Batch menolak keseluruhan permintaan jika satu sumber atau manifest gagal; tidak ada hasil sukses parsial. Detail JSON disimpan sekali, lalu referensinya dipakai pada banyak ringkasan node untuk mengurangi ukuran payload.
+
+Inspect dan batch saat ini masing-masing membaca workbook dua kali per sumber: `loadSource` untuk metadata dan `validateInput` melalui `parseInput`. Sumber diproses berurutan, dan hasil canonical inspect tidak disimpan untuk request batch/filter berikutnya. Normalisasi audit di-cache pada objek worksheet, bukan lintas pembacaan/request. Benchmark lokal menunjukkan biaya dominan pada pembacaan XLSX dengan banyak merge. Rencana loader bersama, optimasi merge, reuse sumber, payload/render dan pembatalan dicatat di [improvement.md](improvement.md); belum diimplementasikan pada 3.9.0.
 
 ## 5. Endpoint dan sumber daya
 

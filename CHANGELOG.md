@@ -9,6 +9,29 @@ dan proyek ini menganut standar [Semantic Versioning (SemVer 2.0.0)](https://sem
 
 ## [Unreleased]
 
+## [3.9.0] - 2026-10-27
+
+### Added
+- `improvement.md` menyimpan analisis alur inspect/batch, baseline lokal, eksperimen merge dan urutan perbaikan: instrumentasi, loader/normalisasi bersama, reuse sumber, pemeriksaan inkremental, payload/render, pembatalan dan kapasitas. Semua optimasi masih direncanakan; tidak diterapkan pada rilis ini.
+- Ekspor Excel rekap berjenjang memiliki outline baris dengan kontrol +/- dan tombol 1–7 pada hierarki penuh: Grand Total, Satker, Kegiatan, KRO, RO, Komponen, Subkomponen. Kolom A yang sebelumnya tersembunyi kini menampilkan label tingkat, tanpa menggeser kolom B:I atau rumus.
+
+### Changed
+- Sorotan jingga khusus KRO 2175.QDC/2175.QEA milik BBPKK Bandung Barat beserta turunannya dihapus. Semua cabang ekspor memakai warna umum sesuai tingkat hierarki, termasuk label kolom A.
+- Grup mengikuti relasi induk–anak yang diekspor, memisahkan satker/cabang dan menempatkan induk di atas rincian. Header ikut terlipat bersama rincian satker; fokus tanpa leluhur merapatkan kedalaman grup. Seluruh rincian terbuka saat diunduh, tanpa flag collapsed pada baris terminal. Area gulir dimulai dari A8 dengan freeze tujuh baris.
+- README.md, PRD.md, Architecture.md, Schema.md dan Design.md diperbarui sesuai format ekspor berlabel dan outline.
+- Package, lockfile, label versi UI dan changelog aplikasi diselaraskan ke 3.9.0. AGENTS.md ditinjau; aturan sebelum push tetap berlaku tanpa perubahan.
+
+### Fixed
+- Audit RKK memeriksa keberadaan pembanding output lama yang opsional sebelum memuatnya. File tidak tersedia dilaporkan sebagai skip; error lain dan kegagalan assertion pada file yang tersedia tetap menggagalkan tes. Audit sintetis serta sampel nyata tetap berjalan.
+
+### Validation
+- Regresi warna QDC dan QEA lulus setelah XLSX disimpan/dibaca ulang: fill dan font seluruh kolom A:I pada cabang BBPKK Bandung Barat beserta turunannya sama dengan profil umum satker lain.
+- `node test/test-satig-export.js`, pemeriksaan sintaks eksportir/tes, dan `git diff --check` lulus. Regresi mencakup serialisasi XML/XLSX, tujuh tingkat outline, label, seluruh grup terbuka, batas satker/cabang, fokus tanpa leluhur, node terminal, formula dan target.
+- `npm.cmd run test:recap` lulus: metadata, batch, API, simulasi DOM frontend, ekspor SATIG serta audit RKK sintetis/nyata. Audit nyata mencakup 1.665 rincian, total Rp117.302.994.000 dan selisih pembulatan konversi Rp299 yang sudah dikenal. Integrasi opsional lima workbook, perbandingan template SATIG dan pembanding output lama audit RKK dilewati karena sampel lokal tidak lengkap.
+- Sinkronisasi versi/tanggal package, lockfile, dokumen, label UI dan changelog aplikasi diperiksa; API changelog localhost serta halaman utama/changelog aktif menampilkan 3.9.0. Pemeriksaan sintaks eksportir, changelog dan tes, kompilasi seluruh script inline kedua halaman, tautan improvement.md serta git diff --check lulus. Tes standalone RAB/FA tidak diulang karena implementasi konversi tidak berubah; audit RKK nyata dalam suite tetap menguji hasil konversi.
+- Contoh lokal `context/Rekap_Kegiatan-KRO-RO_2026-10-27_grouping.xlsx` dibuat dari RKK (11): 199 baris, 192 node dan total Rp117.302.994.000. Nilai serta formula B:I sesuai file contoh awal (cached result nol yang tidak tersimpan pada contoh awal diperlakukan sebagai nol). Outline maksimum 6 diverifikasi setelah file dibaca ulang. Artefak context diabaikan Git.
+- Pemeriksaan visual/interaksi +/- di Microsoft Excel belum dilakukan; pembacaan XLSX dan simulasi tingkat outline tidak menggantikan pemeriksaan tersebut.
+
 ## [3.8.0] - 2026-10-22
 
 ### Fixed

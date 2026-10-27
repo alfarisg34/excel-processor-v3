@@ -1,10 +1,10 @@
 # PRD — Excel Processor V3 Kemnaker
 
-Tanggal pembaruan: 22 Oktober 2026
+Tanggal pembaruan: 27 Oktober 2026
 
-Versi aplikasi pada `package.json`: 3.8.0
+Versi aplikasi pada `package.json`: 3.9.0
 
-Status: dokumentasi sistem yang tersedia pada rilis 3.8.0.
+Status: dokumentasi sistem yang tersedia pada rilis 3.9.0.
 
 Dokumen pendamping: [Architecture.md](Architecture.md) untuk komponen dan alur sistem, [Schema.md](Schema.md) untuk kontrak data/workbook/API, dan [Design.md](Design.md) untuk perilaku UI serta format ekspor.
 
@@ -130,12 +130,12 @@ Filter pemilik/penanggung jawab tersedia untuk batch. Detail mempertahankan atri
 
 Empat jalur unduhan tersedia: rekap akun Excel/PDF dan struktur Excel/PDF. Ekspor akun mengikuti filter detail aktif. PDF struktur mempertahankan pohon dan atribusi sumber. Excel struktur menggunakan template SATIG Kegiatan-KRO-RO sebagai acuan tunggal.
 
-- Workbook satu sheet, kolom A tersembunyi, baris 1–3 kosong, grand total baris 4. Setiap satker memiliki total, header dua baris dan rincian Kegiatan → KRO → RO → Komponen → Subkomponen.
+- Workbook satu sheet, kolom A terlihat dengan label tingkat, baris 1–3 kosong, grand total baris 4. Setiap satker memiliki total, header dua baris dan rincian Kegiatan → KRO → RO → Komponen → Subkomponen.
 - Kolom B:I adalah kode pendek dan uraian, Target Renja, Satuan, ANGGARAN, PNBP, PHLN, RM dan Unit Cost. Header diulang per satker, termasuk variasi merge template.
-- Warna/font/border/format accounting mengikuti profil file contoh. Total satker biru dengan teks putih; Kegiatan kuning, KRO hitam, RO ke bawah biru. Sorotan jingga BBPKK Bandung Barat untuk cabang 2175.QDC/QEA dipertahankan.
+- Warna/font/border/format accounting mengikuti profil tingkat yang sama untuk seluruh satker dan kode. Total satker biru dengan teks putih; Kegiatan kuning, KRO hitam, RO ke bawah biru. Tidak ada sorotan jingga khusus berdasarkan pemilik atau kode KRO.
 - Target/satuan berasal dari volume KRO/RO RKK; target tidak tersedia tetap kosong. Unit Cost hanya untuk RO dengan target positif. Tampilan angka bulat mengikuti template, nilai pecahan tetap disimpan.
 - Subtotal menjumlahkan anak langsung dalam hasil ekspor; grand total menjumlahkan satker. Fokus/pencarian tetap berlaku dan subtotal mengikuti rincian yang diekspor; kondisi buka/tutup tabel web tidak membatasi ekspor.
-- Format SATIG tidak memuat baris Program/Akun, metadata ekspor, sheet tambahan atau outline. Freeze tujuh baris, zoom 68%, cetak portrait skala 100%.
+- Format SATIG tidak memuat baris Program/Akun, metadata ekspor atau sheet tambahan. Outline bertingkat menempatkan induk di atas rincian, seluruh grup terbuka saat diunduh. Freeze tujuh baris dengan area gulir mulai A8, zoom 68%, cetak portrait skala 100%.
 - Pencarian tanpa rincian yang dapat diekspor tidak mengunduh workbook kosong. Tombol menampilkan loading, mencegah klik ganda, dan pulih setelah gagal. Permintaan mempunyai timeout browser 60 detik.
 - Backend ExcelJS menghasilkan file; layout tidak bergantung pada CDN SheetJS atau keberadaan file context dalam deployment.
 
@@ -178,13 +178,14 @@ Kesalahan batch: 400 untuk multipart/manifest tidak valid, 413 untuk batas ukura
 | Batch | Sumber wajib dikonfirmasi; salinan hash, revisi pemilik/tahun, tahun berbeda, dan rekonsiliasi gagal ditolak |
 | Atribusi | Cabang kode sama lintas unit tetap terpisah; detail/PDF/Excel akun memuat asal data, Excel SATIG memiliki blok pemilik satker |
 | Filter | Rincian dan total sesuai filter aktif; filter kosong menjelaskan kondisi; loading/pembatalan/error memulihkan UI |
-| Excel SATIG | Satu sheet, blok per satker, header berulang, rincian sampai Subkomponen, style/freeze mengikuti template |
+| Excel SATIG | Satu sheet, blok per satker, header berulang, rincian sampai Subkomponen, label tingkat di A, style B:I dan freeze tujuh baris mengikuti template; outline 1–7 dari Grand Total sampai Subkomponen pada ekspor penuh, induk di atas rincian, seluruh grup terbuka saat diunduh; header ikut terlipat bersama rincian satker, fokus tanpa leluhur merapatkan kedalaman grup |
 | Rumus/target ekspor | Volume RKK, Unit Cost untuk target positif, subtotal anak langsung dan total hasil fokus/pencarian |
 
 Verifikasi tersedia melalui `npm run test:recap` (metadata, batch, API, simulasi DOM frontend, dan audit RKK), `node test/test-flows.js` (alur RAB/FA), dan `node test/test-validate.js` (aturan validasi). Integrasi sampel lokal rekap berjalan hanya ketika sampel yang diperlukan tersedia. Simulasi DOM tidak menggantikan pemeriksaan visual di browser atau Microsoft Excel.
 
 ## 9. Keterbatasan dan tindak lanjut
 
+- Performa inspect/batch masih memakai pembacaan XLSX berulang dan upload ulang saat batch/filter pemilik/PJ. Baseline lokal, eksperimen merge dan rencana perbaikannya dicatat di [improvement.md](improvement.md); optimasi tersebut belum termasuk rilis 3.9.0. Simulasi tiga/lima sumber seukuran RKK (11) melewati batas respons JSON 4 MiB meskipun upload diizinkan.
 - Pemetaan kolom RKK belum dinamis berdasarkan header. Varian volume L, harga N dan jumlah Q seperti RKK (10) masih ditolak sebagai jumlah detail kosong; rilis 3.8.0 hanya mendokumentasikan diagnosis ini.
 - UI pemrosesan menulis “beberapa” RKK tetapi input/handler pemrosesan menerima satu RKK. Dukungan multi-file tersedia pada rekap batch.
 - Teks bantuan FA masih menyebut kolom AV; implementasi aktual memakai AP/AQ. Beberapa dokumentasi lama menyebut 42 kolom, sedangkan output FA mencapai kolom 43.

@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict');
 const ExcelJS = require('exceljs');
+const JSZip = require('jszip');
 const { buildSatigWorkbook, MONEY, TARGET } = require('../src/utils/satig-hierarchy-export');
 const { buildBatch } = require('../src/utils/hierarchy-recap-batch');
 const fixture = require('./recap-fixture');
@@ -7,6 +8,21 @@ const { fingerprint } = require('../src/utils/rkk-metadata');
 
 function exportItems(node) {
   return [...(node.level >= 2 && node.level <= 6 ? [node] : []), ...(node.children || []).flatMap(exportItems)];
+}
+async function roundTripOutline(workbook) {
+  const buffer = await workbook.xlsx.writeBuffer();
+  const zip = await JSZip.loadAsync(buffer);
+  const xml = await zip.file('xl/worksheets/sheet1.xml').async('string');
+  assert.match(xml, /<outlinePr[^>]*summaryBelow="0"/);
+  assert.ok(!/collapsed="1"|hidden="1"/.test(xml), 'Workbook must open with every group expanded');
+  const loaded = new ExcelJS.Workbook();
+  await loaded.xlsx.load(buffer);
+  const sheet = loaded.worksheets[0];
+  assert.equal(sheet.properties.outlineProperties.summaryBelow, false);
+  const rows = sheet.getRows(4, sheet.rowCount - 3);
+  assert.equal(sheet.properties.outlineLevelRow, Math.max(...rows.map(row => row.outlineLevel)));
+  rows.forEach(row => assert.equal(row.hidden, false));
+  return sheet;
 }
 async function run() {
   const a = await fixture({ outputTargets: true }), b = await fixture({ unit: 'BPKK Kendari', location: 'KOTA KENDARI', kppn: '060', amount: 20000 });
@@ -16,12 +32,23 @@ async function run() {
   ] });
   const payload = {items:exportItems(batch.hierarchyTree),ownerOrder:['bpkk-bekasi','bpkk-kendari']};
   const original = buildSatigWorkbook(payload);
-  const wb = new ExcelJS.Workbook();
-  await wb.xlsx.load(await original.xlsx.writeBuffer());
-  assert.deepEqual(wb.worksheets.map(s=>s.name),['Kegiatan-KRO-RO']);
-  const ws = wb.worksheets[0];
+  const ws = await roundTripOutline(original);
+  assert.deepEqual(ws.workbook.worksheets.map(s=>s.name),['Kegiatan-KRO-RO']);
   for(let r=1;r<=3;r++)assert.equal(ws.getRow(r).actualCellCount,0);
-  assert.equal(ws.getColumn(1).hidden,true);
+  assert.equal(ws.getColumn(1).hidden,false);
+  assert.equal(ws.getColumn(1).width,18);
+  assert.equal(ws.views[0].topLeftCell,'A8');
+  assert.deepEqual([4,5,6,8,9,10,11,12].map(r=>ws.getCell('A'+r).value),
+    ['Total','Satker','Tingkat','Kegiatan','KRO','RO','Komponen','Subkomponen']);
+  assert.deepEqual([4,5,6,7,8,9,10,11,12,13].map(r=>ws.getRow(r).outlineLevel),[0,1,2,2,2,3,4,5,6,4]);
+  assert.equal(ws.properties.outlineLevelRow,6);
+  // Simulate the seven outline buttons: only rows shallower than the selected level remain.
+  const dataRows=ws.getRows(4,ws.rowCount-3).filter(r=>r.getCell(1).value!=='Tingkat');
+  const labels=['Total','Satker','Kegiatan','KRO','RO','Komponen','Subkomponen'];
+  for(let button=1;button<=7;button++) {
+    const visible=dataRows.filter(r=>r.outlineLevel<button);
+    assert.deepEqual([...new Set(visible.map(r=>r.getCell(1).value))],labels.slice(0,button));
+  }
   assert.equal(ws.views[0].state,'frozen');assert.equal(ws.views[0].ySplit,7);assert.equal(ws.views[0].zoomScale,68);
   assert.equal(ws.pageSetup.orientation,'portrait');assert.equal(ws.pageSetup.scale,100);
   assert.equal(ws.getCell('B4').value,'GRAND TOTAL ANGGARAN DITJEN BINAPENTA DAN PKK');
@@ -49,13 +76,18 @@ async function run() {
   assert.equal(ws.getCell('G4').result,0,'Zero funding must survive cached formula serialization');
   const laterHeaders=[];
   ws.eachRow(row=>{
-    assert.equal(row.outlineLevel,0);
     assert.ok(!/^\s{2,}/.test(row.getCell(2).text));
     assert.ok(!row.getCell(2).text.includes('026.04.WA'));
     assert.ok(!row.getCell(2).text.includes('521211'));
     if(row.number>7 && row.getCell(2).value==='KEGIATAN/KRO/RO')laterHeaders.push(row.number);
   });
   assert.equal(laterHeaders.length,1);assert.equal(ws.getCell('I'+laterHeaders[0]).value,null);
+  const nextHeader=laterHeaders[0];
+  assert.equal(ws.getRow(nextHeader-1).outlineLevel,1,'Next satker must close the previous satker group');
+  assert.equal(ws.getRow(nextHeader).outlineLevel,2);
+  assert.equal(ws.getRow(nextHeader+1).outlineLevel,2);
+  assert.equal(ws.getRow(nextHeader+2).outlineLevel,2);
+  assert.equal(ws.getRow(ws.rowCount).outlineLevel,6,'Last leaf must belong to its parent group');
   const secondRo=payload.items.find(item=>item.level===4 && item.ownerId==='bpkk-kendari');
   const missingRow=ws.getRows(1,ws.rowCount).find(row=>row.getCell(2).text===secondRo.code.split('.').pop()+' - '+secondRo.name && row.number>laterHeaders[0]);
   assert.equal(missingRow.getCell(3).value,null);assert.equal(missingRow.getCell(9).value,null);
@@ -68,12 +100,24 @@ async function run() {
   const selected=payload.items.filter(i=>i.key===firstRo.key || i.parentKey===firstRo.key || i.level<4).filter(i=>i.ownerId===firstRo.ownerId);
   const focused=buildSatigWorkbook({items:selected});
   assert.equal(focused.worksheets[0].getCell('E4').result,10000);
+  await roundTripOutline(focused);
+  // Focus without exported ancestors starts directly below Satker, with no empty levels.
+  const branchItems=payload.items.filter(i=>i.key===firstRo.key || i.parentKey===firstRo.key ||
+    payload.items.some(parent=>parent.parentKey===firstRo.key && parent.key===i.parentKey));
+  const branch=await roundTripOutline(buildSatigWorkbook({items:branchItems}));
+  assert.deepEqual([8,9,10].map(r=>branch.getCell('A'+r).value),['RO','Komponen','Subkomponen']);
+  assert.deepEqual([8,9,10].map(r=>branch.getRow(r).outlineLevel),[2,3,4]);
+  assert.equal(branch.getCell('E4').result,10000);
+  const leaf=await roundTripOutline(buildSatigWorkbook({items:[payload.items.find(i=>i.level===6)]}));
+  assert.equal(leaf.getCell('A8').value,'Subkomponen');
+  assert.equal(leaf.getRow(8).outlineLevel,2);
+  assert.equal(leaf.rowCount,8);
   assert.throws(()=>buildSatigWorkbook({items:[]}),/Tidak ada rincian/);
   assert.throws(()=>buildSatigWorkbook({items:[{...payload.items[0],level:7}]}),/tidak valid/);
   assert.throws(()=>buildSatigWorkbook({items:[payload.items[0],payload.items[0]]}),/duplikat/);
   assert.throws(()=>buildSatigWorkbook({items:[{...payload.items[0],totalVal:Infinity}]}),/tidak valid/);
   assert.throws(()=>buildSatigWorkbook({items:[payload.items[0],{...payload.items[1],ownerId:'other'}]}),/Relasi induk/);
-  // Five sections must repeat headers and keep the reference's special Bandung branches.
+  // Five sections must repeat headers; Bandung branches use the same level styles as other owners.
   const fiveItems=['custom-ses','custom-pkk','bbpkk-bandung-barat','bpkk-bekasi','bpkk-kendari'].flatMap((ownerId,index)=>{
     const prefix='owner'+index;
     return payload.items.filter(i=>i.ownerId==='bpkk-bekasi').map(i=>({
@@ -82,18 +126,30 @@ async function run() {
     }));
   });
   const five=buildSatigWorkbook({items:fiveItems});const fiveSheet=five.worksheets[0];
+  await roundTripOutline(five);
   const repeated=[];fiveSheet.eachRow(row=>{if(row.getCell(2).value==='KEGIATAN/KRO/RO' && row.number!==7)repeated.push(row.number);});
   assert.equal(repeated.length,5);
   assert.equal(fiveSheet.getCell('E4').result,100000);
-  const highlighted=fiveSheet.getRows(1,fiveSheet.rowCount).find(r=>r.getCell(2).text==='QDC - Layanan Internal');
-  assert.equal(highlighted.getCell(2).fill.fgColor.argb,'FFFFC000');
-  assert.equal(fiveSheet.getRow(highlighted.number+1).getCell(2).fill.fgColor.argb,'FFFFC000');
+  for (const code of ['2175.QDC','2175.QEA']) {
+    const sheet=await roundTripOutline(buildSatigWorkbook({items:fiveItems.map(item=>
+      item.ownerId==='bbpkk-bandung-barat' && item.level===3 ? {...item,code} : item)}));
+    const kro=sheet.getRows(1,sheet.rowCount).find(r=>r.getCell(2).text===code.split('.').pop()+' - Layanan Internal');
+    assert.ok(kro);
+    const nodeCount=payload.items.filter(i=>i.ownerId==='bpkk-bekasi').length;
+    const bandungStart=repeated[2]+2;
+    for(let offset=0;offset<nodeCount;offset++)for(let col=1;col<=9;col++) {
+      const actual=sheet.getRow(bandungStart+offset).getCell(col);
+      const general=ws.getRow(8+offset).getCell(col);
+      assert.deepEqual(actual.fill,general.fill,`${code}: ${actual.address} must use the general fill`);
+      assert.deepEqual(actual.font,general.font,`${code}: ${actual.address} must use the general font`);
+    }
+  }
   for(const header of repeated.slice(1))assert.deepEqual(['F','G','H'].map(c=>fiveSheet.getCell(c+(header+1)).value),['PNBP','PHLN','RM']);
   // Compare persisted prototype styling with the actual reference when locally available.
   try {
     const template=new ExcelJS.Workbook();await template.xlsx.readFile('context/SATIG_Setelah Buka Blokir A dan SISTEM PPTKA  05102026.xlsx');
     const source=template.getWorksheet('Kegiatan-KRO-RO');
-    for(let c=1;c<=9;c++)assert.equal(ws.getColumn(c).width,source.getColumn(c).width);
+    for(let c=2;c<=9;c++)assert.equal(ws.getColumn(c).width,source.getColumn(c).width);
     for(const addr of ['B4','E4','B8','E8','B9','B10','E10']) {
       assert.equal(ws.getCell(addr).font.name,source.getCell(addr).font.name);
       assert.equal(ws.getCell(addr).font.size,source.getCell(addr).font.size);
@@ -102,7 +158,7 @@ async function run() {
     }
     console.log('SATIG: local reference widths, fonts, borders and formats matched after XLSX round trip.');
   } catch(error) { if(error.code==='ENOENT' || /File not found/.test(error.message))console.log('SATIG: optional local template comparison skipped (reference unavailable).');else throw error; }
-  console.log('SATIG: native XLSX round trip, single sheet, blank top rows, satker groups, repeated headers, funding totals, direct-child formulas, targets, zero/fractional/missing targets and filtered scope passed.');
+  console.log('SATIG: native XLSX round trip, expanded nested outlines, level labels, satker/branch boundaries, focused/terminal branches, single sheet, repeated headers, funding totals, formulas and targets passed.');
 }
 if(require.main===module)run().catch(e=>{console.error(e);process.exitCode=1;});
 module.exports=run;

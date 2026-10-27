@@ -3,6 +3,44 @@ const path = require('path');
 
 const releases = [
   {
+    version: '3.9.0',
+    date: '2026-10-27',
+    type: 'MINOR',
+    title: 'Grouping Excel Berjenjang dan Rencana Optimasi Rekap',
+    changes: [
+      {
+        type: 'FEAT',
+        title: 'Outline Excel dan Label Tingkat',
+        desc: 'Kolom A menampilkan label tingkat. Outline +/- dan tombol 1–7 pada hierarki penuh mengikuti Grand Total, Satker, Kegiatan, KRO, RO, Komponen dan Subkomponen. Induk di atas rincian, header ikut terlipat bersama rincian satker, seluruh grup terbuka saat diunduh. Fokus tanpa leluhur merapatkan kedalaman grup; kolom B:I dan posisi rumus tetap, area gulir mulai A8 dengan freeze tujuh baris.'
+      },
+      {
+        type: 'FIX',
+        title: 'Warna Umum untuk Semua Cabang',
+        desc: 'Sorotan jingga khusus KRO 2175.QDC/2175.QEA milik BBPKK Bandung Barat dan turunannya dihapus. Seluruh cabang, termasuk label A, memakai profil warna tingkat yang sama untuk setiap satker.'
+      },
+      {
+        type: 'DOCS',
+        title: 'Rencana Percepatan Inspect dan Rekap Gabungan',
+        desc: 'improvement.md mencatat alur saat ini, baseline lokal, eksperimen pembacaan tanpa pembangunan merge dan reuse sumber, serta rencana instrumentasi, loader bersama, cache, pemeriksaan inkremental, payload/render dan pembatalan. Angka eksperimen hanya berlaku pada sampel yang diuji; optimasi belum diimplementasikan. README, PRD, Architecture, Schema dan Design diselaraskan; AGENTS.md ditinjau tanpa perubahan. Package, lockfile dan label UI memakai 3.9.0.'
+      },
+      {
+        type: 'FIX',
+        title: 'Pembanding Audit RKK Opsional',
+        desc: 'Tes audit melaporkan skip ketika output lama pembanding tidak tersedia. Audit sintetis dan sampel nyata tetap berjalan; error pembacaan lain dan assertion pembanding yang tersedia tetap menggagalkan tes.'
+      },
+      {
+        type: 'TEST',
+        title: 'Regresi Rekap dan XLSX',
+        desc: 'Regresi mencakup outline/label setelah serialisasi XLSX, summary di atas rincian, seluruh grup terbuka, batas satker/cabang, fokus/terminal, formula/target dan kesamaan fill/font QDC/QEA dengan profil umum. Suite rekap mencakup metadata, batch, API, simulasi DOM frontend dan audit RKK; sinkronisasi versi, sintaks script dan git diff --check diperiksa.'
+      },
+      {
+        type: 'TEST',
+        title: 'Batas Pemeriksaan',
+        desc: 'Integrasi opsional lima workbook, perbandingan template SATIG dan pembanding output lama audit RKK dilewati karena sampel lokal tidak lengkap. Pemeriksaan visual browser/Microsoft Excel belum dilakukan untuk rilis ini. Varian kolom RKK L/N/Q belum didukung; optimasi performa dalam improvement.md tetap pekerjaan mendatang.'
+      }
+    ]
+  },
+  {
     version: '3.8.0',
     date: '2026-10-22',
     type: 'MINOR',

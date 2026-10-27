@@ -141,12 +141,15 @@ async function run() {
   await fs.mkdir(path.join(__dirname,'../context/verification'),{recursive:true});
   await realOut.xlsx.writeFile(path.join(__dirname,'../context/verification/output-normalized.xlsx'));
   await fs.writeFile(path.join(__dirname,'../context/verification/validation-report.json'),JSON.stringify(fixed,null,2));
-  try {
+  let hasOldOutput = true;
+  try { await fs.access(oldPath); }
+  catch (error) { if (error.code === 'ENOENT') hasOldOutput = false; else throw error; }
+  if (hasOldOutput) {
     const old=new ExcelJS.Workbook();await old.xlsx.readFile(oldPath);
     const oldReport=await validate(realBuffer,old);
     assert.equal(oldReport.totalBudgetDiff,1101071299);assert.equal(oldReport.overallStatus,'DIFF');
     assert(oldReport.subtotalDiffCount>0);
-  } catch(e) {if(e.code!=='ENOENT')throw e;}
+  } else console.log('RKK audit: optional old-output comparison skipped (local reference unavailable).');
   console.log('RKK audit: synthetic cases and real workbook passed; normalized total 117302994000; remaining rounding difference 299.');
 }
 module.exports=run;

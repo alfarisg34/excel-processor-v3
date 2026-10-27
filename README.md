@@ -4,7 +4,7 @@ A high-performance Node.js & Express application designed for processing, restru
 
 It transforms raw RKK Satker input files into a **20-column side-by-side comparison layout (SEMULA vs. MENJADI vs. SELISIH)** matching the **RAB Format Baru** specification, calculates hierarchical budget formulas dynamically, cleans SAKTI metadata rows (such as KPPN and Lokasi info), provides pre-upload hierarchy validation, matches Sisa Anggaran from Laporan FA Detail (16 Segmen), and provides an interactive hierarchical tree recap.
 
-Versi saat ini: **3.8.0**. Catatan rilis tersedia pada [CHANGELOG.md](CHANGELOG.md).
+Versi saat ini: **3.9.0**. Catatan rilis tersedia pada [CHANGELOG.md](CHANGELOG.md). Rencana optimasi rekap yang belum diimplementasikan tersedia di [improvement.md](improvement.md).
 
 ---
 
@@ -61,7 +61,7 @@ Versi saat ini: **3.8.0**. Catatan rilis tersedia pada [CHANGELOG.md](CHANGELOG.
 - **Runtime**: Node.js
 - **Server Framework**: Express.js
 - **Excel Processing Engine**: ExcelJS
-- **Excel Export**: Excel struktur memakai ExcelJS backend melalui `/api/recap-hierarchy/export`, satu sheet `Kegiatan-KRO-RO` sesuai SATIG: blok per satker dengan header berulang, rincian sampai Subkomponen, volume RKK sebagai Target Renja, subtotal anak langsung, format accounting dan freeze tujuh baris. Excel akun tetap memakai xlsx-js-style 1.2.0 di browser.
+- **Excel Export**: Excel struktur memakai ExcelJS backend melalui `/api/recap-hierarchy/export`, satu sheet `Kegiatan-KRO-RO` sesuai SATIG: blok per satker dengan header berulang, rincian sampai Subkomponen, volume RKK sebagai Target Renja, subtotal anak langsung, format accounting dan freeze tujuh baris. Kolom A menampilkan label tingkat; outline `+/-` dan tombol 1–7 pada ekspor penuh dapat melipat Grand Total > Satker > Kegiatan > KRO > RO > Komponen > Subkomponen. File dibuka dengan seluruh rincian terlihat; fokus tanpa leluhur merapatkan kedalaman grup. Excel akun tetap memakai xlsx-js-style 1.2.0 di browser.
 - **Middleware**: Multer, CORS
 - **Styling & UI**: Modern Dark Glassmorphism Web Application (HTML5, Vanilla CSS3, FontAwesome, jsPDF)
 
@@ -78,6 +78,7 @@ Setiap `git push` wajib didahului pembaruan `CHANGELOG.md` dan peninjauan seluru
 | [Schema.md](Schema.md) | Layout workbook, hirarki, manifest, payload API, identitas sumber, dan laporan audit |
 | [Design.md](Design.md) | Alur UI, status pekerjaan, filter/drilldown, token visual, dan format unduhan |
 | [CHANGELOG.md](CHANGELOG.md) | Riwayat perubahan dan catatan Unreleased |
+| [improvement.md](improvement.md) | Baseline performa inspect/batch dan rencana optimasi bertahap yang belum diimplementasikan |
 | [AGENTS.md](AGENTS.md) | Aturan kerja serta kewajiban sebelum push |
 
 

@@ -1,6 +1,6 @@
 # Schema
 
-Tanggal pembaruan: 22 Oktober 2026. Kontrak berdasarkan implementasi package 3.8.0. Dokumen ini mencakup workbook, objek runtime, serta API; proyek tidak memiliki schema database. Gambaran sistem ada di [Architecture.md](Architecture.md).
+Tanggal pembaruan: 27 Oktober 2026. Kontrak berdasarkan implementasi package 3.9.0. Dokumen ini mencakup workbook, objek runtime, serta API; proyek tidak memiliki schema database. Gambaran sistem ada di [Architecture.md](Architecture.md).
 
 ## 1. Konvensi
 
@@ -175,7 +175,9 @@ POST /api/recap-hierarchy/export menerima JSON items (array wajib, maksimal 30.0
 
 Frontend mengirim node hasil fokus/pencarian yang berada pada Kegiatan sampai Subkomponen. Payload berisi hasil rekap di browser; endpoint tidak mengunggah ulang atau memvalidasi sumber RKK. Program dan Akun tetap tersedia di pohon web/PDF, tetapi tidak masuk format Excel SATIG.
 
-Workbook hanya mempunyai sheet Kegiatan-KRO-RO. A tersembunyi, baris 1–3 kosong, label grand total pada B4 dan angka E4:H4, blok pertama mulai baris 5 dengan total satker, header dua baris 6–7, data mulai 8. Blok berikutnya mengulang total satker dan header. Kolom B:I: kode pendek dan uraian, Target Renja, Satuan, ANGGARAN, PNBP, PHLN, RM, Unit Cost. Tidak ada metadata, indentasi, outline atau sheet rincian/atribusi tambahan.
+Workbook hanya mempunyai sheet Kegiatan-KRO-RO. A terlihat (lebar 18) dengan label Total/Satker/Kegiatan/KRO/RO/Komponen/Subkomponen dan header Tingkat yang digabung vertikal. Baris 1–3 kosong, label grand total pada B4 dan angka E4:H4, blok pertama mulai baris 5 dengan total satker, header dua baris 6–7, data mulai 8. Blok berikutnya mengulang total satker dan header. Kolom B:I: kode pendek dan uraian, Target Renja, Satuan, ANGGARAN, PNBP, PHLN, RM, Unit Cost. Tidak ada metadata, indentasi atau sheet rincian/atribusi tambahan.
+
+Outline baris memakai summaryBelow: false dan seluruh rincian terbuka saat diunduh. Grand total berkedalaman 0, satker 1, kedua baris header dan akar rincian 2; anak bertambah satu tingkat sesuai parentKey yang hadir dalam ekspor. Ekspor penuh mencapai kedalaman 6 (tombol 1–7 sampai Subkomponen). Fokus tanpa leluhur merapatkan kedalaman, tanpa mengubah label jenis node. Header ikut tersembunyi ketika satker ditutup; batas satker dan cabang tidak bercampur. Kedalaman maksimum worksheet mengikuti baris yang diekspor. Freeze tujuh baris dengan area gulir mulai A8; posisi angka dan formula B:I tetap.
 
 PHLN mengambil totalPLN; PNBP mengambil totalPNBP. Target KRO/RO berasal dari volume kolom G RKK berbentuk angka dan satuan (misalnya 1198000.0 Orang), diteruskan melalui targetRenja (number opsional) dan targetUnit (string opsional) pada node, summary dan tree. Target tidak terbaca tetap kosong; target antar RO/unit tidak dijumlahkan. Unit Cost hanya untuk RO dengan target positif, menggunakan E<baris>/C<baris>.
 

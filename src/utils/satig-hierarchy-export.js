@@ -6,6 +6,7 @@ const template = require('../config/satig-export-template.json');
 const MONEY = '_-* #,##0_-;-* #,##0_-;_-* "-"??_-;_-@';
 const TARGET = '_-* #,##0_-;-* #,##0_-;_-* "-"_-;_-@';
 const widths = template.widths;
+const levelLabels = { 2: 'Kegiatan', 3: 'KRO', 4: 'RO', 5: 'Komponen', 6: 'Subkomponen' };
 const satkerNames = {
   'bbpkk-bandung-barat': 'Satker Balai Besar Perluasan Kesempatan Kerja Bandung Barat',
   'bpkk-bekasi': 'BALAI PERLUASAN KESEMPATAN KERJA BEKASI',
@@ -41,12 +42,20 @@ function buildSatigWorkbook(payload) {
   const wb = new ExcelJS.Workbook();
   wb.calcProperties.fullCalcOnLoad = true;
   const ws = wb.addWorksheet('Kegiatan-KRO-RO', {
-    views: [{ state: 'frozen', ySplit: 7, topLeftCell: 'B8', zoomScale: 68, zoomScaleNormal: 68, showGridLines: true }],
+    views: [{ state: 'frozen', ySplit: 7, topLeftCell: 'A8', zoomScale: 68, zoomScaleNormal: 68, showGridLines: true }],
+    properties: { outlineProperties: { summaryBelow: false } },
     pageSetup: { orientation: 'portrait', scale: 100, fitToPage: false,
       margins: { left: 0.7, right: 0.7, top: 0.75, bottom: 0.75, header: 0, footer: 0 } }
   });
   widths.forEach((width, index) => { ws.getColumn(index + 1).width = width; });
-  ws.getColumn(1).hidden = true;
+  ws.getColumn(1).width = 18;
+  function setOutline(row, depth) {
+    row.outlineLevel = depth;
+    ws.properties.outlineLevelRow = Math.max(ws.properties.outlineLevelRow, depth);
+    // ExcelJS otherwise marks the deepest rows collapsed even when all rows are visible.
+    // Keep expanded groups without adding an extra, empty outline level.
+    Object.defineProperty(row, 'collapsed', { value: false, configurable: true });
+  }
   const groups = new Map();
   for (const item of payload.items) {
     const id = item.ownerId || 'single-satker';
@@ -58,15 +67,17 @@ function buildSatigWorkbook(payload) {
     const rank = id => order.includes(id) ? order.indexOf(id) : order.length;
     return rank(a.id) - rank(b.id);
   });
-  function styleRow(row, kind, { fill, center = false } = {}) {
+  function styleRow(row, kind, { center = false } = {}) {
     row.height = center ? 18.5 : Math.max(15.5, Math.ceil(row.getCell(2).text.length / 67) * 14.5);
     for (let c = 2; c <= 9; c++) {
       const cell = row.getCell(c);
       cell.style = structuredClone(template.styles[template.profiles[kind][c - 2]]);
-      if (fill) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + fill } };
     }
+    row.getCell(1).style = structuredClone(row.getCell(2).style);
+    row.getCell(1).alignment = { ...row.getCell(1).alignment, horizontal: 'left', wrapText: true };
   }
   const grand = ws.getRow(4);
+  grand.getCell(1).value = 'Total';
   grand.getCell(2).value = 'GRAND TOTAL ANGGARAN DITJEN BINAPENTA DAN PKK';
   styleRow(grand, 'grand', { center: true });
   const summaryRows = [];
@@ -87,12 +98,18 @@ function buildSatigWorkbook(payload) {
       else roots.push(item);
     }
     const summary = ws.getRow(rowNumber++);
+    summary.getCell(1).value = 'Satker';
+    setOutline(summary, 1);
     summary.getCell(2).value = satkerNames[group.id] || (/^satker\b/i.test(group.name) ? group.name : 'Satker ' + group.name);
     styleRow(summary, 'satker', { center: true });
     summary.height = Math.max(18.5, Math.ceil(summary.getCell(2).text.length / 67) * 20.25);
     const header = rowNumber;
     ws.getRow(header).values = [null, 'KEGIATAN/KRO/RO', 'Target Renja', 'Satuan', 'ANGGARAN', 'Sumber Dana'];
     ws.getRow(header + 1).values = [null, null, null, null, null, 'PNBP', 'PHLN', 'RM'];
+    ws.getCell('A' + header).value = 'Tingkat';
+    ws.mergeCells(`A${header}:A${header + 1}`);
+    setOutline(ws.getRow(header), 2);
+    setOutline(ws.getRow(header + 1), 2);
     for (const c of ['C', 'D']) ws.mergeCells(`${c}${header}:${c}${header + 1}`);
     ws.mergeCells(`F${header}:H${header}`);
     if (!index) {
@@ -103,20 +120,21 @@ function buildSatigWorkbook(payload) {
     styleRow(ws.getRow(header + 1), index ? 'laterHeaderBottom' : 'headerBottom', { center: true });
     ws.getRow(header).height = ws.getRow(header + 1).height = index ? 15.75 : 15.5;
     rowNumber += 2;
-    function writeNode(item, highlighted = false) {
+    function writeNode(item, depth = 2) {
       const code = item.level === 3 || item.level === 4 ? item.code.split('.').pop() : item.code;
       const suffix = ' — ' + group.name;
       const name = item.level === 2 && item.name.includes(suffix) ? item.name.slice(0, item.name.lastIndexOf(suffix)) : item.name;
       const row = ws.getRow(rowNumber++);
       item.rowNumber = row.number;
+      row.getCell(1).value = levelLabels[item.level];
+      setOutline(row, depth);
       row.getCell(2).value = `${code} - ${name}`;
-      highlighted ||= group.id === 'bbpkk-bandung-barat' && item.level === 3 && /^2175\.(QDC|QEA)$/.test(item.code);
-      styleRow(row, {2:'kegiatan',3:'kro',4:'ro',5:'komponen',6:'subkomponen'}[item.level], { fill: highlighted ? 'FFC000' : undefined });
+      styleRow(row, {2:'kegiatan',3:'kro',4:'ro',5:'komponen',6:'subkomponen'}[item.level]);
       if ([3, 4].includes(item.level) && Number.isFinite(item.targetRenja)) {
         row.getCell(3).value = item.targetRenja;
         row.getCell(4).value = item.targetUnit || null;
       }
-      for (const child of item.children) writeNode(child, highlighted);
+      for (const child of item.children) writeNode(child, depth + 1);
       if (item.children.length) {
         sumFrom(row, item.children);
         item.totals = Object.fromEntries(['E','F','G','H'].map(col => [col, row.getCell(col).result]));

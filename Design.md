@@ -1,6 +1,6 @@
 # Design
 
-Tanggal pembaruan: 22 Oktober 2026. Desain berdasarkan antarmuka dan ekspor yang tersedia pada package 3.8.0. Dokumen ini memuat perilaku UI, keputusan implementasi, dan format artefak. Kebutuhan bisnis ada di [PRD.md](PRD.md); struktur sistem dan data ada di [Architecture.md](Architecture.md) dan [Schema.md](Schema.md).
+Tanggal pembaruan: 27 Oktober 2026. Desain berdasarkan antarmuka dan ekspor yang tersedia pada package 3.9.0. Dokumen ini memuat perilaku UI, keputusan implementasi, dan format artefak. Kebutuhan bisnis ada di [PRD.md](PRD.md); struktur sistem dan data ada di [Architecture.md](Architecture.md) dan [Schema.md](Schema.md).
 
 ## 1. Tujuan desain
 
@@ -94,20 +94,22 @@ Template tunggal adalah sheet Kegiatan-KRO-RO pada contoh SATIG. Profil format s
 
 | Elemen | Format saat ini |
 | --- | --- |
-| Sheet | Satu sheet Kegiatan-KRO-RO; baris 1–3 kosong; A tersembunyi |
+| Sheet | Satu sheet Kegiatan-KRO-RO; baris 1–3 kosong; A terlihat, lebar 18, berisi label Tingkat |
 | Grand total | B4 kuning, Calibri 14 tebal; E4:H4 abu-abu, Arial 12 tebal |
 | Blok satker | Baris total biru #4472C4, teks putih tebal 14; diikuti dua baris header dan rincian satker |
 | Header | Biru muda #D9E2F3; sumber dana F:H digabung; header diulang per satker |
 | Variasi header | Blok pertama menggabungkan B/C/D/E/I secara vertikal dan mencantumkan Unit Cost; blok berikutnya C/D vertikal, tanpa judul Unit Cost; blok ketiga juga E vertikal |
 | Kolom B:I | Kode pendek dan uraian, Target Renja, Satuan, ANGGARAN, PNBP, PHLN, RM, Unit Cost |
 | Tingkat | Kegiatan kuning dan tebal 12; KRO hitam tebal 11; RO/Komponen/Subkomponen biru #0070C0 tebal 11 |
-| Sorotan template | Cabang 2175.QDC dan 2175.QEA milik BBPKK Bandung Barat jingga #FFC000 sampai Subkomponen |
+| Warna cabang | Semua satker/kode memakai profil tingkat yang sama; tanpa sorotan jingga khusus untuk cabang tertentu |
 | Sel | Border, font, alignment dan accounting mengikuti profil template; wrap uraian, tinggi menyesuaikan panjang teks |
 | Angka | Nilai numeric; accounting tanpa desimal, nol berupa strip; Unit Cost tetap menyimpan presisi hasil pembagian |
 | Lebar B:I | 67, 13.1796875, 18, 21.1796875, 19.7265625, 19.7265625, 19.7265625, 13.81640625 |
-| Tampilan/cetak | Freeze tujuh baris, zoom 68%, gridlines, portrait skala 100%; tanpa outline |
+| Tampilan/cetak | Freeze tujuh baris, area gulir mulai A8, zoom 68%, gridlines, portrait skala 100%; outline baris bertingkat, seluruh rincian terbuka saat diunduh |
 
 Rincian berhenti pada Subkomponen. Tidak ada baris Program/Akun, metadata ekspor, indentasi, atau sheet tambahan. Satker dikelompokkan berdasarkan ownerId, memakai urutan sumber terpilih. Nama kegiatan tidak diberi suffix pemilik/PJ dalam laporan; identitas pemilik tampil pada blok satker. Fokus dan pencarian menentukan node ekspor, tanpa dipengaruhi keadaan buka/tutup pohon web. Subtotal menjumlahkan anak langsung yang diekspor; terminal cabang memakai jumlah sumber dana, sehingga total laporan mengikuti rincian yang tersedia dalam ekspor.
+
+Kolom A berisi Total, Satker, Kegiatan, KRO, RO, Komponen atau Subkomponen; header Tingkat digabung vertikal pada setiap blok. Kolom B:I dan posisi rumus tetap. Outline menempatkan induk di atas rincian (summaryBelow: false). Pada ekspor penuh, tombol 1–7 menampilkan sampai Grand Total, Satker, Kegiatan, KRO, RO, Komponen dan Subkomponen. Header mempunyai kedalaman yang sama dengan akar rincian, sehingga ikut tersembunyi ketika satker ditutup. Fokus tanpa leluhur memulai akar rincian pada kedalaman 2, lalu bertambah satu per relasi anak yang diekspor; label tingkat tetap memakai jenis node aslinya. Kedalaman maksimum worksheet mengikuti baris yang benar-benar diekspor. Semua grup terbuka saat file dibuat, tanpa flag collapsed pada baris terminal.
 
 Target/satuan KRO dan RO berasal dari volume kolom G RKK. Target kosong tetap kosong; target nol tetap numeric. Unit Cost hanya dihitung pada RO dengan target positif. Formula subtotal dan Unit Cost disimpan bersama cached result dan dihitung ulang saat workbook dibuka. ExcelJS backend menulis XLSX melalui POST /api/recap-hierarchy/export. Tombol unduh menampilkan loading, mencegah klik ganda, pulih saat gagal dan menolak hasil jika data rekap berubah selama permintaan.
 
@@ -125,7 +127,9 @@ Tidak ada pemaksaan hasil cocok melalui penghapusan detail identik atau pengabai
 
 ## 10. Verifikasi dan pemeliharaan
 
-`npm run test:recap` memeriksa metadata, batch, API, audit RKK, dan simulasi DOM frontend. Pengujian SATIG menyimpan dan membaca kembali XLSX untuk memeriksa satu sheet, pengelompokan satker, header berulang, formula anak langsung, target kosong/nol/pecahan, sumber dana, style, freeze dan fokus/pencarian. Profil font, border, format angka dan lebar kolom dibandingkan dengan file contoh lokal bila tersedia.
+Perbaikan performa upload/inspect/batch, render hanya tab aktif dan pengurangan DOM direncanakan di [improvement.md](improvement.md), belum diterapkan pada rilis 3.9.0. Pembatalan UI saat ini membatalkan penantian browser; penghentian pekerjaan backend perlu implementasi terpisah.
+
+`npm run test:recap` memeriksa metadata, batch, API, audit RKK, dan simulasi DOM frontend. Pengujian SATIG menyimpan dan membaca kembali XLSX untuk memeriksa satu sheet, label tingkat, outline 1–7, batas satker/cabang, header berulang, formula anak langsung, target kosong/nol/pecahan, sumber dana, style, freeze dan fokus/pencarian tanpa leluhur. XML diperiksa agar summaryBelow bernilai false dan tidak ada baris hidden/collapsed pada file awal. Profil font, border, format angka dan lebar kolom B:I dibandingkan dengan file contoh lokal bila tersedia.
 
 Pemeriksaan visual browser dan Microsoft Excel belum dilakukan untuk format SATIG. Pemeriksaan tersebut masih diperlukan untuk clipping uraian/angka, tinggi baris, cetak, responsive layout, dan interaksi keyboard. Jangan menyatakan audit visual lulus berdasarkan tes DOM atau pembacaan XLSX saja.
 
